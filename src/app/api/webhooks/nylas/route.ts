@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import crypto from 'crypto';
 
 /**
@@ -57,36 +59,78 @@ export async function POST(request: NextRequest) {
         if (delta.type === 'message.created') {
           console.log('Processing message.created event...');
 
-          // In a real scenario, you would fetch the message details from Nylas
-          // using the delta.object_data.id to get the body and subject.
-          // For now, we'll use mock data to test the connection.
-          const mockEmailData = {
-            subject: 'Mock Subject: Follow-up on our meeting',
-            body: 'This is a mock email body to test the CrewAI service connection.',
-          };
+          const { grant_id, id: message_id } = delta.object_data;
+          console.log(`Fetching message ${message_id} for grant ${grant_id}`);
 
           try {
-            // Call the Python CrewAI service
+            const supabase = await createClient(cookies());
+
+            // 1. Get the user's access token for this grant
+            const { data: inbox, error: inboxError } = await supabase
+              .from('connected_inboxes')
+              .select('access_token, user_id')
+              .eq('grant_id', grant_id)
+              .single();
+
+            if (inboxError || !inbox) {
+              throw new Error(`Could not find inbox for grant_id: ${grant_id}`);
+            }
+
+            // 2. Fetch the full message from Nylas
+            const nylasApiServer = process.env.NYLAS_API_SERVER;
+            const messageResponse = await fetch(
+              `${nylasApiServer}/v3/grants/${grant_id}/messages/${message_id}`,
+              {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${inbox.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            if (!messageResponse.ok) {
+              throw new Error('Failed to fetch message from Nylas');
+            }
+
+            const messageData = await messageResponse.json();
+
+            // 3. Call the Python CrewAI service for analysis
             const analysisResponse = await fetch('http://localhost:8000/analyze-reply', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(mockEmailData),
+              body: JSON.stringify({ 
+                subject: messageData.subject, 
+                body: messageData.body 
+              }),
             });
 
             if (!analysisResponse.ok) {
-              const errorBody = await analysisResponse.text();
-              throw new Error(`CrewAI service failed: ${analysisResponse.status} ${errorBody}`);
+              throw new Error('CrewAI service analysis failed');
             }
 
             const analysisResult = await analysisResponse.json();
             console.log('Received analysis from CrewAI service:', analysisResult);
 
-            // TODO: Save analysisResult to the Supabase 'replies' table.
+            // 4. Save the analysis to the Supabase 'replies' table
+            const { error: insertError } = await supabase.from('replies').insert({
+              lead_id: messageData.id, // Using message ID as lead_id
+              user_id: inbox.user_id,
+              sentiment: analysisResult.sentiment,
+              action_required: analysisResult.action_required,
+              summary: analysisResult.summary,
+            });
+
+            if (insertError) {
+              throw new Error(`Failed to save reply to Supabase: ${insertError.message}`);
+            }
+
+            console.log('Successfully saved reply analysis to Supabase.');
 
           } catch (e) {
-            console.error('Error calling CrewAI service:', e);
+            console.error('Error processing webhook delta:', e);
           }
         }
       }
