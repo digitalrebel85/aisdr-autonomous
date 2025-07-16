@@ -12,8 +12,14 @@ export default function DashboardPage() {
           <p className="mt-2 text-gray-600">Welcome back!</p>
         </div>
         <nav className="flex justify-center space-x-4">
+          <Link href="/dashboard/inbox" className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+            AI Inbox
+          </Link>
+          <Link href="/dashboard/leads" className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700">
+            Manage Leads
+          </Link>
           <Link href="/settings" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            Go to Settings
+            Settings
           </Link>
         </nav>
         <div className="flex justify-center">

@@ -3,8 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     // 1. Get the authenticated user
@@ -14,15 +13,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse the request body
-    const { to, subject, body, sender_email } = await request.json();
-    if (!to || !subject || !body || !sender_email) {
-      return new NextResponse(JSON.stringify({ error: 'Missing required fields: to, subject, body, sender_email' }), { status: 400 });
+    const { to, subject, body, sender_email, lead_id } = await request.json();
+    if (!to || !subject || !body || !sender_email || !lead_id) {
+      return new NextResponse(JSON.stringify({ error: 'Missing required fields: to, subject, body, sender_email, lead_id' }), { status: 400 });
     }
 
     // 3. Look up the sender's inbox credentials from Supabase
     const { data: inbox, error: selectError } = await supabase
       .from('connected_inboxes')
-      .select('access_token') // We only need the access token now
+      .select('access_token, grant_id') // We only need the access token and grant_id now
       .eq('user_id', user.id)
       .eq('email_address', sender_email)
       .single();
@@ -39,6 +38,7 @@ export async function POST(request: NextRequest) {
       to: [{ email: to }],
       subject: subject,
       body: body,
+      tracking: { opens: true, bounces: true },
     };
 
     const nylasResponse = await fetch(nylasApiUrl, {
@@ -59,10 +59,25 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Return the Nylas response
-    return NextResponse.json(responseData);
+    // Also log the sent email to our database
+    const { error: insertError } = await supabase
+      .from('sent_emails')
+      .insert({
+        message_id: responseData.id,
+        grant_id: inbox.grant_id,
+        user_id: user.id,
+        lead_id: lead_id,
+      });
 
+    if (insertError) {
+      // Log the error but don't fail the request, as the email was still sent
+      console.error('Failed to log sent email to DB:', insertError);
+    }
+
+    return new NextResponse(JSON.stringify({ messageId: responseData.id }), { status: 200 });
   } catch (error) {
-    console.error('Send email error:', error);
-    return new NextResponse(JSON.stringify({ error: 'An unexpected error occurred.' }), { status: 500 });
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Error sending email:', message);
+    return new NextResponse(`Internal Server Error: ${message}`, { status: 500 });
   }
 }
