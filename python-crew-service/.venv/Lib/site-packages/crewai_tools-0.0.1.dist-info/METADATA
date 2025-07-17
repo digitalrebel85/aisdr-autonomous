@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: crewai-tools
+Version: 0.0.1
+Summary: Set of tools for the crewAI framework
+Author: João Moura
+Author-email: joaomdmoura@mgail.com
+Requires-Python: >=3.11,<4.0
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Project-URL: Homepage, https://github.com/joaomdmoura/crewAI-tools
+Project-URL: Repository, https://github.com/joaomdmoura/crewAI-tools
+Description-Content-Type: text/markdown
+
+# CrewAI Tools

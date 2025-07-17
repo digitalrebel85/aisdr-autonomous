@@ -1,7 +1,12 @@
 fastapi
 uvicorn
 crewai
+crewai-tools
 python-dotenv
 supabase
 langchain-openai
 langchain-deepseek
+requests
+pytest
+pytest-mock
+requests-mock
