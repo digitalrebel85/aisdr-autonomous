@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   const cookieStore = cookies();
   const env = loadEnvVars();
   const nylasApiKey = env.NYLAS_API_KEY;
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
   if (!nylasApiKey) {
     throw new Error('NYLAS_API_KEY is not defined in .env.local');
