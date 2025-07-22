@@ -1,4 +1,4 @@
-from crewai import Agent, Tool
+from crewai import Agent
 
 # Assuming the tool is defined in tools/visitor_intel_tool.py
 # from tools.visitor_intel_tool import get_company_by_ip

@@ -3,7 +3,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
-from crewai_tools import tool
+from crewai.tools import tool
 
 # Load environment variables from .env file
 load_dotenv()

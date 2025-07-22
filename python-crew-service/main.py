@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 import os
-import requests
+import httpx
 import json
+from supabase import create_client, Client
 
 # LLM Configuration
 from langchain_deepseek import ChatDeepSeek
@@ -26,7 +27,7 @@ from crew.visitor_intel_crew import create_visitor_intel_crew
 from crew.strategic_reflection_crew import create_strategic_reflection_crew
 
 # Tools
-from tools.nylas_tools import get_nylas_data, get_message_details
+from tools.nylas_tools import get_message_details as fetch_nylas_message_details
 from tools.supabase_tools import get_lead_by_email
 
 # --- FastAPI App Initialization ---
@@ -38,12 +39,13 @@ app = FastAPI(
 # --- Environment Variable Loading & Validation ---
 load_dotenv()
 
+
 required_env_vars = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_KEY',
     'NYLAS_API_KEY',
     'NYLAS_API_SERVER',
-    'SNITCHER_API_KEY',
+    # 'SNITCHER_API_KEY' is now optional
 ]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
@@ -62,10 +64,24 @@ else:
     print("INFO: Using OpenAI LLM")
     llm = ChatOpenAI(model_name="gpt-4o", temperature=0, api_key=os.getenv('OPENAI_API_KEY'))
 
+# Helper function to extract JSON from a string
+def extract_json_from_string(s):
+    # Find the start and end of the JSON block
+    start = s.find('{')
+    end = s.rfind('}') + 1
+    if start == -1 or end == 0:
+        return None
+    json_str = s[start:end]
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        return None
+
 # --- API Endpoints ---
 
 @app.post("/get-message-details")
 async def get_message_details(request: MessageDetailsRequest):
+    supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
     try:
         # In test mode, return a realistic mock message object
         if request.message_id == 'test-simulation':
@@ -85,20 +101,17 @@ async def get_message_details(request: MessageDetailsRequest):
             raise HTTPException(status_code=404, detail="Inbox not found for grant_id.")
         access_token = inbox_res.data['access_token']
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/json"
-        }
-        async with httpx.AsyncClient() as client:
-            res = await client.get(f"{NYLAS_API_SERVER}/v3/grants/{request.grant_id}/messages/{request.message_id}", headers=headers)
-            res.raise_for_status()
-            return res.json()
+        # Call the renamed function to fetch details from Nylas
+        message_details = await fetch_nylas_message_details(request.grant_id, request.message_id)
+        return message_details
+
     except Exception as e:
-        print(f"Error fetching message details: {e}")
+        print(f"Error getting message details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze-reply")
 async def analyze_reply(request: AnalysisRequest):
+    supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
     try:
         # 1. Get user's Nylas access token from Supabase
         inbox_res = supabase.table('connected_inboxes').select('access_token').eq('grant_id', request.grant_id).single().execute()
@@ -107,16 +120,37 @@ async def analyze_reply(request: AnalysisRequest):
         access_token = inbox_res.data['access_token']
 
         # 2. Fetch message details and thread history from Nylas
+        reply_text = ""
+        thread_history = ""
         if request.message_id == 'test-simulation':
             print("--- RUNNING analyze-reply IN TEST SIMULATION MODE ---")
-            message = {
-                'snippet': 'That sounds interesting. Can you send over some more details?',
-                'thread_id': 'mock_thread_123'
-            }
+            reply_text = "That sounds interesting. Can you send over some more details?"
             thread_history = "User: Hey, are you free for a chat? Lead: That sounds interesting. Can you send over some more details?"
         else:
-            message, thread_history = await get_nylas_data(request.grant_id, access_token, request.message_id)
-        reply_text = message.get('snippet', '')
+            # Fetch the specific message that triggered the webhook to get the reply text
+            message_details = await fetch_nylas_message_details(request.grant_id, request.message_id)
+            reply_text = message_details.get('snippet', '')
+
+            # Fetch the full thread for context
+            async with httpx.AsyncClient() as client:
+                nylas_api_server = os.getenv('NYLAS_API_SERVER')
+                headers = {
+                    "Authorization": f"Bearer {os.getenv('NYLAS_API_KEY')}",
+                    "Accept": "application/json"
+                }
+                # Fetch the full thread using the thread_id from the message
+                thread_id = message_details.get('thread_id')
+                if not thread_id:
+                    # If thread_id is still not found, it might be a new email not yet in a thread.
+                    # In this case, we can treat the single message as the entire thread history.
+                    thread_history = [{
+                        'snippet': message_details.get('snippet', ''),
+                        'from': message_details.get('from', [])
+                    }]
+                else:
+                    thread_res = await client.get(f"{nylas_api_server}/v3/grants/{request.grant_id}/threads/{thread_id}?view=expanded", headers=headers)
+                    thread_res.raise_for_status()
+                    thread_history = thread_res.json()
 
         # 3. Find the lead_id and get lead context from Supabase
         lead_res = supabase.table('leads').select('*').eq('user_id', request.user_id).eq('email', request.sender_email).single().execute()
@@ -179,7 +213,16 @@ async def generate_cold_email(request: EmailCopywritingRequest):
             request.pain_points, request.offer, request.hook_snippet
         )
         result = email_crew.kickoff()
-        return EmailCopywritingResult.model_validate_json(result.raw)
+        print(f"--- RAW CREW RESULT ---\n{result.raw}")
+
+        # Extract JSON from the raw result string
+        json_result = extract_json_from_string(result.raw)
+        if not json_result:
+            raise HTTPException(status_code=500, detail="Failed to parse JSON from crew result.")
+
+        # Validate and return the result
+        result = EmailCopywritingResult.model_validate(json_result)
+        return result
 
     except Exception as e:
         print(f"Error during cold email generation: {e}")
@@ -187,6 +230,11 @@ async def generate_cold_email(request: EmailCopywritingRequest):
 
 @app.post("/resolve-ip", response_model=VisitorIntelResponse)
 async def resolve_ip(request: VisitorIntelRequest):
+    if not os.getenv('SNITCHER_API_KEY'):
+        raise HTTPException(
+            status_code=400,
+            detail="Visitor IP resolution feature is disabled. Please set the SNITCHER_API_KEY."
+        )
     try:
         print(f"--- RESOLVING IP ADDRESS: {request.ip} ---")
         intel_crew = create_visitor_intel_crew(llm, request.ip)

@@ -50,136 +50,161 @@ export async function POST(request: NextRequest) {
     const payload = JSON.parse(rawBody);
     console.log('STEP 2: Webhook payload parsed:', JSON.stringify(payload, null, 2));
 
-    if (!payload.deltas || payload.deltas.length === 0) {
-      console.log('Webhook received, but no deltas to process.');
-      return new NextResponse('Webhook received; no action taken.', { status: 200 });
-    }
-
-    // Using a for...of loop to handle async operations correctly
-    for (const delta of payload.deltas) {
-      console.log(`Processing delta type: ${delta.type}`);
-
-      // Use an admin client to bypass RLS for all webhook operations
-      const supabase = createClient(
+    // Handle both delta and direct object webhook formats from Nylas
+    if (payload.deltas && payload.deltas.length > 0) {
+      // DELTA FORMAT
+      console.log(`STEP 3: Processing ${payload.deltas.length} deltas...`);
+      for (const delta of payload.deltas) {
+        await processEvent(delta, createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_KEY!
+        ));
+      }
+    } else if (payload.data && payload.data.object) {
+      // FULL OBJECT FORMAT
+      console.log('STEP 3: Processing single event object...');
+      // Adapt the full object format to match the expected delta structure for processEvent
+      const adaptedEvent = {
+        type: payload.type,
+        object: payload.data.object.object, // e.g., 'message'
+        object_data: {
+          ...payload.data.object,
+          // For message.updated, the actual updates are in a 'metadata' sub-object
+          ...(payload.data.object.metadata && { ...payload.data.object.metadata }),
+        },
+      };
+      await processEvent(adaptedEvent, createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_KEY!
-      );
+      ));
+    } else {
+      console.log('Webhook received, but no deltas or data object to process.');
+      return new NextResponse('OK', { status: 200 });
+    }
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
 
-      if (delta.type === 'message.created') {
-        console.log('STEP 3: Event is message.created.');
-        const { grant_id, id: message_id } = delta.object_data;
+  return new NextResponse('OK', { status: 200 });
+}
 
-        console.log(`STEP 4: Calling Python service for message_id: ${message_id}`);
-        const messageDetailsRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/get-message-details`, {
+// Extracted event processing logic to handle both formats
+async function processEvent(delta: any, supabase: any) {
+  try {
+    console.log(`Processing delta type: ${delta.type}`);
+
+    if (delta.type === 'message.created') {
+      console.log('STEP 3: Event is message.created.');
+      const { grant_id, id: message_id } = delta.object_data;
+
+      console.log(`STEP 4: Calling Python service for message_id: ${message_id}`);
+      const messageDetailsRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/get-message-details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grant_id, message_id }),
+      });
+
+      if (!messageDetailsRes.ok) {
+        const errorText = await messageDetailsRes.text();
+        console.error('Python service /get-message-details FAILED:', errorText);
+        throw new Error(`Failed to get message details: ${errorText}`);
+      }
+
+      const messageDetails = await messageDetailsRes.json();
+      console.log('STEP 5: Successfully got message details:', messageDetails);
+      const senderEmail = messageDetails.data.from?.[0]?.email;
+
+      console.log(`STEP 6: Fetching inbox info for grant_id: ${grant_id}`);
+
+      const { data: inboxData, error: inboxError } = await supabase
+        .from('connected_inboxes')
+        .select('user_id, email_address')
+        .eq('grant_id', grant_id)
+        .single();
+
+      if (inboxError || !inboxData) {
+        console.error('Supabase inbox fetch FAILED:', inboxError);
+        throw new Error(`Could not find inbox for grant_id ${grant_id}`);
+      }
+      console.log('STEP 7: Successfully fetched inbox info:', inboxData);
+
+      console.log(`STEP 8: Checking if sender (${senderEmail}) is different from user (${inboxData.email_address})`);
+      if (senderEmail && senderEmail.toLowerCase() !== inboxData.email_address.toLowerCase()) {
+        console.log('STEP 9: Sender is different. Proceeding with analysis.');
+        const analysisRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/analyze-reply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ grant_id, message_id }),
+          body: JSON.stringify({ grant_id, message_id, user_id: inboxData.user_id, sender_email: senderEmail }),
         });
 
-        if (!messageDetailsRes.ok) {
-          const errorText = await messageDetailsRes.text();
-          console.error('Python service /get-message-details FAILED:', errorText);
-          throw new Error(`Failed to get message details: ${errorText}`);
+        if (!analysisRes.ok) {
+          const errorText = await analysisRes.text();
+          console.error('Python service /analyze-reply FAILED:', errorText);
+          throw new Error(`Failed to analyze reply: ${errorText}`);
         }
 
-        const messageDetails = await messageDetailsRes.json();
-        console.log('STEP 5: Successfully got message details:', messageDetails);
-        const senderEmail = messageDetails.from?.[0]?.email;
+        const analysis = await analysisRes.json();
+        console.log('STEP 10: Successfully got analysis from Python:', analysis);
 
-        console.log(`STEP 6: Fetching inbox info for grant_id: ${grant_id}`);
-
-        const { data: inboxData, error: inboxError } = await supabase
-          .from('connected_inboxes')
-          .select('user_id, email_address')
-          .eq('grant_id', grant_id)
-          .single();
-
-        if (inboxError || !inboxData) {
-          console.error('Supabase inbox fetch FAILED:', inboxError);
-          throw new Error(`Could not find inbox for grant_id ${grant_id}`);
-        }
-        console.log('STEP 7: Successfully fetched inbox info:', inboxData);
-
-        console.log(`STEP 8: Checking if sender (${senderEmail}) is different from user (${inboxData.email_address})`);
-        if (senderEmail && senderEmail.toLowerCase() !== inboxData.email_address.toLowerCase()) {
-          console.log('STEP 9: Sender is different. Proceeding with analysis.');
-          const analysisRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/analyze-reply`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ grant_id, message_id, user_id: inboxData.user_id, sender_email: senderEmail }),
-          });
-
-          if (!analysisRes.ok) {
-            const errorText = await analysisRes.text();
-            console.error('Python service /analyze-reply FAILED:', errorText);
-            throw new Error(`Failed to analyze reply: ${errorText}`);
-          }
-
-          const analysis = await analysisRes.json();
-          console.log('STEP 10: Successfully got analysis from Python:', analysis);
-
-          console.log('STEP 11: Saving analysis to Supabase replies table.');
-          const { error: insertError } = await supabase.from('replies').insert({
-            grant_id: grant_id,
-            user_id: inboxData.user_id,
-            message_id: message_id,
-            lead_id: analysis.lead_id,
-            sentiment: analysis.sentiment,
-            action: analysis.action,
-            summary: analysis.summary,
-            next_step_prompt: analysis.nextStepPrompt,
-            raw_response: analysis,
-          });
-
-          if (insertError) {
-            console.error('Supabase insert FAILED:', insertError);
-            throw new Error(`Failed to insert reply into DB: ${insertError.message}`);
-          }
-          console.log('STEP 12: Successfully saved analysis to DB.');
-        } else {
-          console.log('STEP 9: Sender is the same as the user or missing. Skipping analysis.');
-        }
-      } else if (delta.type === 'message.opened' || delta.type === 'message.bounced') {
-        console.log(`EVENT: Received ${delta.type}`);
-        const { id: message_id } = delta.object_data;
-        const event_type = delta.type.split('.')[1]; // 'opened' or 'bounced'
-
-        // Find the original sent email to get the lead_id and user_id
-        const { data: sentEmail, error: sentEmailError } = await supabase
-          .from('sent_emails')
-          .select('lead_id, user_id')
-          .eq('message_id', message_id)
-          .single();
-
-        if (sentEmailError || !sentEmail) {
-          console.warn(`Could not find sent_email record for message_id ${message_id}. Skipping event logging.`);
-          continue; // Skip to the next delta
-        }
-
-        console.log(`Found matching sent email for lead: ${sentEmail.lead_id}. Logging event.`);
-
-        const { error: eventInsertError } = await supabase.from('email_events').insert({
+        console.log('STEP 11: Saving analysis to Supabase replies table.');
+        const { error: insertError } = await supabase.from('replies').insert({
+          grant_id: grant_id,
+          user_id: inboxData.user_id,
           message_id: message_id,
-          lead_id: sentEmail.lead_id,
-          user_id: sentEmail.user_id,
-          event_type: event_type,
-          event_timestamp: new Date(delta.date * 1000).toISOString(),
-          raw_payload: delta,
+          lead_id: analysis.lead_id,
+          sentiment: analysis.sentiment,
+          action: analysis.action,
+          summary: analysis.summary,
+          next_step_prompt: analysis.nextStepPrompt,
+          raw_response: analysis,
         });
 
-        if (eventInsertError) {
-          console.error(`Failed to insert email event for message_id ${message_id}:`, eventInsertError);
-          // Don't throw an error, just log and continue
-        } else {
-          console.log(`Successfully logged '${event_type}' event for message_id ${message_id}.`);
+        if (insertError) {
+          console.error('Supabase insert FAILED:', insertError);
+          throw new Error(`Failed to insert reply into DB: ${insertError.message}`);
         }
+        console.log('STEP 12: Successfully saved analysis to DB.');
+      } else {
+        console.log('STEP 9: Sender is the same as the user or missing. Skipping analysis.');
+      }
+    } else if (delta.type === 'message.opened' || delta.type === 'message.bounced') {
+      console.log(`EVENT: Received ${delta.type}`);
+      const { id: message_id } = delta.object_data;
+      const event_type = delta.type.split('.')[1]; // 'opened' or 'bounced'
+
+      // Find the original sent email to get the lead_id and user_id
+      const { data: sentEmail, error: sentEmailError } = await supabase
+        .from('sent_emails')
+        .select('lead_id, user_id')
+        .eq('message_id', message_id)
+        .single();
+
+      if (sentEmailError || !sentEmail) {
+        console.warn(`Could not find sent_email record for message_id ${message_id}. Skipping event logging.`);
+        return;
+      }
+
+      console.log(`Found matching sent email for lead: ${sentEmail.lead_id}. Logging event.`);
+
+      const { error: eventInsertError } = await supabase.from('email_events').insert({
+        message_id: message_id,
+        lead_id: sentEmail.lead_id,
+        user_id: sentEmail.user_id,
+        event_type: event_type,
+        event_timestamp: new Date(delta.date * 1000).toISOString(),
+        raw_payload: delta,
+      });
+
+      if (eventInsertError) {
+        console.error(`Failed to insert email event for message_id ${message_id}:`, eventInsertError);
+        // Don't throw an error, just log and continue
+      } else {
+        console.log(`Successfully logged '${event_type}' event for message_id ${message_id}.`);
       }
     }
-
-    return new NextResponse('Webhook processed', { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('Error processing Nylas webhook:', message);
-    return new NextResponse(`Internal Server Error: ${message}`, { status: 500 });
+    console.error(`Error processing ${delta.type} event:`, error);
   }
 }

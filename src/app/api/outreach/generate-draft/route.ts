@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   try {
     const lead = await request.json();
 
-    const response = await fetch(`${pythonServiceUrl}/run-email-copywriter`, {
+    const response = await fetch(`${pythonServiceUrl}/generate-cold-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
         company: lead.company,
         pain_points: lead.pain_points,
         offer: lead.offer,
+        hook_snippet: '', // Add missing field
       }),
     });
 

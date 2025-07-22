@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Construct and send the email using the Nylas API
-    // Per Nylas docs, use '/me/' in the path when authenticating with a user's access token.
-    const nylasApiUrl = `https://api.us.nylas.com/v3/grants/me/messages/send`;
+    // Use the grant_id and the application's NYLAS_API_KEY for robust server-to-server auth
+    const nylasApiUrl = `https://api.us.nylas.com/v3/grants/${inbox.grant_id}/messages/send`;
 
     const emailPayload = {
       to: [{ email: to }],
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const nylasResponse = await fetch(nylasApiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${inbox.access_token}`,
+        'Authorization': `Bearer ${process.env.NYLAS_API_KEY}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -60,10 +60,20 @@ export async function POST(request: NextRequest) {
 
     // 5. Return the Nylas response
     // Also log the sent email to our database
+    // The message ID is nested inside the 'data' object in the Nylas response
+    const messageId = responseData.data?.id;
+
+    if (!messageId) {
+      // Log the error but don't fail the request, as the email was still sent
+      console.error('Failed to get message_id from Nylas response:', responseData);
+      // Still return a success response to the client
+      return new NextResponse(JSON.stringify({ message: 'Email sent but failed to log message ID.' }), { status: 200 });
+    }
+
     const { error: insertError } = await supabase
       .from('sent_emails')
       .insert({
-        message_id: responseData.id,
+        message_id: messageId,
         grant_id: inbox.grant_id,
         user_id: user.id,
         lead_id: lead_id,
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
       console.error('Failed to log sent email to DB:', insertError);
     }
 
-    return new NextResponse(JSON.stringify({ messageId: responseData.id }), { status: 200 });
+    return new NextResponse(JSON.stringify({ messageId: messageId }), { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error sending email:', message);

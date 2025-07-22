@@ -4,7 +4,7 @@ import requests
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
-from crewai_tools import tool
+from crewai.tools import tool
 
 # --- Environment Setup ---
 load_dotenv()

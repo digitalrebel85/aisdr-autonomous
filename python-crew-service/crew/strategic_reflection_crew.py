@@ -1,5 +1,5 @@
 from crewai import Agent, Crew, Process, Task
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 from langchain_core.tools import tool
 from tools.supabase_tools import get_campaign_performance_metrics
 
@@ -52,7 +52,7 @@ def create_strategic_reflection_crew(llm, user_id: str):
         agents=[strategist_agent],
         tasks=[analysis_task],
         process=Process.sequential,
-        verbose=2
+        verbose=True
     )
 
     return strategic_crew

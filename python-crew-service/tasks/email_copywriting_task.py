@@ -9,8 +9,9 @@ class EmailCopywritingTask():
             The prospect's pain points are: {pain_points}
             The offer is: {offer}
             Use this hook snippet to start the email: {hook_snippet}
+
+            Your final answer MUST be a JSON object with keys 'subject' and 'body'.
             """,
-            expected_output="A JSON object with keys: 'subject' and 'body'.",
+            expected_output="A JSON object with the email's subject and body.",
             agent=agent
         )
-        self.task.output_pydantic = EmailCopywritingResult

@@ -4,6 +4,7 @@ from tasks.email_copywriting_task import EmailCopywritingTask
 
 def create_email_copywriter_crew(llm, name, title, company, pain_points, offer, hook_snippet):
     email_writer_agent = EmailCopywriterAgent(llm=llm)
+
     email_task = EmailCopywritingTask(
         agent=email_writer_agent,
         name=name,
@@ -18,5 +19,6 @@ def create_email_copywriter_crew(llm, name, title, company, pain_points, offer, 
         agents=[email_writer_agent],
         tasks=[email_task.task],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        manager_llm=llm  # Explicitly set the manager LLM
     )

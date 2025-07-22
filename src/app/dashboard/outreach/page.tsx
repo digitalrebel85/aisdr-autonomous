@@ -10,8 +10,9 @@ type Lead = {
   email: string;
   title: string;
   company: string;
-  pain_points: string;
+  pain_points: string[]; // Correctly type as an array of strings
   offer: string;
+  hook_snippet: string;
 };
 
 type Draft = {
@@ -79,7 +80,10 @@ export default function OutreachPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(selectedLead),
+        body: JSON.stringify({
+          ...selectedLead,
+          pain_points: selectedLead.pain_points.join(', '),
+        }),
       });
 
       if (!response.ok) {
@@ -150,7 +154,10 @@ export default function OutreachPage() {
         <div className="bg-gray-800 p-6 rounded-lg">
           <h2 className="text-xl font-bold mb-4">1. Select Lead</h2>
           <select
-            onChange={(e) => setSelectedLead(leads.find(lead => lead.id === e.target.value) || null)}
+            onChange={(e) => {
+              const lead = leads.find(lead => String(lead.id) === e.target.value) || null;
+              setSelectedLead(lead);
+            }}
             className="w-full p-2 rounded bg-gray-700 text-white mb-4"
             disabled={leads.length === 0}
           >
