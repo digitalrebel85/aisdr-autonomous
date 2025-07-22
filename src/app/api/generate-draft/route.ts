@@ -1,35 +1,52 @@
-import OpenAI from 'openai';
-import { OpenAIStream, StreamingTextResponse } from 'ai';
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
-// Create an OpenAI API client (that's edge friendly!)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
+export async function POST(request: Request) {
+  const supabase = await createClient();
 
-// IMPORTANT! Set the runtime to edge
-export const runtime = 'edge';
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-export async function POST(req: Request) {
-  const { prompt } = await req.json();
+  const { message_id, grant_id, sender_email } = await request.json();
 
-  // Ask OpenAI for a streaming completion given the prompt
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    stream: true,
-    messages: [
-      {
-        role: 'system',
-        content: `You are an expert sales assistant. Your task is to write a concise, professional, and friendly email draft based on the user's prompt. The user's prompt contains the goal for the email. Do not add a subject line or any pleasantries like "Hi [Name]". Just write the core body of the email.`,
+  if (!message_id || !grant_id || !sender_email) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+
+  const pythonServiceUrl = process.env.PYTHON_SERVICE_URL;
+  if (!pythonServiceUrl) {
+    console.error('PYTHON_SERVICE_URL is not set');
+    return NextResponse.json({ error: 'Service is not configured' }, { status: 500 });
+  }
+
+  try {
+    const response = await fetch(`${pythonServiceUrl}/analyze-reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-  });
+      body: JSON.stringify({
+        grant_id,
+        message_id,
+        sender_email,
+        user_id: user.id,
+      }),
+    });
 
-  // Convert the response into a friendly text-stream
-  const stream = OpenAIStream(response);
-  // Respond with the stream
-  return new StreamingTextResponse(stream);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`Python service error: ${response.status} ${errorBody}`);
+      return NextResponse.json({ error: 'Failed to generate draft from service' }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+
+  } catch (error) {
+    console.error('Error calling Python service:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

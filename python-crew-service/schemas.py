@@ -43,3 +43,10 @@ class VisitorIntelRequest(BaseModel):
 class VisitorIntelResponse(BaseModel):
     companyDomain: str | None = None
     companyName: str | None = None
+
+class StrategicReflectionRequest(BaseModel):
+    user_id: str
+
+class StrategicReflectionResponse(BaseModel):
+    summary: str
+    recommendations: list[str]

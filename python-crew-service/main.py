@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 import os
 import requests
+import json
 
 # LLM Configuration
 from langchain_deepseek import ChatDeepSeek
@@ -12,14 +13,17 @@ from schemas import (
     MessageDetailsRequest, AnalysisRequest, AnalysisResult,
     FollowUpRequest, FollowUpResult,
     EmailCopywritingRequest, EmailCopywritingResult,
-    VisitorIntelRequest, VisitorIntelResponse
+    VisitorIntelRequest, VisitorIntelResponse,
+    StrategicReflectionRequest, StrategicReflectionResponse
 )
 
 # Crew Creators
+from crew.master_sales_crew import create_master_sales_crew
 from crew.reply_crew import create_reply_crew
 from crew.follow_up_crew import create_follow_up_crew
 from crew.email_copywriter_crew import create_email_copywriter_crew
 from crew.visitor_intel_crew import create_visitor_intel_crew
+from crew.strategic_reflection_crew import create_strategic_reflection_crew
 
 # Tools
 from tools.nylas_tools import get_nylas_data, get_message_details
@@ -93,7 +97,7 @@ async def get_message_details(request: MessageDetailsRequest):
         print(f"Error fetching message details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/analyze-reply", response_model=AnalysisResult)
+@app.post("/analyze-reply")
 async def analyze_reply(request: AnalysisRequest):
     try:
         # 1. Get user's Nylas access token from Supabase
@@ -121,20 +125,34 @@ async def analyze_reply(request: AnalysisRequest):
         lead = lead_res.data
         lead_id = lead['id'] # This is the primary key, which we need.
 
-        # 4. Create and configure the CrewAI agent and task
-        reply_crew = create_reply_crew(llm, str(lead), thread_history, reply_text)
+        # 4. Create and run the Master Sales Crew to orchestrate a response
+        company_domain = request.sender_email.split('@')[1]
+        print(f"--- ORCHESTRATING RESPONSE FOR: {request.sender_email} ---")
 
-        # 5. Run the Crew
-        result = reply_crew.kickoff()
+        master_crew = create_master_sales_crew(
+            llm=llm, 
+            company_domain=company_domain, 
+            email_reply=reply_text,
+            lead_context=str(lead),
+            thread_history=thread_history
+        )
+        result = master_crew.kickoff()
 
-        # The result from kickoff is a CrewOutput object. The raw JSON string is in the .raw attribute.
-        analysis = AnalysisResult.model_validate_json(result.raw)
+        print(f"--- CREW RESULT ---\n{result.raw}")
 
-        # 6. Return the structured analysis, ensuring the lead_id is set correctly
-        # The Pydantic model from the agent should have the correct lead_id, but we'll set it here to be certain.
-        analysis.lead_id = lead_id
-        print(f"DEBUG: Returning analysis for lead_id: {analysis.lead_id}")
-        return analysis
+        # The master agent's final output is a JSON string.
+        # We need to parse it to send it back as a proper JSON object.
+        try:
+            crew_output = json.loads(result.raw)
+        except json.JSONDecodeError:
+            # Handle cases where the LLM doesn't return valid JSON
+            crew_output = {
+                "drafted_reply": result.raw,
+                "agent_reasoning": "The agent did not return valid JSON. Raw output is provided as the draft."
+            }
+
+        crew_output['lead_id'] = lead_id
+        return crew_output
 
     except Exception as e:
         print(f"Error during analysis: {e}")
@@ -179,6 +197,20 @@ async def resolve_ip(request: VisitorIntelRequest):
         print(f"Error during IP resolution: {e}")
         if "No company found" in str(e):
             return VisitorIntelResponse(companyDomain=None, companyName=None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/run-strategic-reflection", response_model=StrategicReflectionResponse)
+async def run_strategic_reflection(request: StrategicReflectionRequest):
+    try:
+        print(f"--- RUNNING STRATEGIC REFLECTION FOR USER: {request.user_id} ---")
+        strategic_crew = create_strategic_reflection_crew(llm, request.user_id)
+        result = strategic_crew.kickoff()
+        
+        # The final output should be a JSON string from the agent
+        return StrategicReflectionResponse.model_validate_json(result.raw)
+
+    except Exception as e:
+        print(f"Error during strategic reflection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")

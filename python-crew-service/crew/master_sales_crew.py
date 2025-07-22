@@ -1,0 +1,81 @@
+from crewai import Agent, Task, Crew, Process
+from .reply_crew import create_reply_agent
+from .email_copywriter_crew import create_email_copywriter_agent
+from .quality_assurance_crew import create_quality_assurance_agent
+from crewai.tools import BaseTool
+from tools.apollo_tools import get_company_profile
+
+# --- Tool Definition ---
+
+class CompanyProfileTool(BaseTool):
+    name: str = "Company Profile Enrichment Tool"
+    description: str = "Fetches detailed company profile data (industry, size, funding, etc.) from Apollo.io using a company domain."
+
+    def _run(self, domain: str) -> dict:
+        """Use the tool to get a company's profile."""
+        return get_company_profile(domain)
+
+# --- Agent Definition ---
+
+def create_master_sales_agent(llm):
+    return Agent(
+        role="Master Sales Strategist",
+        goal="Analyze incoming email replies, enrich lead data, and formulate a strategic plan to create the perfect response.",
+        backstory=(
+            "You are the mastermind behind a highly efficient sales team. You don't write emails yourself; "
+            "instead, you analyze the situation, gather intelligence, and create a detailed plan for your team of specialized agents. "
+            "Your primary job is to decide WHAT needs to be done, not to do it yourself."
+        ),
+        tools=[CompanyProfileTool()],
+        allow_delegation=True,  # This is crucial for orchestrating other agents
+        verbose=True,
+        llm=llm
+    )
+
+# --- Task Definition ---
+
+def create_master_sales_task(agent, company_domain, email_reply, lead_context, thread_history):
+    return Task(
+        description=(
+            "You are the orchestrator of a sales team. Your goal is to create the perfect email response to a lead. "
+            "This is a multi-step process involving planning, acting, and reflecting.\n\n" 
+            "1. **Plan:** First, create a step-by-step plan for how to respond. Think about the lead's message, their company profile, and the conversation history.\n"
+            "2. **Act:** Execute your plan by delegating tasks to your team. Use the ReplyAgent for analysis and the EmailCopywriterAgent for drafting the initial email.\n"
+            "3. **Reflect:** Once you have a draft, delegate the review of that draft to the QualityAssuranceAgent. This agent will provide feedback.\n"
+            "4. **Finalize:** Based on the feedback, have the EmailCopywriterAgent revise the draft if necessary. Your final answer MUST be the polished, approved email draft.\n\n"
+            f"- Company Domain: {company_domain}\n"
+            f"- Lead Context: {lead_context}\n"
+            f"- Thread History: {thread_history}\n"
+            f"- Email Reply from Lead: \"{email_reply}\""
+        ),
+        expected_output=(
+            "A JSON object with two keys: "
+            "1. 'drafted_reply': The final, complete, and quality-assured email draft (body only)."
+            "2. 'agent_reasoning': A step-by-step summary of the plan you created and the actions your team took to generate and review the draft."
+        ),
+        agent=agent
+    )
+
+# --- Crew Definition ---
+
+def create_master_sales_crew(llm, company_domain, email_reply, lead_context, thread_history):
+    master_agent = create_master_sales_agent(llm)
+    
+    # Define the specialist agents that the master agent can delegate to
+    reply_agent = create_reply_agent(llm)
+    email_writer_agent = create_email_copywriter_agent(llm)
+    qa_agent = create_quality_assurance_agent(llm)
+
+    master_task = create_master_sales_task(master_agent, company_domain, email_reply, lead_context, thread_history)
+
+    return Crew(
+        agents=[
+            master_agent,
+            reply_agent,
+            email_writer_agent,
+            qa_agent
+        ],
+        tasks=[master_task],
+        process=Process.sequential,
+        verbose=True
+    )
