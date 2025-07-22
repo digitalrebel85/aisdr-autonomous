@@ -48,11 +48,10 @@ function getCompanySizeBucket(count: number | null | undefined): string | null {
  * @param domain The company domain to enrich.
  * @returns A RequestInit object for the fetch call.
  */
-export function buildApolloRequest(domain: string): RequestInit {
+export function buildApolloRequest(): RequestInit {
   if (!process.env.APOLLO_API_KEY) {
     throw new Error('APOLLO_API_KEY environment variable is not set.');
   }
-  const url = `https://api.apollo.io/v1/companies/enrich?domain=${domain}&api_key=${process.env.APOLLO_API_KEY}`;
   return {
     method: 'GET',
     headers: {
@@ -87,11 +86,9 @@ export async function runCompanyProfileAgent(
   }
 
   const { companyDomain } = input;
-  const requestConfig = buildApolloRequest(companyDomain);
-  const url = `https://api.apollo.io/v1/companies/enrich?domain=${companyDomain}&api_key=${process.env.APOLLO_API_KEY}`;
-
+  const requestConfig = buildApolloRequest();
   try {
-    const response = await fetch(url, requestConfig);
+    const response = await fetch(`https://api.apollo.io/v1/companies/enrich?domain=${companyDomain}&api_key=${process.env.APOLLO_API_KEY}`, requestConfig);
     if (!response.ok) {
       throw new Error(`Apollo API request failed with status ${response.status}`);
     }

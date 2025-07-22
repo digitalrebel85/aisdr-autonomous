@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
 export default async function LeadsPage() {
   const supabase = await createClient();
@@ -14,6 +15,11 @@ export default async function LeadsPage() {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
+
+  if (leadsError) {
+    console.error('Error fetching leads:', leadsError);
+    // You might want to display an error message to the user here
+  }
 
   async function addLead(formData: FormData) {
     'use server';

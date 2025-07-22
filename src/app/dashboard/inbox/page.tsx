@@ -22,7 +22,7 @@ type Reply = {
 export default function InboxPage() {
   const supabase = createClient();
   const [replies, setReplies] = useState<Reply[]>([]);
-  const [_loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [drafts, setDrafts] = useState<{ [key: string]: string }>({});
   const [reasoning, setReasoning] = useState<{ [key: string]: string }>({});
   const [draftLoading, setDraftLoading] = useState<{ [key: string]: boolean }>({});
@@ -62,6 +62,7 @@ export default function InboxPage() {
 
   useEffect(() => {
     const fetchReplies = async () => {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data, error } = await supabase
@@ -84,7 +85,7 @@ export default function InboxPage() {
           setReplies(data as Reply[]);
         }
       }
-      setLoading(false);
+      setIsLoading(false);
     };
 
     fetchReplies();
@@ -102,8 +103,13 @@ export default function InboxPage() {
   return (
     <div className="w-full max-w-6xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">AI-Powered Inbox</h1>
-      
-      <div className="space-y-4">
+
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-400">Loading replies...</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
         {replies && replies.length > 0 ? (
           replies.map(reply => (
             <div key={reply.id} className="bg-gray-800 p-6 rounded-lg shadow-md">
@@ -195,7 +201,8 @@ export default function InboxPage() {
             <p className="text-gray-500 mt-2">When a lead replies to an email, the analysis will appear here.</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

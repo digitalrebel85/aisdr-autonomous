@@ -1,18 +1,22 @@
 // src/app/settings/page.tsx
 
-import { cookies } from 'next/headers';
+
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 
 export default async function SettingsPage() {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase = await createClient();
 
-  const { data: { user }, error: _error } = await supabase.auth.getUser();
-  const { data: inboxes, error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: inboxes, error: inboxesError } = await supabase
     .from('connected_inboxes')
     .select('id, email_address, provider')
     .eq('user_id', user?.id);
+
+  if (inboxesError) {
+    console.error('Error fetching inboxes:', inboxesError);
+    // Optionally, render an error message to the user
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
+          } catch {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
@@ -77,9 +77,10 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    const { data: user, error: _userError } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Error getting user:', userError);
+      return NextResponse.redirect(new URL('/login?error=authentication_failed', request.url));
     }
 
     // 1. Exchange the authorization code for an access token
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
     }
 
     const credentials = {
-      user_id: user.id,
+      user_id: user.id, // This is now correct after destructuring
       grant_id: accountData.id, // Use grant_id from the /grants/me response
       provider: accountData.provider,
       email_address: accountData.email, // The API returns 'email', not 'email_address'
