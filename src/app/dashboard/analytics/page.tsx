@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
 
       const data = await response.json();
       setAnalysis(data);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);

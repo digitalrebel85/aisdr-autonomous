@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+
 import { redirect } from 'next/navigation';
 
 export default async function LeadsPage() {
@@ -11,7 +11,7 @@ export default async function LeadsPage() {
     return redirect('/login');
   }
 
-  const { data: leads, error: leadsError } = await supabase
+  const { data, error: _leadsError } = await supabase
     .from('leads')
     .select('*')
     .eq('user_id', user.id)

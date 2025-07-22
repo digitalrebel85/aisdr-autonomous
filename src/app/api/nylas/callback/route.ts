@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: user, error: _userError } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('User not authenticated');
     }

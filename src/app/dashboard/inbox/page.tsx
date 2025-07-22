@@ -22,7 +22,7 @@ type Reply = {
 export default function InboxPage() {
   const supabase = createClient();
   const [replies, setReplies] = useState<Reply[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(false);
   const [drafts, setDrafts] = useState<{ [key: string]: string }>({});
   const [reasoning, setReasoning] = useState<{ [key: string]: string }>({});
   const [draftLoading, setDraftLoading] = useState<{ [key: string]: boolean }>({});

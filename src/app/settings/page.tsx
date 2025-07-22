@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   const cookieStore = cookies();
   const supabase = await createClient(cookieStore);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: _error } = await supabase.auth.getUser();
   const { data: inboxes, error } = await supabase
     .from('connected_inboxes')
     .select('id, email_address, provider')

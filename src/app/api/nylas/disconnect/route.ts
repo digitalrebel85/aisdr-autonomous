@@ -24,7 +24,7 @@ function loadEnvVars() {
 }
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies();
+
   const env = loadEnvVars();
   const nylasApiKey = env.NYLAS_API_KEY;
   const supabase = await createClient();

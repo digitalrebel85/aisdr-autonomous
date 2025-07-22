@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import Nylas from 'nylas'
 
 export async function GET() {
   // --- MANUAL ENV VARIABLE LOADING --- 
