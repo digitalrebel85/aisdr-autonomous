@@ -1,7 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
 
-import { redirect } from 'next/navigation';
-
 export default async function LeadsPage() {
   const supabase = await createClient();
 
@@ -11,7 +9,7 @@ export default async function LeadsPage() {
     return redirect('/login');
   }
 
-  const { data, error: _leadsError } = await supabase
+  const { data: leads, error: leadsError } = await supabase
     .from('leads')
     .select('*')
     .eq('user_id', user.id)
@@ -78,7 +76,7 @@ export default async function LeadsPage() {
         <div className="bg-gray-800 rounded-lg shadow-md">
           <ul className="divide-y divide-gray-700">
             {leads && leads.length > 0 ? (
-              leads.map(lead => (
+              leads.map((lead: { id: string; name: string; email: string; company: string; status: string; }) => (
                 <li key={lead.id} className="p-4">
                   <p className="font-bold text-lg">{lead.name} ({lead.email})</p>
                   <p className="text-sm text-gray-400">{lead.company}</p>

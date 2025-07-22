@@ -88,8 +88,12 @@ export default function OutreachPage() {
 
       const data = await response.json();
       setDraft(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred while generating the draft.');
+      }
     } finally {
       setIsLoading(false);
     }

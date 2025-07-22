@@ -31,7 +31,11 @@ export default function AnalyticsPage() {
       const data = await response.json();
       setAnalysis(data);
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     } finally {
       setIsLoading(false);
     }
