@@ -14,12 +14,17 @@ class ReplyTask():
                 "- 'follow_up' - Schedule a follow-up for later\n"
                 "- 'schedule_call' - They want to schedule a call or meeting\n"
                 "- 'not_interested' - They declined or are not interested\n"
-                "- 'no_action' - No response needed (auto-reply, out of office, etc.)\n"
-                "Do NOT use any other action types. Choose the most appropriate one from the list above."
+                "- 'no_action' - No response needed (auto-reply, out of office, etc.)\n\n"
+                "For the 'nextStepPrompt' field: Write the ACTUAL EMAIL CONTENT that should be sent to the lead. "
+                "Do NOT write instructions like 'Send a message about...' or 'Explain how...'. "
+                "Instead, write the actual email as if you are personally responding to them. "
+                "Be conversational, helpful, and reference their specific question or comment."
             ),
             expected_output=(
                 "A JSON object with keys: 'lead_id', 'sentiment', 'action', 'summary', 'nextStepPrompt'.\n"
-                "The 'action' field must be exactly one of: 'reply', 'follow_up', 'schedule_call', 'not_interested', or 'no_action'."
+                "The 'action' field must be exactly one of: 'reply', 'follow_up', 'schedule_call', 'not_interested', or 'no_action'.\n"
+                "The 'nextStepPrompt' field must contain the ACTUAL EMAIL CONTENT to send to the lead, not instructions for what to write. "
+                "Write it as if you are personally responding to the lead's email. Be conversational, helpful, and professional."
             ),
             agent=agent
         )
