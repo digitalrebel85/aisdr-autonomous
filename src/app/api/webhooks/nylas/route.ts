@@ -39,6 +39,9 @@ export async function POST(request: NextRequest) {
     const expectedSignature = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
     if (nylasSignature !== expectedSignature) {
       console.warn('Invalid Nylas webhook signature.');
+      console.log(`Received Signature: ${nylasSignature}`);
+      console.log(`Expected Signature: ${expectedSignature}`);
+      console.log(`Raw Body Used: ${rawBody.substring(0, 200)}...`); // Log first 200 chars
       return new NextResponse('Invalid signature', { status: 401 });
     }
   } else {
@@ -135,7 +138,13 @@ async function processEvent(delta: any, supabase: any) {
         const analysisRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/analyze-reply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ grant_id, message_id, user_id: inboxData.user_id, sender_email: senderEmail }),
+          body: JSON.stringify({ 
+            grant_id, 
+            message_id, 
+            user_id: inboxData.user_id, 
+            sender_email: senderEmail,
+            message_body: messageDetails.data.body || messageDetails.data.snippet || ''
+          }),
         });
 
         if (!analysisRes.ok) {
@@ -146,6 +155,12 @@ async function processEvent(delta: any, supabase: any) {
 
         const analysis = await analysisRes.json();
         console.log('STEP 10: Successfully got analysis from Python:', analysis);
+
+        // Check if analysis was skipped (no matching lead found)
+        if (analysis.status === 'skipped') {
+          console.log('STEP 11: Analysis was skipped (no matching lead). Skipping database insert.');
+          return; // Exit early, don't save to database
+        }
 
         console.log('STEP 11: Saving analysis to Supabase replies table.');
         const { error: insertError } = await supabase.from('replies').insert({
@@ -165,6 +180,43 @@ async function processEvent(delta: any, supabase: any) {
           throw new Error(`Failed to insert reply into DB: ${insertError.message}`);
         }
         console.log('STEP 12: Successfully saved analysis to DB.');
+
+        // STEP 13: Send automatic AI-generated reply if action requires it
+        const actionsRequiringReply = ['reply', 'follow_up', 'schedule_call'];
+        if (actionsRequiringReply.includes(analysis.action)) {
+          console.log('STEP 13: Sending AI-generated reply...');
+          try {
+            const replySubject = `Re: ${messageDetails.data.subject || 'Your inquiry'}`;
+            const sendEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-automated-reply`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                to: senderEmail,
+                subject: replySubject,
+                body: analysis.nextStepPrompt,
+                sender_email: inboxData.email_address,
+                lead_id: analysis.lead_id,
+                user_id: inboxData.user_id,
+                grant_id: grant_id
+              })
+            });
+
+            if (sendEmailResponse.ok) {
+              const emailResult = await sendEmailResponse.json();
+              console.log('STEP 14: Successfully sent AI reply. Message ID:', emailResult.messageId);
+            } else {
+              const errorText = await sendEmailResponse.text();
+              console.error('STEP 14: Failed to send AI reply:', errorText);
+            }
+          } catch (emailError) {
+            console.error('STEP 14: Error sending AI reply:', emailError);
+            // Don't throw error - analysis was successful even if reply failed
+          }
+        } else {
+          console.log('STEP 13: No reply needed based on analysis action:', analysis.action);
+        }
       } else {
         console.log('STEP 9: Sender is the same as the user or missing. Skipping analysis.');
       }

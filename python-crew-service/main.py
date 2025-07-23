@@ -119,7 +119,7 @@ async def analyze_reply(request: AnalysisRequest):
             raise HTTPException(status_code=404, detail="Inbox not found for grant_id.")
         access_token = inbox_res.data['access_token']
 
-        # 2. Fetch message details and thread history from Nylas
+        # 2. Use the message body sent from the webhook handler
         reply_text = ""
         thread_history = ""
         if request.message_id == 'test-simulation':
@@ -127,9 +127,12 @@ async def analyze_reply(request: AnalysisRequest):
             reply_text = "That sounds interesting. Can you send over some more details?"
             thread_history = "User: Hey, are you free for a chat? Lead: That sounds interesting. Can you send over some more details?"
         else:
-            # Fetch the specific message that triggered the webhook to get the reply text
+            # Use the message body that was already fetched by the webhook handler
+            reply_text = request.message_body
+            print(f"--- USING MESSAGE BODY FROM WEBHOOK: '{reply_text[:100]}...' ---")
+            
+            # Still fetch message details for thread_id if needed
             message_details = await fetch_nylas_message_details(request.grant_id, request.message_id)
-            reply_text = message_details.get('snippet', '')
 
             # Fetch the full thread for context
             async with httpx.AsyncClient() as client:
@@ -153,24 +156,28 @@ async def analyze_reply(request: AnalysisRequest):
                     thread_history = thread_res.json()
 
         # 3. Find the lead_id and get lead context from Supabase
-        lead_res = supabase.table('leads').select('*').eq('user_id', request.user_id).eq('email', request.sender_email).single().execute()
-        if not lead_res.data:
-            raise HTTPException(status_code=404, detail=f"Lead not found for email: {request.sender_email}")
-        lead = lead_res.data
-        lead_id = lead['id'] # This is the primary key, which we need.
+        lead_res = supabase.table('leads').select('*').eq('user_id', request.user_id).eq('email', request.sender_email).execute()
+        
+        lead_id = None
+        lead_context = "No existing lead context found."
+
+        if lead_res.data:
+            lead = lead_res.data[0]
+            lead_id = lead['id']
+            lead_context = str(lead)
+        else:
+            print(f"--- No lead found for email: {request.sender_email}. Skipping analysis. ---")
+            return {"status": "skipped", "reason": "No matching lead found"}
 
         # 4. Create and run the Master Sales Crew to orchestrate a response
-        company_domain = request.sender_email.split('@')[1]
         print(f"--- ORCHESTRATING RESPONSE FOR: {request.sender_email} ---")
-
-        master_crew = create_master_sales_crew(
-            llm=llm, 
-            company_domain=company_domain, 
+        reply_crew = create_reply_crew(
+            llm=llm,
             email_reply=reply_text,
-            lead_context=str(lead),
+            lead_context=lead_context,
             thread_history=thread_history
         )
-        result = master_crew.kickoff()
+        result = reply_crew.kickoff()
 
         print(f"--- CREW RESULT ---\n{result.raw}")
 

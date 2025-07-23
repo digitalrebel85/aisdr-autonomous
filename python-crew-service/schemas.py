@@ -9,6 +9,7 @@ class AnalysisRequest(BaseModel):
     message_id: str
     user_id: str
     sender_email: str
+    message_body: str = ""
 
 class AnalysisResult(BaseModel):
     lead_id: str

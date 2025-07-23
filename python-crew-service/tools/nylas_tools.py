@@ -12,7 +12,16 @@ async def get_message_details(grant_id: str, message_id: str) -> dict:
         "Authorization": f"Bearer {NYLAS_API_KEY}",
         "Accept": "application/json"
     }
-    async with httpx.AsyncClient() as client:
+    # Set a longer timeout (e.g., 30 seconds) to handle slow API responses
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.get(url, headers=headers)
         response.raise_for_status()  # Raises an exception for 4xx or 5xx status codes
-        return response.json()
+        message_data = response.json()
+        # Debug: Print the full message structure to understand available fields
+        print(f"--- DEBUG: Full Nylas message response ---")
+        print(f"Available fields: {list(message_data.keys())}")
+        if 'body' in message_data:
+            print(f"Body field exists: {type(message_data['body'])}")
+        if 'snippet' in message_data:
+            print(f"Snippet: '{message_data['snippet']}'")
+        return message_data
