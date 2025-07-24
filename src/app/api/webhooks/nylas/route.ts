@@ -92,12 +92,104 @@ export async function POST(request: NextRequest) {
   return new NextResponse('OK', { status: 200 });
 }
 
+// In-memory cache to prevent duplicate processing (simple approach for demo)
+const processedMessages = new Set<string>();
+
+// Helper function to organize processed emails (mark as read + move to folder)
+async function organizeProcessedEmail(grant_id: string, message_id: string) {
+  const folderName = 'AI-Processed';
+  
+  try {
+    // First, ensure the folder exists
+    const foldersResponse = await fetch(`https://api.us.nylas.com/v3/grants/${grant_id}/folders`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.NYLAS_API_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!foldersResponse.ok) {
+      throw new Error(`Failed to list folders: ${foldersResponse.status}`);
+    }
+    
+    const foldersData = await foldersResponse.json();
+    const existingFolder = foldersData.data?.find((folder: any) => folder.name === folderName);
+    
+    let targetFolderId = existingFolder?.id;
+    
+    // Create folder if it doesn't exist
+    if (!existingFolder) {
+      console.log(`Creating folder: ${folderName}`);
+      const createFolderResponse = await fetch(`https://api.us.nylas.com/v3/grants/${grant_id}/folders`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NYLAS_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: folderName })
+      });
+      
+      if (createFolderResponse.ok) {
+        const newFolder = await createFolderResponse.json();
+        targetFolderId = newFolder.data?.id;
+        console.log(`Created folder: ${folderName} with ID: ${targetFolderId}`);
+      } else {
+        console.warn(`Failed to create folder ${folderName}, will try to move to existing folders`);
+      }
+    }
+    
+    // Move email to folder and mark as read
+    const updatePayload: any = { unread: false };
+    
+    if (targetFolderId) {
+      updatePayload.folders = [targetFolderId];
+    }
+    
+    const updateResponse = await fetch(`https://api.us.nylas.com/v3/grants/${grant_id}/messages/${message_id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${process.env.NYLAS_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatePayload)
+    });
+    
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      throw new Error(`Failed to organize email: ${updateResponse.status} - ${errorText}`);
+    }
+    
+    console.log(`Email ${message_id} marked as read${targetFolderId ? ` and moved to ${folderName}` : ''}`);
+    
+  } catch (error) {
+    console.error('Error organizing processed email:', error);
+    throw error;
+  }
+}
+
 // Extracted event processing logic to handle both formats
 async function processEvent(delta: any, supabase: any) {
   try {
     console.log(`Processing delta type: ${delta.type}`);
 
     if (delta.type === 'message.created') {
+      // Skip if we've already processed this message
+      const messageId = delta.object_data.id;
+      if (processedMessages.has(messageId)) {
+        console.log(`SKIP: Message ${messageId} already processed.`);
+        return;
+      }
+      
+      // Skip sent emails (emails sent by the user)
+      const folders = delta.object_data.folders || [];
+      if (folders.includes('SENT')) {
+        console.log(`SKIP: Message ${messageId} is a sent email (in SENT folder).`);
+        return;
+      }
+      
+      // Mark as processed
+      processedMessages.add(messageId);
       console.log('STEP 3: Event is message.created.');
       const { grant_id, id: message_id } = delta.object_data;
 
@@ -182,6 +274,8 @@ async function processEvent(delta: any, supabase: any) {
         console.log('STEP 12: Successfully saved analysis to DB.');
 
         // STEP 13: Send automatic AI-generated reply if action requires it
+        // NOTE: This only executes for emails from known leads that require AI responses
+        // Regular emails (newsletters, notifications, etc.) are never processed here
         const actionsRequiringReply = ['reply', 'follow_up', 'schedule_call'];
         if (actionsRequiringReply.includes(analysis.action)) {
           console.log('STEP 13: Sending AI-generated reply...');
@@ -206,6 +300,15 @@ async function processEvent(delta: any, supabase: any) {
             if (sendEmailResponse.ok) {
               const emailResult = await sendEmailResponse.json();
               console.log('STEP 14: Successfully sent AI reply. Message ID:', emailResult.messageId);
+              
+              // STEP 15: Organize the processed email (mark as read + move to folder)
+              try {
+                await organizeProcessedEmail(grant_id, message_id);
+                console.log('STEP 15: Successfully organized processed email.');
+              } catch (orgError) {
+                console.error('STEP 15: Failed to organize email:', orgError);
+                // Don't throw - email was still processed successfully
+              }
             } else {
               const errorText = await sendEmailResponse.text();
               console.error('STEP 14: Failed to send AI reply:', errorText);

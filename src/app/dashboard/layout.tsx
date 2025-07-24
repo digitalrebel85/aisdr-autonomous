@@ -30,9 +30,13 @@ export default function DashboardLayout({
              <Icon className="w-6 h-6 mr-3" />
             <span>Leads</span>
           </Link>
-          <Link href="/dashboard/outreach" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+          <Link href="/dashboard/offers" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
              <Icon className="w-6 h-6 mr-3" />
-            <span>Outreach</span>
+            <span>Offers</span>
+          </Link>
+          <Link href="/dashboard/automated-outreach" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+             <Icon className="w-6 h-6 mr-3" />
+            <span>Automated Outreach</span>
           </Link>
           <Link href="/dashboard/analytics" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
              <Icon className="w-6 h-6 mr-3" />

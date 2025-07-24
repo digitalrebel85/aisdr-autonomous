@@ -10,8 +10,9 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: inboxes, error: inboxesError } = await supabase
     .from('connected_inboxes')
-    .select('id, email_address, provider')
-    .eq('user_id', user?.id);
+    .select('id, email_address, provider, grant_id, created_at, access_token')
+    .eq('user_id', user?.id)
+    .order('created_at', { ascending: false });
 
   if (inboxesError) {
     console.error('Error fetching inboxes:', inboxesError);
@@ -27,35 +28,137 @@ export default async function SettingsPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Your Inboxes</h2>
-          <div className="p-4 border rounded-lg bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-800">Connected Inboxes</h2>
+            <span className="px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+              {inboxes?.length || 0} connected
+            </span>
+          </div>
+          
+          <div className="space-y-3">
             {inboxes && inboxes.length > 0 ? (
-              <ul className="space-y-3">
-                {inboxes.map((inbox) => (
-                  <li key={inbox.id} className="flex items-center justify-between p-3 bg-white rounded-md shadow-sm">
-                    <span className="font-medium text-gray-700">{inbox.email_address}</span>
-                    <div className="flex items-center space-x-4">
-                    <span className="px-2 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full">{inbox.provider}</span>
-                    <form action="/api/nylas/disconnect" method="post">
-                      <input type="hidden" name="inboxId" value={inbox.id} />
-                      <button type="submit" className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
-                        Disconnect
-                      </button>
-                    </form>
+              inboxes.map((inbox) => {
+                const isActive = inbox.access_token ? true : false;
+                const connectedDate = new Date(inbox.created_at).toLocaleDateString();
+                
+                return (
+                  <div key={inbox.id} className="p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            {inbox.provider === 'gmail' ? (
+                              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">G</span>
+                              </div>
+                            ) : inbox.provider === 'outlook' ? (
+                              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">O</span>
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">@</span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">{inbox.email_address}</h3>
+                            <p className="text-sm text-gray-500">Connected on {connectedDate}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            isActive ? 'bg-green-400' : 'bg-red-400'
+                          }`}></div>
+                          <span className={`text-xs font-medium ${
+                            isActive ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {isActive ? 'Active' : 'Disconnected'}
+                          </span>
+                        </div>
+                        
+                        <span className="px-2 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full capitalize">
+                          {inbox.provider}
+                        </span>
+                        
+                        <form action="/api/nylas/disconnect" method="post">
+                          <input type="hidden" name="inboxId" value={inbox.id} />
+                          <button 
+                            type="submit" 
+                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                            onClick={(e) => {
+                              if (!confirm(`Are you sure you want to disconnect ${inbox.email_address}?`)) {
+                                e.preventDefault();
+                              }
+                            }}
+                          >
+                            Disconnect
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Grant ID: {inbox.grant_id}</span>
+                        <span>AI replies: {isActive ? 'Enabled' : 'Disabled'}</span>
+                      </div>
+                    </div>
                   </div>
-                  </li>
-                ))}
-              </ul>
+                );
+              })
             ) : (
-              <p className="text-center text-gray-500">No inboxes connected yet.</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl text-gray-400">📧</span>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No inboxes connected</h3>
+                <p className="text-gray-500 mb-4">Connect your first email account to start automating replies</p>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex justify-center pt-4">
-          <Link href="/api/nylas/auth/redirect" className="w-full max-w-xs px-6 py-3 text-center text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors">
-            Connect New Inbox
-          </Link>
+        <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Another Inbox</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Connect multiple email accounts (Gmail, Outlook, etc.) to manage all your lead communications from one dashboard.
+            </p>
+            <Link 
+              href="/api/nylas/auth/redirect" 
+              className="inline-flex items-center px-6 py-3 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors font-medium"
+            >
+              <span className="mr-2">+</span>
+              Connect New Inbox
+            </Link>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-green-200">
+            <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
+              <div className="flex items-center space-x-1">
+                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">G</span>
+                </div>
+                <span>Gmail</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">O</span>
+                </div>
+                <span>Outlook</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">@</span>
+                </div>
+                <span>Other</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <nav className="flex justify-center pt-2">
