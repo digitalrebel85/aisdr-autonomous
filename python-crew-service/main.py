@@ -18,6 +18,11 @@ from schemas import (
     StrategicReflectionRequest, StrategicReflectionResponse
 )
 
+# Strategic Follow-up Agent
+from agents.strategic_followup_agent import (
+    StrategicFollowUpInput, StrategicFollowUpOutput, generate_strategic_followup
+)
+
 # Crew Creators
 from crew.master_sales_crew import create_master_sales_crew
 from crew.reply_crew import create_reply_crew
@@ -257,16 +262,31 @@ async def resolve_ip(request: VisitorIntelRequest):
 @app.post("/run-strategic-reflection", response_model=StrategicReflectionResponse)
 async def run_strategic_reflection(request: StrategicReflectionRequest):
     try:
-        print(f"--- RUNNING STRATEGIC REFLECTION FOR USER: {request.user_id} ---")
-        strategic_crew = create_strategic_reflection_crew(llm, request.user_id)
-        result = strategic_crew.kickoff()
-        
-        # The final output should be a JSON string from the agent
-        return StrategicReflectionResponse.model_validate_json(result.raw)
-
+        crew = create_strategic_reflection_crew()
+        result = crew.kickoff(inputs={
+            'campaign_analytics': request.campaign_analytics,
+            'time_period': request.time_period,
+            'current_strategy': request.current_strategy
+        })
+        return StrategicReflectionResponse(recommendations=str(result))
     except Exception as e:
-        print(f"Error during strategic reflection: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Strategic reflection failed: {str(e)}")
+
+@app.post("/generate-strategic-followup")
+async def generate_strategic_followup_endpoint(request: StrategicFollowUpInput) -> StrategicFollowUpOutput:
+    """Generate strategic follow-up email content based on lead engagement patterns"""
+    try:
+        print(f"Generating strategic follow-up for {request.lead_email}")
+        print(f"Reason: {request.follow_up_reason}, Engagement: {request.engagement_level}")
+        
+        result = generate_strategic_followup(request)
+        
+        print(f"Generated follow-up - Subject: {result.subject}")
+        return result
+        
+    except Exception as e:
+        print(f"Error generating strategic follow-up: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Strategic follow-up generation failed: {str(e)}")
 
 @app.get("/")
 async def root():

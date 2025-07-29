@@ -1,8 +1,8 @@
 // src/app/settings/page.tsx
 
-
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
+import DisconnectInboxButton from '@/components/DisconnectInboxButton';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -84,20 +84,10 @@ export default async function SettingsPage() {
                           {inbox.provider}
                         </span>
                         
-                        <form action="/api/nylas/disconnect" method="post">
-                          <input type="hidden" name="inboxId" value={inbox.id} />
-                          <button 
-                            type="submit" 
-                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-                            onClick={(e) => {
-                              if (!confirm(`Are you sure you want to disconnect ${inbox.email_address}?`)) {
-                                e.preventDefault();
-                              }
-                            }}
-                          >
-                            Disconnect
-                          </button>
-                        </form>
+                        <DisconnectInboxButton 
+                          inboxId={inbox.id} 
+                          emailAddress={inbox.email_address} 
+                        />
                       </div>
                     </div>
                     

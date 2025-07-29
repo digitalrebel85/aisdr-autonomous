@@ -38,6 +38,18 @@ export default function DashboardLayout({
              <Icon className="w-6 h-6 mr-3" />
             <span>Automated Outreach</span>
           </Link>
+          <Link href="/dashboard/strategic-followup" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+             <Icon className="w-6 h-6 mr-3" />
+            <span>Strategic Follow-up</span>
+          </Link>
+          <Link href="/dashboard/bookings" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+             <Icon className="w-6 h-6 mr-3" />
+            <span>Calendar Bookings</span>
+          </Link>
+          <Link href="/dashboard/calendar-hosts" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
+             <Icon className="w-6 h-6 mr-3" />
+            <span>Calendar Hosts</span>
+          </Link>
           <Link href="/dashboard/analytics" className="flex items-center px-4 py-2 rounded-md hover:bg-gray-700">
              <Icon className="w-6 h-6 mr-3" />
             <span>Analytics</span>

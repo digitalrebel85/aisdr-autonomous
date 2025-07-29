@@ -10,22 +10,38 @@ export async function POST(request: NextRequest) {
 
   try {
     // 1. Parse the request body
-    const { to, subject, body, sender_email, lead_id, user_id, grant_id } = await request.json();
+    const { to, subject, body, sender_email, lead_id, user_id, grant_id, reply_to_message_id, thread_id } = await request.json();
     if (!to || !subject || !body || !sender_email || !lead_id || !user_id || !grant_id) {
       return new NextResponse(JSON.stringify({ 
         error: 'Missing required fields: to, subject, body, sender_email, lead_id, user_id, grant_id' 
       }), { status: 400 });
     }
 
+    console.log(`Sending automated reply with threading: reply_to=${reply_to_message_id}, thread_id=${thread_id}`);
+
     // 2. Construct and send the email using the Nylas API with the provided grant_id
     const nylasApiUrl = `https://api.us.nylas.com/v3/grants/${grant_id}/messages/send`;
 
-    const emailPayload = {
+    // 2.1. Build email payload with proper threading support
+    const emailPayload: any = {
       to: [{ email: to }],
       subject: subject,
       body: body,
       tracking: { opens: true, bounces: true },
     };
+
+    // 2.2. Add threading information if available (for proper reply threading)
+    if (reply_to_message_id) {
+      emailPayload.reply_to_message_id = reply_to_message_id;
+      console.log(`Adding reply_to_message_id: ${reply_to_message_id}`);
+    }
+    
+    if (thread_id) {
+      emailPayload.thread_id = thread_id;
+      console.log(`Adding thread_id: ${thread_id}`);
+    }
+
+    console.log('Final email payload:', JSON.stringify(emailPayload, null, 2));
 
     const nylasResponse = await fetch(nylasApiUrl, {
       method: 'POST',
@@ -64,6 +80,10 @@ export async function POST(request: NextRequest) {
         grant_id: grant_id,
         user_id: user_id,
         lead_id: lead_id,
+        // Add threading information for tracking
+        reply_to_message_id: reply_to_message_id || null,
+        thread_id: thread_id || null,
+        campaign_type: 'automated_reply'
       });
 
     if (insertError) {

@@ -259,19 +259,38 @@ async function processEvent(delta: any, supabase: any) {
           grant_id: grant_id,
           user_id: inboxData.user_id,
           message_id: message_id,
+          thread_id: messageDetails.data.thread_id || null,
           lead_id: analysis.lead_id,
           sentiment: analysis.sentiment,
           action: analysis.action,
           summary: analysis.summary,
           next_step_prompt: analysis.nextStepPrompt,
           raw_response: analysis,
+          sender_email: senderEmail
         });
 
         if (insertError) {
-          console.error('Supabase insert FAILED:', insertError);
-          throw new Error(`Failed to insert reply into DB: ${insertError.message}`);
+          console.error('STEP 11 FAILED: Error saving analysis to Supabase:', insertError);
+          throw new Error(`Failed to save analysis: ${insertError.message}`);
         }
-        console.log('STEP 12: Successfully saved analysis to DB.');
+
+        console.log('STEP 11 SUCCESS: Analysis saved to Supabase replies table.');
+
+        // STEP 12: Update lead engagement tracking
+        console.log('STEP 12: Updating lead engagement based on reply.');
+        const { error: engagementError } = await supabase
+          .rpc('update_lead_engagement_from_reply', {
+            lead_id: analysis.lead_id,
+            reply_action: analysis.action,
+            reply_sentiment: analysis.sentiment
+          });
+
+        if (engagementError) {
+          console.error('STEP 12 WARNING: Failed to update lead engagement:', engagementError);
+          // Don't throw error - this is not critical for the main flow
+        } else {
+          console.log('STEP 12 SUCCESS: Lead engagement updated.');
+        }
 
         // STEP 13: Send automatic AI-generated reply if action requires it
         // NOTE: This only executes for emails from known leads that require AI responses
@@ -293,7 +312,10 @@ async function processEvent(delta: any, supabase: any) {
                 sender_email: inboxData.email_address,
                 lead_id: analysis.lead_id,
                 user_id: inboxData.user_id,
-                grant_id: grant_id
+                grant_id: grant_id,
+                // Add threading information for proper reply threading
+                reply_to_message_id: message_id,
+                thread_id: messageDetails.data.thread_id || null
               })
             });
 

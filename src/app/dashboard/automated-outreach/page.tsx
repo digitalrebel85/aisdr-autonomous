@@ -27,6 +27,19 @@ interface Offer {
   hook_snippet: string;
 }
 
+interface BookingLink {
+  id: number;
+  title: string;
+  description?: string;
+  booking_slug: string;
+  duration_minutes: number;
+  is_active: boolean;
+  calendar_host?: {
+    host_name: string;
+    host_title?: string;
+  };
+}
+
 interface Campaign {
   id: string;
   name: string;
@@ -43,9 +56,11 @@ interface Campaign {
 export default function AutomatedOutreachPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [bookingLinks, setBookingLinks] = useState<BookingLink[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<number | null>(null);
+  const [selectedBookingLink, setSelectedBookingLink] = useState<number | null>(null);
   const [campaignName, setCampaignName] = useState('');
   const [delayMinutes, setDelayMinutes] = useState(5);
   const [showTimezoneInfo, setShowTimezoneInfo] = useState(false);
@@ -76,6 +91,16 @@ export default function AutomatedOutreachPage() {
         console.log('Fetched offers:', offersData.offers?.length || 0);
       } else {
         console.error('Failed to fetch offers:', offersResponse.status);
+      }
+
+      // Fetch booking links
+      const bookingLinksResponse = await fetch('/api/booking-links');
+      if (bookingLinksResponse.ok) {
+        const bookingLinksData = await bookingLinksResponse.json();
+        setBookingLinks(bookingLinksData.bookingLinks || []);
+        console.log('Fetched booking links:', bookingLinksData.bookingLinks?.length || 0);
+      } else {
+        console.error('Failed to fetch booking links:', bookingLinksResponse.status);
       }
 
       // Fetch campaigns
@@ -117,6 +142,7 @@ export default function AutomatedOutreachPage() {
           campaignName,
           leadIds: selectedLeads,
           offerId: selectedOffer,
+          bookingLinkId: selectedBookingLink,
           delayMinutes
         }),
       });
@@ -212,6 +238,34 @@ export default function AutomatedOutreachPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Booking Link (Optional)
+                  </label>
+                  <select
+                    value={selectedBookingLink || ''}
+                    onChange={(e) => setSelectedBookingLink(Number(e.target.value) || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">No booking link</option>
+                    {bookingLinks.map((link) => (
+                      <option key={link.id} value={link.id}>
+                        {link.title} ({link.duration_minutes} min)
+                        {link.calendar_host && ` - ${link.calendar_host.host_name}`}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="text-xs text-gray-500 mt-1">
+                    <p>• Include a booking link in your outreach emails</p>
+                    <p>• Recipients can schedule calls directly from the email</p>
+                    {bookingLinks.length === 0 && (
+                      <p className="text-amber-600 mt-1">
+                        No booking links available. <Link href="/dashboard/bookings" className="text-blue-600 hover:underline">Create one first</Link>.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div>
