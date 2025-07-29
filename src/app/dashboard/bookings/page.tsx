@@ -18,6 +18,7 @@ interface BookingLink {
   timezone: string;
   max_bookings_per_day: number;
   calendar_host_id?: number;
+  working_hours?: Record<string, { start: string; end: string }>;
   calendar_host?: {
     host_name: string;
     host_email: string;
@@ -63,6 +64,15 @@ export default function BookingsPage() {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     max_bookings_per_day: 8,
     calendar_host_id: '',
+    working_hours: {
+      monday: { start: '09:00', end: '17:00', enabled: true },
+      tuesday: { start: '09:00', end: '17:00', enabled: true },
+      wednesday: { start: '09:00', end: '17:00', enabled: true },
+      thursday: { start: '09:00', end: '17:00', enabled: true },
+      friday: { start: '09:00', end: '17:00', enabled: true },
+      saturday: { start: '09:00', end: '17:00', enabled: false },
+      sunday: { start: '09:00', end: '17:00', enabled: false },
+    },
   });
 
   const supabase = createClient();
@@ -152,6 +162,14 @@ export default function BookingsPage() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 
+      // Convert working hours to database format (only include enabled days)
+      const workingHoursForDb = Object.entries(newLink.working_hours)
+        .filter(([_, dayConfig]) => dayConfig.enabled)
+        .reduce((acc, [day, config]) => {
+          acc[day] = { start: config.start, end: config.end };
+          return acc;
+        }, {} as Record<string, { start: string; end: string }>);
+
       const { error } = await supabase
         .from('booking_links')
         .insert({
@@ -164,6 +182,7 @@ export default function BookingsPage() {
           timezone: newLink.timezone,
           max_bookings_per_day: newLink.max_bookings_per_day,
           calendar_host_id: parseInt(newLink.calendar_host_id),
+          working_hours: workingHoursForDb,
           is_active: true,
         });
 
@@ -177,6 +196,15 @@ export default function BookingsPage() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         max_bookings_per_day: 8,
         calendar_host_id: '',
+        working_hours: {
+          monday: { start: '09:00', end: '17:00', enabled: true },
+          tuesday: { start: '09:00', end: '17:00', enabled: true },
+          wednesday: { start: '09:00', end: '17:00', enabled: true },
+          thursday: { start: '09:00', end: '17:00', enabled: true },
+          friday: { start: '09:00', end: '17:00', enabled: true },
+          saturday: { start: '09:00', end: '17:00', enabled: false },
+          sunday: { start: '09:00', end: '17:00', enabled: false },
+        },
       });
       setShowCreateForm(false);
       loadData();
@@ -357,6 +385,129 @@ export default function BookingsPage() {
                   />
                 </div>
               </div>
+
+              {/* Working Hours Configuration */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Working Hours</h3>
+                <div className="space-y-3">
+                  {Object.entries(newLink.working_hours).map(([day, config]) => {
+                    const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+                    return (
+                      <div key={day} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`${day}-enabled`}
+                            checked={config.enabled}
+                            onChange={(e) => {
+                              setNewLink({
+                                ...newLink,
+                                working_hours: {
+                                  ...newLink.working_hours,
+                                  [day]: { ...config, enabled: e.target.checked }
+                                }
+                              });
+                            }}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`${day}-enabled`} className="ml-2 text-sm font-medium text-gray-700 w-20">
+                            {dayName}
+                          </label>
+                        </div>
+                        
+                        {config.enabled && (
+                          <div className="flex items-center space-x-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Start</label>
+                              <input
+                                type="time"
+                                value={config.start}
+                                onChange={(e) => {
+                                  setNewLink({
+                                    ...newLink,
+                                    working_hours: {
+                                      ...newLink.working_hours,
+                                      [day]: { ...config, start: e.target.value }
+                                    }
+                                  });
+                                }}
+                                className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <span className="text-gray-400">to</span>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">End</label>
+                              <input
+                                type="time"
+                                value={config.end}
+                                onChange={(e) => {
+                                  setNewLink({
+                                    ...newLink,
+                                    working_hours: {
+                                      ...newLink.working_hours,
+                                      [day]: { ...config, end: e.target.value }
+                                    }
+                                  });
+                                }}
+                                className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Quick preset buttons */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const weekdaysOnly = { ...newLink.working_hours };
+                      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
+                        weekdaysOnly[day as keyof typeof weekdaysOnly] = { start: '09:00', end: '17:00', enabled: true };
+                      });
+                      ['saturday', 'sunday'].forEach(day => {
+                        weekdaysOnly[day as keyof typeof weekdaysOnly] = { start: '09:00', end: '17:00', enabled: false };
+                      });
+                      setNewLink({ ...newLink, working_hours: weekdaysOnly });
+                    }}
+                    className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+                  >
+                    Weekdays 9-5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allDays = { ...newLink.working_hours };
+                      Object.keys(allDays).forEach(day => {
+                        allDays[day as keyof typeof allDays] = { start: '09:00', end: '17:00', enabled: true };
+                      });
+                      setNewLink({ ...newLink, working_hours: allDays });
+                    }}
+                    className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+                  >
+                    All Days 9-5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const customHours = { ...newLink.working_hours };
+                      Object.keys(customHours).forEach(day => {
+                        customHours[day as keyof typeof customHours] = { start: '08:00', end: '18:00', enabled: true };
+                      });
+                      ['saturday', 'sunday'].forEach(day => {
+                        customHours[day as keyof typeof customHours] = { start: '08:00', end: '18:00', enabled: false };
+                      });
+                      setNewLink({ ...newLink, working_hours: customHours });
+                    }}
+                    className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
+                  >
+                    Extended Hours 8-6
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
@@ -412,6 +563,23 @@ export default function BookingsPage() {
                       <span>Max {link.max_bookings_per_day}/day</span>
                       <span>{link.timezone}</span>
                     </div>
+                    
+                    {/* Working Hours Display */}
+                    {link.working_hours && Object.keys(link.working_hours).length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-xs text-gray-500 mb-1">Working Hours:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(link.working_hours).map(([day, hours]) => {
+                            const dayName = day.charAt(0).toUpperCase() + day.slice(1).substring(0, 3);
+                            return (
+                              <span key={day} className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                                {dayName}: {hours.start}-{hours.end}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2">
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                         {window.location.origin}/book/{link.booking_slug}
