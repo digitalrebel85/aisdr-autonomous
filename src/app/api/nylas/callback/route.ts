@@ -9,9 +9,21 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  const state = searchParams.get('state');
+  const error = searchParams.get('error');
+
+  if (error) {
+    const redirectUrl = state === 'calendar_host' 
+      ? '/dashboard/calendar-hosts?error=oauth_failed'
+      : '/settings?error=nylas_auth_failed';
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
+  }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/settings?error=nylas_auth_failed', request.url));
+    const redirectUrl = state === 'calendar_host'
+      ? '/dashboard/calendar-hosts?error=no_code'
+      : '/settings?error=nylas_auth_failed';
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
   // --- MANUAL ENV VARIABLE LOADING ---
@@ -160,7 +172,19 @@ export async function GET(request: NextRequest) {
       throw new Error(`Failed to save credentials: ${dbError.message}`);
     }
 
-    return NextResponse.redirect(new URL('/settings?success=inbox_connected', request.url));
+    // Handle different flows based on state parameter
+    if (state === 'calendar_host') {
+      // For calendar host flow, redirect to calendar hosts page with grant info
+      const redirectUrl = new URL('/dashboard/calendar-hosts', request.url);
+      redirectUrl.searchParams.set('success', 'calendar_connected');
+      redirectUrl.searchParams.set('grant_id', grant_id);
+      redirectUrl.searchParams.set('host_email', accountData.email);
+      redirectUrl.searchParams.set('access_token', access_token);
+      return NextResponse.redirect(redirectUrl);
+    } else {
+      // Regular inbox connection flow
+      return NextResponse.redirect(new URL('/settings?success=inbox_connected', request.url));
+    }
 
   } catch (error) {
     console.error('Nylas callback error:', error);

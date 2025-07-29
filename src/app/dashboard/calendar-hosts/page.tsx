@@ -169,9 +169,17 @@ export default function CalendarHostsPage() {
     e.preventDefault();
 
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert('Authentication required. Please log in.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('calendar_hosts')
         .insert([{
+          user_id: user.id,
           host_name: formData.host_name,
           host_email: formData.host_email,
           host_title: formData.host_title || null,

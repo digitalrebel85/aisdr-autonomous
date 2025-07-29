@@ -14,10 +14,12 @@ export async function GET() {
     }
 
     // Generate OAuth URL for calendar host connection
+    // Use existing callback with a state parameter to identify calendar host flow
     const authUrl = `${nylasApiServer}/v3/connect/auth?` +
       `client_id=${nylasClientId}&` +
-      `redirect_uri=${encodeURIComponent(`${baseUrl}/api/nylas/calendar-host-callback`)}&` +
+      `redirect_uri=${encodeURIComponent(`${baseUrl}/api/nylas/callback`)}&` +
       `response_type=code&` +
+      `state=calendar_host&` +
       `provider=google`;
 
     return NextResponse.json({
