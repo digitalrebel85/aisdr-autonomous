@@ -58,14 +58,42 @@ export async function GET(request: NextRequest) {
     // Get booking link with calendar host information
     const supabase = await createClient();
     
-    const { data: bookingData, error: linkError } = await supabase
+    // Try to get booking link with host info using RPC function
+    let { data: bookingData, error: linkError } = await supabase
       .rpc('get_booking_link_with_host', { p_booking_slug: bookingSlug })
       .single() as { data: BookingLinkWithHost | null; error: any };
 
-    if (linkError || !bookingData) {
+    // If RPC function doesn't exist, fall back to direct table query
+    if (linkError && linkError.code === '42883') { // Function doesn't exist
+      const { data: directBookingData, error: directError } = await supabase
+        .from('booking_links')
+        .select('*')
+        .eq('booking_slug', bookingSlug)
+        .eq('is_active', true)
+        .single();
+      
+      if (directError || !directBookingData) {
+        return NextResponse.json(
+          { error: 'Booking link not found or inactive' },
+          { status: 404 }
+        );
+      }
+      
+      // Convert to expected format
+      bookingData = directBookingData as any;
+      linkError = null;
+    } else if (linkError || !bookingData) {
       return NextResponse.json(
         { error: 'Booking link not found or inactive' },
         { status: 404 }
+      );
+    }
+
+    // Ensure bookingData is not null (should be guaranteed by previous checks)
+    if (!bookingData) {
+      return NextResponse.json(
+        { error: 'Booking data is null' },
+        { status: 500 }
       );
     }
 
@@ -80,12 +108,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Debug logging
+    console.log('DEBUG: Booking availability request:', {
+      bookingSlug,
+      date,
+      timezone,
+      bookingData: {
+        id: bookingData.id,
+        title: bookingData.title,
+        duration_minutes: bookingData.duration_minutes,
+        is_active: bookingData.is_active,
+      }
+    });
+
     // Get available slots using the calendar host's grant and calendar
     const slots = await getAvailableSlots(
       bookingData.id,
       date,
       timezone
     );
+
+    console.log('DEBUG: Slots returned:', {
+      slotsCount: slots?.length || 0,
+      slots: slots?.slice(0, 3) || [], // Log first 3 slots
+    });
 
     return NextResponse.json({
       success: true,

@@ -7,9 +7,9 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
 interface TimeSlot {
-  slot_start: string;
-  slot_end: string;
-  available: boolean;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
 }
 
 interface BookingLink {
@@ -41,7 +41,25 @@ export default function BookingPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
+  const [userTimezone, setUserTimezone] = useState<string>('');
+  const [displayTimezone, setDisplayTimezone] = useState<string>('');
+
+  // Popular timezone options for dropdown
+  const timezoneOptions = [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'Europe/London', label: 'London (GMT/BST)' },
+    { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+    { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+    { value: 'UTC', label: 'UTC' },
+  ];
+
   // Form data
   const [formData, setFormData] = useState({
     name: '',
@@ -56,6 +74,75 @@ export default function BookingPage() {
     message: string;
     bookingId?: number;
   } | null>(null);
+
+  // Auto-detect user's timezone on page load
+  useEffect(() => {
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setUserTimezone(detectedTimezone);
+    
+    // Check if user has a saved preference
+    const savedTimezone = localStorage.getItem('booking-display-timezone');
+    if (savedTimezone) {
+      setDisplayTimezone(savedTimezone);
+    } else {
+      setDisplayTimezone(detectedTimezone);
+    }
+  }, []);
+
+  // Save timezone preference when changed
+  const handleTimezoneChange = (newTimezone: string) => {
+    setDisplayTimezone(newTimezone);
+    localStorage.setItem('booking-display-timezone', newTimezone);
+    
+    // Reload slots with new timezone if date is selected
+    if (selectedDate) {
+      loadAvailability(selectedDate);
+    }
+  };
+
+  // Simplified timezone conversion utility
+  const convertTimeToTimezone = (timeString: string, fromTimezone: string, toTimezone: string, date: Date) => {
+    try {
+      // If same timezone, no conversion needed
+      if (fromTimezone === toTimezone) {
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        return `${displayHour}:${minutes} ${ampm}`;
+      }
+
+      // Create a date object with the time in the source timezone
+      const dateStr = date.toISOString().split('T')[0];
+      const [hours, minutes] = timeString.split(':');
+      
+      // Create a temporary date to work with timezone conversion
+      const tempDate = new Date();
+      tempDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+      tempDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Format in target timezone
+      return tempDate.toLocaleTimeString('en-US', {
+        timeZone: toTimezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error converting timezone:', error);
+      // Fallback to simple formatting
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+  };
+
+  const getTimezoneLabel = (timezone: string) => {
+    const option = timezoneOptions.find(opt => opt.value === timezone);
+    return option ? option.label : timezone;
+  };
 
   // Calendar helper functions
   const getDaysInMonth = (date: Date): CalendarDay[] => {
@@ -111,9 +198,13 @@ export default function BookingPage() {
 
     try {
       setLoadingSlots(true);
-      const dateString = date.toISOString().split('T')[0];
+      // Convert date to YYYY-MM-DD format without timezone conversion
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
       const response = await fetch(
-        `/api/booking/availability?slug=${slug}&date=${dateString}&timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}`
+        `/api/booking/availability?slug=${slug}&date=${dateString}&timezone=${displayTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}`
       );
 
       if (response.ok) {
@@ -121,7 +212,13 @@ export default function BookingPage() {
         if (!bookingLink) {
           setBookingLink(data.bookingLink);
         }
-        setAvailableSlots(data.slots || []);
+        // Map API response to frontend format
+        const mappedSlots = (data.slots || []).map((slot: any) => ({
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          is_available: slot.is_available
+        }));
+        setAvailableSlots(mappedSlots);
       } else {
         console.error('Failed to load availability');
         setAvailableSlots([]);
@@ -154,8 +251,8 @@ export default function BookingPage() {
           leadEmail: formData.email,
           leadCompany: formData.company,
           leadPhone: formData.phone,
-          startTime: selectedSlot.slot_start,
-          endTime: selectedSlot.slot_end,
+          startTime: selectedSlot.start_time,
+          endTime: selectedSlot.end_time,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           notes: formData.notes,
         }),
@@ -186,20 +283,36 @@ export default function BookingPage() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString([], {
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!displayTimezone || !bookingLink?.timezone) {
+      // Fallback to simple formatting if timezone info not available
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+
+    // Convert from booking link timezone to display timezone
+    if (selectedDate) {
+      return convertTimeToTimezone(
+        timeString,
+        bookingLink.timezone,
+        displayTimezone,
+        selectedDate
+      );
+    }
+
+    return timeString;
   };
 
   // Load initial booking link info
@@ -251,7 +364,7 @@ export default function BookingPage() {
                       <strong>Date:</strong> {selectedDate ? formatDate(selectedDate) : ''}
                     </p>
                     <p className="text-sm text-blue-700">
-                      <strong>Time:</strong> {formatTime(selectedSlot.slot_start)} - {formatTime(selectedSlot.slot_end)}
+                      <strong>Time:</strong> {formatTime(selectedSlot.start_time)} - {formatTime(selectedSlot.end_time)}
                     </p>
                     <p className="text-sm text-blue-700">
                       <strong>Duration:</strong> {bookingLink?.duration} minutes
@@ -311,7 +424,7 @@ export default function BookingPage() {
   }
 
   const calendarDays = getDaysInMonth(currentMonth);
-  const availableSlotsList = availableSlots.filter(slot => slot.available);
+  const availableSlotsList = availableSlots.filter(slot => slot.is_available);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -348,8 +461,39 @@ export default function BookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Calendar Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Select a Date</h2>
+            </div>
+            
+            {/* Timezone Selector */}
+            <div className="mb-6 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Timezone:</span>
+                </div>
+                <select
+                  value={displayTimezone}
+                  onChange={(e) => handleTimezoneChange(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {timezoneOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {userTimezone !== displayTimezone && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Your detected timezone: {getTimezoneLabel(userTimezone)}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => navigateMonth('prev')}
@@ -422,9 +566,9 @@ export default function BookingPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Loading available times...</p>
                   </div>
-                ) : availableSlotsList.length > 0 ? (
+                ) : availableSlots.length > 0 ? (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {availableSlotsList.map((slot, index) => (
+                    {availableSlots.filter(slot => slot.is_available).map((slot, index) => (
                       <button
                         key={index}
                         onClick={() => {
@@ -441,7 +585,7 @@ export default function BookingPage() {
                         `}
                       >
                         <div className="font-medium">
-                          {formatTime(slot.slot_start)}
+                          {formatTime(slot.start_time)}
                         </div>
                         <div className="text-sm text-gray-500">
                           {bookingLink.duration} minutes
@@ -476,7 +620,7 @@ export default function BookingPage() {
                         {selectedDate ? formatDate(selectedDate) : ''}
                       </div>
                       <div className="text-sm">
-                        {formatTime(selectedSlot.slot_start)} - {formatTime(selectedSlot.slot_end)}
+                        {formatTime(selectedSlot.start_time)} - {formatTime(selectedSlot.end_time)}
                       </div>
                     </div>
                   </div>
