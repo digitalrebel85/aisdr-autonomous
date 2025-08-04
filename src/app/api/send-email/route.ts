@@ -6,25 +6,55 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
   try {
-    // 1. Get the authenticated user
+    // 1. Parse the request body first
+    const { to, subject, body, sender_email, lead_id, grantId, fromEmail, bookingId } = await request.json();
+    
+    // 2. Get the authenticated user (optional for system usage)
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    
+    // Allow system usage without authentication if grantId is provided
+    const isSystemUsage = !user && grantId;
+    
+    if (!user && !isSystemUsage) {
       return new NextResponse(JSON.stringify({ error: 'User not authenticated' }), { status: 401 });
     }
-
-    // 2. Parse the request body
-    const { to, subject, body, sender_email, lead_id } = await request.json();
-    if (!to || !subject || !body || !sender_email || !lead_id) {
-      return new NextResponse(JSON.stringify({ error: 'Missing required fields: to, subject, body, sender_email, lead_id' }), { status: 400 });
+    
+    // Support both old and new parameter formats
+    const recipientEmail = to;
+    const senderEmail = sender_email || fromEmail;
+    const grantIdToUse = grantId;
+    
+    if (!recipientEmail || !subject || !body || (!senderEmail && !grantIdToUse)) {
+      return new NextResponse(JSON.stringify({ error: 'Missing required fields: to, subject, body, and either sender_email or grantId' }), { status: 400 });
     }
 
     // 3. Look up the sender's inbox credentials from Supabase
-    const { data: inbox, error: selectError } = await supabase
-      .from('connected_inboxes')
-      .select('access_token, grant_id') // We only need the access token and grant_id now
-      .eq('user_id', user.id)
-      .eq('email_address', sender_email)
-      .single();
+    let inbox;
+    let selectError;
+    
+    if (grantIdToUse) {
+      // Use grant ID directly (for system/cron job usage)
+      const { data, error } = await supabase
+        .from('connected_inboxes')
+        .select('access_token, grant_id, email_address')
+        .eq('grant_id', grantIdToUse)
+        .single();
+      inbox = data;
+      selectError = error;
+    } else {
+      // Look up by sender email (for user-initiated emails)
+      if (!user) {
+        return new NextResponse(JSON.stringify({ error: 'User authentication required for sender email lookup' }), { status: 401 });
+      }
+      const { data, error } = await supabase
+        .from('connected_inboxes')
+        .select('access_token, grant_id, email_address')
+        .eq('user_id', user.id)
+        .eq('email_address', senderEmail)
+        .single();
+      inbox = data;
+      selectError = error;
+    }
 
     if (selectError || !inbox) {
       return new NextResponse(JSON.stringify({ error: 'Sender email not found or not connected for this user.' }), { status: 404 });
@@ -35,7 +65,7 @@ export async function POST(request: NextRequest) {
     const nylasApiUrl = `https://api.us.nylas.com/v3/grants/${inbox.grant_id}/messages/send`;
 
     const emailPayload = {
-      to: [{ email: to }],
+      to: [{ email: recipientEmail }],
       subject: subject,
       body: body,
       tracking: { opens: true, bounces: true },
@@ -75,8 +105,9 @@ export async function POST(request: NextRequest) {
       .insert({
         message_id: messageId,
         grant_id: inbox.grant_id,
-        user_id: user.id,
+        user_id: user?.id || null,
         lead_id: lead_id,
+        booking_id: bookingId || null,
       });
 
     if (insertError) {

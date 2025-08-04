@@ -214,9 +214,9 @@ export default function BookingPage() {
         }
         // Map API response to frontend format
         const mappedSlots = (data.slots || []).map((slot: any) => ({
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-          is_available: slot.is_available
+          start_time: slot.start,
+          end_time: slot.end,
+          is_available: slot.available
         }));
         setAvailableSlots(mappedSlots);
       } else {
@@ -293,26 +293,42 @@ export default function BookingPage() {
   };
 
   const formatTime = (timeString: string) => {
-    if (!displayTimezone || !bookingLink?.timezone) {
-      // Fallback to simple formatting if timezone info not available
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-      return `${displayHour}:${minutes} ${ampm}`;
-    }
+    try {
+      // Extract time from datetime string if needed (e.g., "2025-08-05T09:00:00" -> "09:00")
+      let timeOnly = timeString;
+      if (timeString.includes('T')) {
+        timeOnly = timeString.split('T')[1].substring(0, 5); // Get HH:MM part
+      }
+      
+      // Default to Europe/London if no timezone is set (since working hours are in London time)
+      const sourceTimezone = bookingLink?.timezone && bookingLink.timezone !== 'UTC' 
+        ? bookingLink.timezone 
+        : 'Europe/London';
+      
+      if (!displayTimezone) {
+        // Fallback to simple formatting if display timezone not available
+        const [hours, minutes] = timeOnly.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        return `${displayHour}:${minutes} ${ampm}`;
+      }
 
-    // Convert from booking link timezone to display timezone
-    if (selectedDate) {
-      return convertTimeToTimezone(
-        timeString,
-        bookingLink.timezone,
-        displayTimezone,
-        selectedDate
-      );
-    }
+      // Convert from booking link timezone to display timezone
+      if (selectedDate) {
+        return convertTimeToTimezone(
+          timeOnly,
+          sourceTimezone,
+          displayTimezone,
+          selectedDate
+        );
+      }
 
-    return timeString;
+      return timeOnly;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeString;
+    }
   };
 
   // Load initial booking link info

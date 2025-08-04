@@ -27,12 +27,21 @@ class FollowUpResult(BaseModel):
     body: str
 
 class EmailCopywritingRequest(BaseModel):
+    # Basic lead info
     name: str
-    title: str
+    title: str = ""
     company: str
-    pain_points: str
+    email: str
+    
+    # Core messaging
     offer: str
     hook_snippet: str = ""
+    
+    # Enhanced lead context (JSON string containing all enriched data)
+    lead_context: str = "{}"  # JSON string with all available lead data
+    
+    # Legacy fields for backward compatibility
+    pain_points: str = ""
 
 class EmailCopywritingResult(BaseModel):
     subject: str

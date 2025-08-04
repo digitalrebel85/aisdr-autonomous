@@ -10,3 +10,11 @@ requests
 pytest
 pytest-mock
 requests-mock
+pydantic
+openai
+spacy
+nltk
+regex
+jsonschema
+aiofiles
+python-multipart

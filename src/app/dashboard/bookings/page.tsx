@@ -18,6 +18,7 @@ interface BookingLink {
   timezone: string;
   max_bookings_per_day: number;
   calendar_host_id?: number;
+  meeting_location?: string;
   working_hours?: Record<string, { start: string; end: string }>;
   calendar_host?: {
     host_name: string;
@@ -64,6 +65,7 @@ export default function BookingsPage() {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     max_bookings_per_day: 8,
     calendar_host_id: '',
+    meeting_location: 'Zoom (link will be provided)',
     working_hours: {
       monday: { start: '09:00', end: '17:00', enabled: true },
       tuesday: { start: '09:00', end: '17:00', enabled: true },
@@ -182,6 +184,7 @@ export default function BookingsPage() {
           timezone: newLink.timezone,
           max_bookings_per_day: newLink.max_bookings_per_day,
           calendar_host_id: parseInt(newLink.calendar_host_id),
+          meeting_location: newLink.meeting_location,
           working_hours: workingHoursForDb,
           is_active: true,
         });
@@ -196,6 +199,7 @@ export default function BookingsPage() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         max_bookings_per_day: 8,
         calendar_host_id: '',
+        meeting_location: 'Zoom (link will be provided)',
         working_hours: {
           monday: { start: '09:00', end: '17:00', enabled: true },
           tuesday: { start: '09:00', end: '17:00', enabled: true },
@@ -386,6 +390,23 @@ export default function BookingsPage() {
                 </div>
               </div>
 
+              {/* Meeting Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Meeting Location *
+                </label>
+                <input
+                  type="text"
+                  value={newLink.meeting_location}
+                  onChange={(e) => setNewLink({ ...newLink, meeting_location: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., Zoom meeting link, Google Meet, Office address"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  This will be shown to attendees and included in calendar events
+                </p>
+              </div>
+
               {/* Working Hours Configuration */}
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Working Hours</h3>
@@ -563,6 +584,16 @@ export default function BookingsPage() {
                       <span>Max {link.max_bookings_per_day}/day</span>
                       <span>{link.timezone}</span>
                     </div>
+                    
+                    {/* Meeting Location Display */}
+                    {link.meeting_location && (
+                      <div className="mt-2">
+                        <div className="text-xs text-gray-500 mb-1">Meeting Location:</div>
+                        <div className="text-sm text-gray-700 bg-blue-50 px-2 py-1 rounded">
+                          {link.meeting_location}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Working Hours Display */}
                     {link.working_hours && Object.keys(link.working_hours).length > 0 && (

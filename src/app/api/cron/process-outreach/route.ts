@@ -21,7 +21,11 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         outreach_campaigns (id, name, status),
-        leads (name, email, company, pain_points),
+        leads (
+          name, email, company, title, first_name, last_name, company_domain,
+          pain_points, linkedin_url, phone, location, industry, company_size,
+          enriched_data, enrichment_status
+        ),
         connected_inboxes (email_address, grant_id)
       `)
       .eq('status', 'queued')
@@ -117,23 +121,54 @@ export async function POST(request: NextRequest) {
           .update({ status: 'processing' })
           .eq('id', queueItem.id);
 
-        // Generate email using Python service
+        // Prepare comprehensive lead context for AI agent
+        const leadContext = {
+          // Basic lead info
+          name: queueItem.lead_data.name,
+          first_name: queueItem.lead_data.first_name,
+          last_name: queueItem.lead_data.last_name,
+          email: queueItem.lead_data.email,
+          title: queueItem.lead_data.title,
+          company: queueItem.lead_data.company,
+          company_domain: queueItem.lead_data.company_domain,
+          
+          // Enriched data
+          linkedin_url: queueItem.lead_data.linkedin_url,
+          phone: queueItem.lead_data.phone,
+          location: queueItem.lead_data.location,
+          industry: queueItem.lead_data.industry,
+          company_size: queueItem.lead_data.company_size,
+          pain_points: queueItem.lead_data.pain_points,
+          
+          // Full enriched data from APIs
+          enriched_data: queueItem.lead_data.enriched_data,
+          enrichment_status: queueItem.lead_data.enrichment_status,
+          
+          // Campaign context
+          campaign_name: queueItem.outreach_campaigns?.name,
+          offer_name: queueItem.offer_data.name
+        };
+
+        // Generate email using Python service with enhanced context
         const emailResponse = await fetch(`${process.env.PYTHON_SERVICE_URL}/generate-cold-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            lead_name: queueItem.lead_data.name,
-            lead_email: queueItem.lead_data.email,
-            company_name: queueItem.lead_data.company,
+            // New schema fields
+            name: queueItem.lead_data.name || `${queueItem.lead_data.first_name} ${queueItem.lead_data.last_name}`.trim(),
+            title: queueItem.lead_data.title || '',
+            company: queueItem.lead_data.company,
+            email: queueItem.lead_data.email,
+            offer: queueItem.offer_data.value_proposition,
+            hook_snippet: queueItem.offer_data.hook_snippet || '',
+            lead_context: JSON.stringify(leadContext),
+            
+            // Legacy fields for backward compatibility
             pain_points: Array.isArray(queueItem.lead_data.pain_points) 
               ? queueItem.lead_data.pain_points.join(', ')
-              : queueItem.lead_data.pain_points || '',
-            value_proposition: queueItem.offer_data.value_proposition,
-            call_to_action: queueItem.offer_data.call_to_action,
-            hook_snippet: queueItem.offer_data.hook_snippet || '',
-            offer_name: queueItem.offer_data.name
+              : queueItem.lead_data.pain_points || ''
           }),
         });
 

@@ -26,8 +26,29 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.user) {
+      // Check if user needs onboarding
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed')
+        .eq('id', data.user.id)
+        .single()
+      
+      // If no profile exists or onboarding not completed, redirect to onboarding
+      if (!profile || !profile.onboarding_completed) {
+        // Create profile if it doesn't exist
+        if (!profile) {
+          await supabase
+            .from('user_profiles')
+            .insert([{ id: data.user.id }])
+        }
+        
+        // Redirect to onboarding unless specifically going elsewhere
+        const redirectTo = next === '/' ? '/onboarding' : next
+        return NextResponse.redirect(`${origin}${redirectTo}`)
+      }
+      
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

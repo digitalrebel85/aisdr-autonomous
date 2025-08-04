@@ -19,18 +19,49 @@ export async function POST(request: Request) {
   try {
     const lead = await request.json();
 
+    // Prepare comprehensive lead context for AI agent
+    const leadContext = {
+      // Basic lead info
+      name: lead.name,
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      email: lead.email,
+      title: lead.title,
+      company: lead.company,
+      company_domain: lead.company_domain,
+      
+      // Enriched data
+      linkedin_url: lead.linkedin_url,
+      phone: lead.phone,
+      location: lead.location,
+      industry: lead.industry,
+      company_size: lead.company_size,
+      pain_points: lead.pain_points,
+      
+      // Full enriched data from APIs
+      enriched_data: lead.enriched_data,
+      enrichment_status: lead.enrichment_status
+    };
+
     const response = await fetch(`${pythonServiceUrl}/generate-cold-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: lead.name,
-        title: lead.title,
+        // New schema fields
+        name: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
+        title: lead.title || '',
         company: lead.company,
-        pain_points: lead.pain_points,
+        email: lead.email,
         offer: lead.offer,
-        hook_snippet: '', // Add missing field
+        hook_snippet: '', // Default empty hook
+        lead_context: JSON.stringify(leadContext),
+        
+        // Legacy fields for backward compatibility
+        pain_points: Array.isArray(lead.pain_points) 
+          ? lead.pain_points.join(', ')
+          : lead.pain_points || ''
       }),
     });
 

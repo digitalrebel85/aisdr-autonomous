@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import httpx
 import json
+from datetime import datetime
 from supabase import create_client, Client
 
 # LLM Configuration
@@ -17,6 +18,17 @@ from schemas import (
     VisitorIntelRequest, VisitorIntelResponse,
     StrategicReflectionRequest, StrategicReflectionResponse
 )
+
+# Lead Enrichment
+from agents.lead_enrichment_agent import lead_enricher_agent, lead_enrichment_task, create_lead_enrichment_crew
+from agents.company_profile_agent import create_company_profile_crew
+from crewai import Crew, Process
+
+# JSON Lead Processing Routes
+from routes.json_lead_upload import router as json_lead_router
+
+# Unstructured Lead Processing
+from endpoints.process_unstructured_lead import router as unstructured_lead_router
 
 # Strategic Follow-up Agent
 from agents.strategic_followup_agent import (
@@ -34,6 +46,28 @@ from crew.strategic_reflection_crew import create_strategic_reflection_crew
 # Tools
 from tools.nylas_tools import get_message_details as fetch_nylas_message_details
 from tools.supabase_tools import get_lead_by_email
+
+# Pydantic model for lead enrichment
+from pydantic import BaseModel
+from typing import Optional, Dict
+
+class LeadEnrichmentRequest(BaseModel):
+    email: str
+    company_domain: Optional[str] = None
+    lead_id: Optional[int] = None
+    user_id: Optional[str] = None
+    name: Optional[str] = None
+    company: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    api_keys: Optional[Dict[str, str]] = None
+
+class CompanyProfileRequest(BaseModel):
+    company_name: str
+    domain: str
+    user_id: Optional[str] = None
+    api_keys: Optional[Dict[str, str]] = None
 
 # --- FastAPI App Initialization ---
 app = FastAPI(
@@ -220,9 +254,12 @@ async def generate_follow_up(request: FollowUpRequest):
 async def generate_cold_email(request: EmailCopywritingRequest):
     try:
         print("--- GENERATING COLD EMAIL ---")
+        print(f"Lead Context: {request.lead_context}")
+        
         email_crew = create_email_copywriter_crew(
             llm, request.name, request.title, request.company, 
-            request.pain_points, request.offer, request.hook_snippet
+            request.pain_points, request.offer, request.hook_snippet,
+            request.lead_context
         )
         result = email_crew.kickoff()
         print(f"--- RAW CREW RESULT ---\n{result.raw}")
@@ -287,6 +324,134 @@ async def generate_strategic_followup_endpoint(request: StrategicFollowUpInput) 
     except Exception as e:
         print(f"Error generating strategic follow-up: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Strategic follow-up generation failed: {str(e)}")
+
+@app.post("/enrich-lead")
+async def enrich_lead(request: LeadEnrichmentRequest):
+    """Enrich a lead using multiple providers (Apollo, PDL, Serper, Clearbit, Hunter)"""
+    try:
+        print(f"--- ENRICHING LEAD: {request.email} ---")
+        print(f"Available data: name={request.name}, company={request.company}, domain={request.company_domain}")
+        
+        # Create enrichment crew with user's API keys
+        enrichment_crew = create_lead_enrichment_crew(
+            lead_data={
+                'email': request.email,
+                'name': request.name,
+                'company': request.company,
+                'company_domain': request.company_domain
+            },
+            api_keys=request.api_keys or {}
+        )
+        
+        # Prepare comprehensive inputs for the crew
+        inputs = {
+            "email": request.email or "",
+            "linkedin_url": request.linkedin_url or "",
+            "name": request.name or "",
+            "company": request.company or "",
+            "company_domain": request.company_domain or ""
+        }
+        
+        print(f"Enrichment inputs: {inputs}")
+        
+        # Execute the enrichment
+        result = enrichment_crew.kickoff(inputs=inputs)
+        
+        print(f"--- ENRICHMENT RESULT ---")
+        print(result.raw)
+        
+        # Parse the result
+        try:
+            enriched_data = json.loads(result.raw)
+            
+            # Add metadata about the enrichment process
+            enriched_data['enrichment_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
+            enriched_data['input_data'] = {
+                'email': request.email,
+                'name': request.name,
+                'company': request.company,
+                'company_domain': request.company_domain,
+                'linkedin_url': request.linkedin_url
+            }
+            
+        except json.JSONDecodeError:
+            # If the result isn't valid JSON, wrap it
+            enriched_data = {
+                "raw_output": str(result.raw),
+                "primary_source": "none",
+                "error": "Failed to parse enrichment result as JSON",
+                "enrichment_timestamp": json.loads(json.dumps(datetime.now(), default=str))
+            }
+        
+        return enriched_data
+        
+    except Exception as e:
+        print(f"Error during lead enrichment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/company-profile")
+async def company_profile(request: CompanyProfileRequest):
+    """Generate company profile using ValueSERP and BuiltWith APIs"""
+    try:
+        print(f"--- GENERATING COMPANY PROFILE: {request.company_name} ---")
+        print(f"Domain: {request.domain}")
+        
+        # Create company profile crew with user's API keys
+        company_crew = create_company_profile_crew(
+            company_data={
+                'company_name': request.company_name,
+                'domain': request.domain
+            },
+            api_keys=request.api_keys or {}
+        )
+        
+        # Prepare inputs for the crew
+        inputs = {
+            "company_name": request.company_name,
+            "domain": request.domain
+        }
+        
+        print(f"Company profile inputs: {inputs}")
+        
+        # Execute the company profiling
+        result = company_crew.kickoff(inputs=inputs)
+        
+        print(f"--- COMPANY PROFILE RESULT ---")
+        print(result.raw)
+        
+        # Parse the result
+        try:
+            profile_data = json.loads(result.raw)
+            
+            # Add metadata about the profiling process
+            profile_data['profile_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
+            profile_data['input_data'] = {
+                'company_name': request.company_name,
+                'domain': request.domain
+            }
+            
+            return profile_data
+            
+        except json.JSONDecodeError:
+            # If JSON parsing fails, return raw result
+            return {
+                "snippet": result.raw,
+                "techStack": [],
+                "profile_timestamp": json.loads(json.dumps(datetime.now(), default=str)),
+                "input_data": {
+                    'company_name': request.company_name,
+                    'domain': request.domain
+                },
+                "parsing_error": "Failed to parse JSON from crew result"
+            }
+            
+    except Exception as e:
+        print(f"Error during company profiling: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Register routers
+app.include_router(json_lead_router)
+app.include_router(unstructured_lead_router)
 
 @app.get("/")
 async def root():

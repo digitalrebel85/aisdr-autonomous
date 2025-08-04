@@ -107,28 +107,58 @@ export class NylasCalendarService {
       const startTimestamp = Math.floor(new Date(startTime).getTime() / 1000);
       const endTimestamp = Math.floor(new Date(endTime).getTime() / 1000);
 
-      const response = await fetch(`${this.baseUrl}/v3/grants/${grantId}/calendars/availability`, {
-        method: 'POST',
+      const requestBody = {
+        start_time: startTimestamp,
+        end_time: endTimestamp,
+        calendar_ids: [calendarId],
+      };
+
+      console.log('Nylas availability check:', {
+        grantId,
+        calendarId,
+        startTime,
+        endTime,
+        startTimestamp,
+        endTimestamp,
+        requestBody
+      });
+
+      // For Google Calendar, use events endpoint instead of availability endpoint
+      // Check for existing events in the time slot
+      const eventsUrl = `${this.baseUrl}/v3/grants/${grantId}/events?calendar_id=${calendarId}&start=${startTimestamp}&end=${endTimestamp}`;
+      
+      console.log('Checking events with URL:', eventsUrl);
+      
+      const response = await fetch(eventsUrl, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          start_time: startTimestamp,
-          end_time: endTimestamp,
-          calendar_ids: [calendarId],
-        }),
       });
 
+      console.log('Nylas API response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Nylas API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Nylas API error response:', errorText);
+        throw new Error(`Nylas API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Events found:', data.data?.length || 0);
       
-      // Check if there are any busy periods that conflict
-      const busyPeriods = data.data?.[0]?.busy_time_slots || [];
-      return busyPeriods.length === 0;
+      // Check if there are any events that conflict with the requested time
+      const events = data.data || [];
+      const hasConflict = events.some((event: any) => {
+        const eventStart = event.when?.start_time || 0;
+        const eventEnd = event.when?.end_time || 0;
+        
+        // Check if there's any overlap
+        return (eventStart < endTimestamp && eventEnd > startTimestamp);
+      });
+      
+      return !hasConflict;
     } catch (error) {
       console.error('Error checking availability:', error);
       return false;
@@ -156,7 +186,7 @@ export class NylasCalendarService {
       const startTimestamp = Math.floor(new Date(eventData.startTime).getTime() / 1000);
       const endTimestamp = Math.floor(new Date(eventData.endTime).getTime() / 1000);
 
-      const response = await fetch(`${this.baseUrl}/v3/grants/${grantId}/events`, {
+      const response = await fetch(`${this.baseUrl}/v3/grants/${grantId}/events?calendar_id=${calendarId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
@@ -179,14 +209,7 @@ export class NylasCalendarService {
               status: 'yes',
             },
           ],
-          calendar_id: calendarId,
           busy: true,
-          conferencing: {
-            provider: 'Zoom',
-            details: {
-              meeting_code: 'auto-generated',
-            },
-          },
         }),
       });
 
@@ -289,6 +312,8 @@ export async function createBooking(params: CreateBookingParams): Promise<{
   const calendarService = new NylasCalendarService();
 
   try {
+    console.log('createBooking: Starting with params:', params);
+    
     // Get booking link details
     const { data: bookingLink, error: linkError } = await supabase
       .from('booking_links')
@@ -296,19 +321,42 @@ export async function createBooking(params: CreateBookingParams): Promise<{
       .eq('id', params.bookingLinkId)
       .single();
 
+    console.log('createBooking: Booking link query result:', { bookingLink, linkError });
+
     if (linkError || !bookingLink) {
+      console.log('createBooking: Booking link not found');
       return { success: false, error: 'Booking link not found' };
     }
 
     // Check availability using our database function
-    const { data: isAvailable } = await supabase
+    console.log('createBooking: Checking availability with RPC');
+    
+    // Convert times to proper ISO format with timezone
+    const startTimeISO = new Date(params.startTime).toISOString();
+    const endTimeISO = new Date(params.endTime).toISOString();
+    
+    console.log('createBooking: RPC parameters:', {
+      p_booking_link_id: params.bookingLinkId,
+      p_start_time: startTimeISO,
+      p_end_time: endTimeISO,
+    });
+    
+    const { data: isAvailable, error: availabilityError } = await supabase
       .rpc('check_booking_availability', {
         p_booking_link_id: params.bookingLinkId,
-        p_start_time: params.startTime,
-        p_end_time: params.endTime,
+        p_start_time: startTimeISO,
+        p_end_time: endTimeISO,
       });
 
+    console.log('createBooking: Availability check result:', { isAvailable, availabilityError });
+
+    if (availabilityError) {
+      console.log('createBooking: Availability check failed with error:', availabilityError);
+      return { success: false, error: 'Availability check failed: ' + availabilityError.message };
+    }
+
     if (!isAvailable) {
+      console.log('createBooking: Time slot not available');
       return { success: false, error: 'Time slot not available' };
     }
 
@@ -411,6 +459,14 @@ export async function createBooking(params: CreateBookingParams): Promise<{
         .eq('id', booking.id);
     }
 
+    // Send immediate confirmation email and schedule follow-ups
+    try {
+      await scheduleBookingFollowUps(booking.id, bookingLink, params);
+    } catch (error) {
+      console.error('Error scheduling booking follow-ups:', error);
+      // Don't fail the booking creation if follow-up scheduling fails
+    }
+
     return {
       success: true,
       bookingId: booking.id,
@@ -419,6 +475,103 @@ export async function createBooking(params: CreateBookingParams): Promise<{
   } catch (error) {
     console.error('Error creating booking:', error);
     return { success: false, error: 'Internal server error' };
+  }
+}
+
+/**
+ * Schedule follow-up emails for a booking
+ */
+async function scheduleBookingFollowUps(
+  bookingId: number,
+  bookingLink: any,
+  params: CreateBookingParams
+): Promise<void> {
+  const supabase = await createClient();
+
+  try {
+    // Get user's connected inbox for sending emails
+    const { data: inbox, error: inboxError } = await supabase
+      .from('connected_inboxes')
+      .select('email_address, grant_id')
+      .eq('user_id', bookingLink.user_id)
+      .eq('is_active', true)
+      .single();
+
+    if (inboxError || !inbox) {
+      console.error('No active inbox found for user:', bookingLink.user_id);
+      return;
+    }
+
+    // Generate confirmation email content
+    const bookingTime = new Date(params.startTime);
+    const formattedDate = bookingTime.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const formattedTime = bookingTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const confirmationSubject = `Booking Confirmed: ${bookingLink.title} on ${formattedDate}`;
+    const confirmationBody = `Hi ${params.leadName},
+
+Thank you for booking a meeting with us! Your appointment has been confirmed.
+
+📅 **Meeting Details:**
+• Date: ${formattedDate}
+• Time: ${formattedTime} (${params.timezone})
+• Duration: ${bookingLink.duration_minutes} minutes
+• Location: ${bookingLink.meeting_location}
+
+${params.notes ? `**Your Notes:** ${params.notes}\n\n` : ''}We're looking forward to speaking with you!
+
+If you need to reschedule or have any questions, please reply to this email.
+
+Best regards,
+The Team`;
+
+    // Send immediate confirmation email
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grantId: inbox.grant_id,
+          to: params.leadEmail,
+          subject: confirmationSubject,
+          body: confirmationBody,
+          fromEmail: inbox.email_address,
+          leadId: null, // Will be set if lead exists
+          bookingId: bookingId,
+        }),
+      });
+
+      if (response.ok) {
+        // Record the confirmation email
+        await supabase
+          .from('booking_follow_ups')
+          .insert({
+            booking_id: bookingId,
+            follow_up_type: 'confirmation',
+            sent_at: new Date().toISOString(),
+            email_subject: confirmationSubject,
+          });
+
+        console.log(`Confirmation email sent for booking ${bookingId}`);
+      } else {
+        console.error(`Failed to send confirmation email for booking ${bookingId}`);
+      }
+    } catch (error) {
+      console.error('Error sending confirmation email:', error);
+    }
+  } catch (error) {
+    console.error('Error in scheduleBookingFollowUps:', error);
   }
 }
 
@@ -433,19 +586,121 @@ export async function getAvailableSlots(
   const supabase = await createClient();
 
   try {
-    const { data: slots, error } = await supabase
-      .rpc('get_available_slots', {
-        p_booking_link_id: bookingLinkId,
-        p_date: date,
-        p_timezone: timezone,
-      });
+    console.log('getAvailableSlots called with:', {
+      bookingLinkId,
+      date,
+      timezone
+    });
 
-    if (error) {
-      console.error('Error getting available slots:', error);
+    // Get booking link details directly
+    const { data: bookingLink, error: linkError } = await supabase
+      .from('booking_links')
+      .select('*')
+      .eq('id', bookingLinkId)
+      .eq('is_active', true)
+      .single();
+
+    if (linkError || !bookingLink) {
+      console.error('Booking link not found:', linkError);
       return [];
     }
 
-    return slots || [];
+    console.log('Booking link found:', {
+      id: bookingLink.id,
+      working_hours: bookingLink.working_hours,
+      duration_minutes: bookingLink.duration_minutes
+    });
+
+    // Get day of week
+    const requestDate = new Date(date + 'T00:00:00');
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayOfWeek = dayNames[requestDate.getDay()];
+
+    console.log('Day of week:', dayOfWeek);
+
+    // Check if working hours exist for this day
+    const workingHours = bookingLink.working_hours?.[dayOfWeek];
+    if (!workingHours) {
+      console.log('No working hours for', dayOfWeek);
+      return [];
+    }
+
+    console.log('Working hours for', dayOfWeek, ':', workingHours);
+
+    // Generate time slots
+    const slots: BookingSlot[] = [];
+    const startTime = workingHours.start; // e.g., "09:00"
+    const endTime = workingHours.end;     // e.g., "17:00"
+    const duration = bookingLink.duration_minutes || 30;
+
+    // Parse start and end times
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+
+    // Create slots every 30 minutes
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+
+    while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+      // Create slot start time in the specified timezone
+      // Format: YYYY-MM-DDTHH:mm:ss (without Z to keep it in local timezone)
+      const timeString = String(currentHour).padStart(2, '0') + ':' + 
+                        String(currentMinute).padStart(2, '0') + ':00';
+      const slotStartString = date + 'T' + timeString;
+      
+      // Create Date objects for availability checking (these will be in UTC)
+      const slotStart = new Date(slotStartString);
+      const slotEnd = new Date(slotStart.getTime() + duration * 60 * 1000);
+
+      // Calculate end time first to check working hours boundary
+      let calculatedEndHour = currentHour;
+      let calculatedEndMinute = currentMinute + duration;
+      
+      // Handle minute overflow
+      if (calculatedEndMinute >= 60) {
+        calculatedEndHour += Math.floor(calculatedEndMinute / 60);
+        calculatedEndMinute = calculatedEndMinute % 60;
+      }
+      
+      // Check if this slot fits within working hours
+      if (calculatedEndHour > endHour || (calculatedEndHour === endHour && calculatedEndMinute > endMinute)) {
+        break; // Slot would extend beyond working hours
+      }
+
+      // Check availability using our database function
+      const { data: isAvailable, error: availError } = await supabase
+        .rpc('check_booking_availability', {
+          p_booking_link_id: bookingLinkId,
+          p_start_time: slotStart.toISOString(),
+          p_end_time: slotEnd.toISOString(),
+        });
+
+      if (availError) {
+        console.error('Error checking availability for slot:', availError);
+      }
+
+      // Use the already calculated end time for the time string
+      const endTimeString = date + 'T' + 
+        String(calculatedEndHour).padStart(2, '0') + ':' + 
+        String(calculatedEndMinute).padStart(2, '0') + ':00';
+
+      slots.push({
+        start: slotStartString,
+        end: endTimeString,
+        available: !availError && isAvailable === true
+      });
+
+      // Move to next 30-minute slot
+      currentMinute += 30;
+      if (currentMinute >= 60) {
+        currentHour += 1;
+        currentMinute = 0;
+      }
+    }
+
+    console.log('Generated slots:', slots.length);
+    return slots;
+
   } catch (error) {
     console.error('Error getting available slots:', error);
     return [];

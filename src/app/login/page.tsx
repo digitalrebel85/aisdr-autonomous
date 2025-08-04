@@ -23,7 +23,18 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
     } else {
-      router.push('/dashboard')
+      // Check if user needs onboarding
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single()
+      
+      if (!profile || !profile.onboarding_completed) {
+        router.push('/onboarding')
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh() // Ensure the layout re-renders to get the new session
     }
   }

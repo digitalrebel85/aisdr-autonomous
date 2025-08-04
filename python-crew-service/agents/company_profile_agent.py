@@ -2,14 +2,11 @@ import os
 import json
 import requests
 from typing import Dict, Any, List, Optional
-from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from crewai.tools import tool
 
-# --- Environment Setup ---
-load_dotenv()
-VALUESERP_KEY = os.getenv("VALUESERP_KEY")
-BUILTWITH_KEY = os.getenv("BUILTWITH_KEY")
+# Global variable to store user's API keys for the current request
+USER_API_KEYS: Dict[str, str] = {}
 MOCK_MODE = os.getenv("MOCK") == "true"
 
 # --- API Tools ---
@@ -17,9 +14,10 @@ MOCK_MODE = os.getenv("MOCK") == "true"
 @tool("ValueSERP Company Snippet")
 def valueserp_company_snippet(company_name: str) -> Dict[str, Any]:
     """Fetches a descriptive snippet for a company from ValueSERP."""
-    if not VALUESERP_KEY:
-        return {}
-    params = {"api_key": VALUESERP_KEY, "q": company_name, "num": "1"}
+    valueserp_key = USER_API_KEYS.get('valueserp')
+    if not valueserp_key:
+        return {"error": "ValueSERP API key not configured", "provider": "valueserp"}
+    params = {"api_key": valueserp_key, "q": company_name, "num": "1"}
     try:
         response = requests.get("https://api.valueserp.com/search", params=params, timeout=15)
         response.raise_for_status()
@@ -33,9 +31,10 @@ def valueserp_company_snippet(company_name: str) -> Dict[str, Any]:
 @tool("BuiltWith Tech Stack")
 def builtwith_tech_stack(domain: str) -> Dict[str, Any]:
     """Identifies the technology stack of a company's domain via BuiltWith."""
-    if not BUILTWITH_KEY:
-        return {}
-    params = {"KEY": BUILTWITH_KEY, "LOOKUP": domain}
+    builtwith_key = USER_API_KEYS.get('builtwith')
+    if not builtwith_key:
+        return {"error": "BuiltWith API key not configured", "provider": "builtwith"}
+    params = {"KEY": builtwith_key, "LOOKUP": domain}
     try:
         response = requests.get("https://api.builtwith.com/v21/api.json", params=params, timeout=15)
         response.raise_for_status()
@@ -108,11 +107,35 @@ company_profile_task = Task(
     expected_output="A JSON object with the company snippet and a list of technologies."
 )
 
+def create_company_profile_crew(company_data: dict, api_keys: dict = None) -> Crew:
+    """Create company profile crew with user's API keys."""
+    global USER_API_KEYS
+    USER_API_KEYS = api_keys or {}
+    
+    company_profile_crew = Crew(
+        agents=[company_profile_agent],
+        tasks=[company_profile_task],
+        process=Process.sequential
+    )
+    
+    return company_profile_crew
+
 # --- Main execution block ---
 if __name__ == "__main__":
     print("--- Running Company Profile Agent ---")
     if MOCK_MODE:
         print("INFO: Running in MOCK mode.")
 
-    result = run_company_profile(company_name="Tesla", domain="tesla.com")
-    print(json.dumps(result, indent=2))
+    # Test with mock API keys
+    api_keys = {
+        'valueserp': 'YOUR_VALUESERP_API_KEY',
+        'builtwith': 'YOUR_BUILTWITH_API_KEY'
+    }
+    crew = create_company_profile_crew({}, api_keys)
+    
+    inputs = {
+        "company_name": "Tesla",
+        "domain": "tesla.com"
+    }
+    result = crew.kickoff(inputs=inputs)
+    print(json.dumps(result.raw, indent=2))
