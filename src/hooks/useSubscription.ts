@@ -1,0 +1,125 @@
+import { useEffect, useState } from 'react';
+import { useUser } from '@supabase/auth-helpers-react';
+import { planManager, UserSubscription, UsageCheck } from '@/lib/plans';
+
+export function useSubscription() {
+  const user = useUser();
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+
+    const fetchSubscription = async () => {
+      try {
+        setLoading(true);
+        const sub = await planManager.getUserSubscription(user.id);
+        setSubscription(sub);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch subscription');
+        setSubscription(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscription();
+  }, [user]);
+
+  const hasFeature = (feature: string): boolean => {
+    if (!subscription) return false;
+    // You can implement feature checking logic here
+    return true;
+  };
+
+  const isWithinLimit = (metric: keyof typeof subscription.limits): boolean => {
+    if (!subscription) return false;
+    const limit = subscription.limits[metric];
+    return limit === -1; // -1 means unlimited
+  };
+
+  const isTrialing = (): boolean => {
+    if (!subscription) return false;
+    return subscription.status === 'trialing' && 
+           subscription.trial_end && 
+           new Date(subscription.trial_end) > new Date();
+  };
+
+  const isActive = (): boolean => {
+    if (!subscription) return false;
+    return subscription.status === 'active' || isTrialing();
+  };
+
+  const daysUntilTrialEnd = (): number | null => {
+    if (!subscription?.trial_end) return null;
+    const trialEnd = new Date(subscription.trial_end);
+    const now = new Date();
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  return {
+    subscription,
+    loading,
+    error,
+    hasFeature,
+    isWithinLimit,
+    isTrialing,
+    isActive,
+    daysUntilTrialEnd,
+    refresh: () => {
+      if (user) {
+        planManager.getUserSubscription(user.id).then(setSubscription);
+      }
+    }
+  };
+}
+
+export function useUsageCheck(metric: string) {
+  const user = useUser();
+  const [usage, setUsage] = useState<UsageCheck | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const checkUsage = async (incrementBy: number = 0): Promise<boolean> => {
+    if (!user) return false;
+
+    setLoading(true);
+    try {
+      const result = await planManager.checkUsageLimit(user.id, metric, incrementBy);
+      setUsage(result);
+      return result.allowed;
+    } catch (error) {
+      console.error('Usage check failed:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrentUsage = async (): Promise<number> => {
+    if (!user) return 0;
+    return await planManager.getUsage(user.id, metric);
+  };
+
+  useEffect(() => {
+    if (user) {
+      checkUsage(0); // Check current usage without incrementing
+    }
+  }, [user, metric]);
+
+  return {
+    usage,
+    loading,
+    checkUsage,
+    getCurrentUsage,
+    canUse: usage?.allowed ?? false,
+    usagePercentage: usage ? (usage.limit === -1 ? 0 : (usage.usage / usage.limit) * 100) : 0
+  };
+}

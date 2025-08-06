@@ -8,7 +8,7 @@ import re
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
-from crewai_tools import tool
+from crewai.tools import BaseTool
 import openai
 from datetime import datetime
 
@@ -64,14 +64,12 @@ class ProcessedLead(BaseModel):
     source: str = Field(default="unknown", description="Source of the lead")
     processed_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
-@tool
 def extract_email_addresses(text: str) -> List[str]:
     """Extract email addresses from text using regex"""
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     emails = re.findall(email_pattern, text)
     return list(set(emails))  # Remove duplicates
 
-@tool
 def extract_phone_numbers(text: str) -> List[str]:
     """Extract phone numbers from text using regex"""
     phone_patterns = [
@@ -83,14 +81,14 @@ def extract_phone_numbers(text: str) -> List[str]:
         phones.extend(re.findall(pattern, text))
     return list(set(phones))
 
-@tool
+
 def extract_linkedin_urls(text: str) -> List[str]:
     """Extract LinkedIn URLs from text"""
     linkedin_pattern = r'https?://(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+'
     urls = re.findall(linkedin_pattern, text)
     return urls
 
-@tool
+
 def extract_company_domains(text: str) -> List[str]:
     """Extract potential company domains from text"""
     # Look for website patterns
@@ -105,7 +103,7 @@ def extract_company_domains(text: str) -> List[str]:
         domains.extend(matches)
     return list(set(domains))
 
-@tool
+
 def identify_company_size_indicators(text: str) -> List[str]:
     """Identify company size indicators in text"""
     size_patterns = [
@@ -120,7 +118,7 @@ def identify_company_size_indicators(text: str) -> List[str]:
         indicators.extend(matches)
     return indicators
 
-@tool
+
 def extract_tech_stack(text: str) -> List[str]:
     """Extract technology stack from text"""
     # Common technologies and frameworks
@@ -146,7 +144,7 @@ def extract_tech_stack(text: str) -> List[str]:
     
     return list(technologies)
 
-@tool
+
 def extract_pain_points(text: str) -> List[str]:
     """Extract business pain points and challenges from text"""
     pain_point_patterns = [
@@ -180,7 +178,7 @@ def extract_pain_points(text: str) -> List[str]:
     
     return list(set(pain_points))
 
-@tool
+
 def extract_funding_stage(text: str) -> str:
     """Extract company funding stage from text"""
     funding_patterns = [
@@ -197,7 +195,7 @@ def extract_funding_stage(text: str) -> str:
     
     return 'unknown'
 
-@tool
+
 def extract_business_context(text: str) -> Dict[str, Any]:
     """Extract rich business context from text"""
     context = {
@@ -242,7 +240,7 @@ def extract_business_context(text: str) -> Dict[str, Any]:
     
     return context
 
-@tool
+
 def analyze_apollo_snippet(snippet: str) -> Dict[str, Any]:
     """Analyze Apollo snippet for email personalization insights"""
     analysis = {

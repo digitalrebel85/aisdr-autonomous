@@ -41,7 +41,7 @@ export default function LeadsPage() {
       
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('*, enrichment_status, enrichment_completed_at, enriched_data')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -78,7 +78,6 @@ export default function LeadsPage() {
         company_domain: formData.companyDomain,
         offer: formData.offer,
         cta: formData.cta,
-        enrichment_status: 'pending',
       });
 
       if (error) {

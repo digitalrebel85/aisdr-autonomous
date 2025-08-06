@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { planManager } from '@/lib/plans';
 
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -17,6 +18,19 @@ export async function POST(request: NextRequest) {
     
     if (!user && !isSystemUsage) {
       return new NextResponse(JSON.stringify({ error: 'User not authenticated' }), { status: 401 });
+    }
+
+    // Check email usage limit for authenticated users (skip for system usage like automated replies)
+    if (user && !isSystemUsage) {
+      const usageCheck = await planManager.checkUsageLimit(user.id, 'emails_per_month', 1);
+      if (!usageCheck.allowed) {
+        return new NextResponse(JSON.stringify({ 
+          error: 'Monthly email limit exceeded',
+          usage: usageCheck.usage,
+          limit: usageCheck.limit,
+          upgrade_url: '/pricing'
+        }), { status: 429 });
+      }
     }
     
     // Support both old and new parameter formats
