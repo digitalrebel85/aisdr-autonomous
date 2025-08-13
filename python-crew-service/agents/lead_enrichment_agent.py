@@ -67,7 +67,10 @@ def serper_person_search(email: str = None, name: str = None, company: str = Non
     """Search for person information using Serper API (Google Search)."""
     serper_key = USER_API_KEYS.get('serper')
     if not serper_key:
-        return {"error": "Serper API key not configured", "provider": "serper"}
+        # Fallback to environment variable if user hasn't configured their own key
+        serper_key = os.getenv('SERPER_API_KEY')
+        if not serper_key:
+            return {"error": "Serper API key not configured", "provider": "serper"}
     
     # Build search query
     query_parts = []
@@ -163,38 +166,112 @@ def multi_provider_enrichment(email: str = None, linkedin_url: str = None, name:
     results = {}
     enriched_data = {}
     
-    # Provider priority order
-    providers = [
-        ('apollo', lambda: apollo_person_lookup(email, linkedin_url)),
-        ('pdl', lambda: pdl_person_lookup(email, linkedin_url)),
-        ('clearbit', lambda: clearbit_person_lookup(email) if email else {"error": "No email"}),
-        ('serper', lambda: serper_person_search(email, name, company)),
-        ('hunter', lambda: hunter_email_finder(company_domain, name.split()[0] if name else None, name.split()[-1] if name and len(name.split()) > 1 else None) if company_domain else {"error": "No domain"})
-    ]
-    
-    for provider_name, provider_func in providers:
+    # Try Apollo first
+    if email or linkedin_url:
         try:
-            print(f"Trying {provider_name} enrichment...")
-            result = provider_func()
-            results[provider_name] = result
+            print("Trying apollo enrichment...")
+            result = apollo_person_lookup.func(email, linkedin_url)
+            results['apollo'] = result
             
-            # Check if we got useful data (no error and has meaningful content)
-            if not result.get('error') and _has_useful_data(result, provider_name):
-                enriched_data = _normalize_provider_data(result, provider_name)
-                enriched_data['primary_source'] = provider_name
+            if not result.get('error') and _has_useful_data(result, 'apollo'):
+                enriched_data = _normalize_provider_data(result, 'apollo')
+                enriched_data['primary_source'] = 'apollo'
                 enriched_data['all_sources'] = results
-                print(f"Successfully enriched from {provider_name}")
-                break
+                print("Successfully enriched from apollo")
+                return enriched_data
         except Exception as e:
-            print(f"Error with {provider_name}: {e}")
-            results[provider_name] = {"error": str(e), "provider": provider_name}
+            print(f"Error with apollo: {e}")
+            results['apollo'] = {"error": str(e), "provider": "apollo"}
     
-    if not enriched_data:
-        enriched_data = {
-            "error": "No providers returned useful data",
-            "all_sources": results,
-            "primary_source": "none"
-        }
+    # Try PDL
+    if email or linkedin_url:
+        try:
+            print("Trying pdl enrichment...")
+            result = pdl_person_lookup.func(email, linkedin_url)
+            results['pdl'] = result
+            
+            if not result.get('error') and _has_useful_data(result, 'pdl'):
+                enriched_data = _normalize_provider_data(result, 'pdl')
+                enriched_data['primary_source'] = 'pdl'
+                enriched_data['all_sources'] = results
+                print("Successfully enriched from pdl")
+                return enriched_data
+        except Exception as e:
+            print(f"Error with pdl: {e}")
+            results['pdl'] = {"error": str(e), "provider": "pdl"}
+    
+    # Try Clearbit
+    if email:
+        try:
+            print("Trying clearbit enrichment...")
+            result = clearbit_person_lookup.func(email)
+            results['clearbit'] = result
+            
+            if not result.get('error') and _has_useful_data(result, 'clearbit'):
+                enriched_data = _normalize_provider_data(result, 'clearbit')
+                enriched_data['primary_source'] = 'clearbit'
+                enriched_data['all_sources'] = results
+                print("Successfully enriched from clearbit")
+                return enriched_data
+        except Exception as e:
+            print(f"Error with clearbit: {e}")
+            results['clearbit'] = {"error": str(e), "provider": "clearbit"}
+    
+    # Try Serper
+    try:
+        print("Trying serper enrichment...")
+        result = serper_person_search.func(email, name, company)
+        results['serper'] = result
+        
+        if not result.get('error') and _has_useful_data(result, 'serper'):
+            enriched_data = _normalize_provider_data(result, 'serper')
+            enriched_data['primary_source'] = 'serper'
+            enriched_data['all_sources'] = results
+            print("Successfully enriched from serper")
+            return enriched_data
+    except Exception as e:
+        print(f"Error with serper: {e}")
+        results['serper'] = {"error": str(e), "provider": "serper"}
+    
+    # Try Hunter
+    if company_domain and name:
+        try:
+            print("Trying hunter enrichment...")
+            first_name = name.split()[0] if name else None
+            last_name = name.split()[-1] if name and len(name.split()) > 1 else None
+            result = hunter_email_finder.func(company_domain, first_name, last_name)
+            results['hunter'] = result
+            
+            if not result.get('error') and _has_useful_data(result, 'hunter'):
+                enriched_data = _normalize_provider_data(result, 'hunter')
+                enriched_data['primary_source'] = 'hunter'
+                enriched_data['all_sources'] = results
+                print("Successfully enriched from hunter")
+                return enriched_data
+        except Exception as e:
+            print(f"Error with hunter: {e}")
+            results['hunter'] = {"error": str(e), "provider": "hunter"}
+    
+    # If no provider returned useful data, create basic enrichment from input
+    print("No providers returned useful data, creating basic enrichment...")
+    enriched_data = {
+        "name": name,
+        "first_name": name.split()[0] if name else None,
+        "last_name": name.split()[-1] if name and len(name.split()) > 1 else None,
+        "title": None,
+        "company": company,
+        "industry": None,
+        "company_size": None,
+        "location": None,
+        "linkedin_url": linkedin_url,
+        "phone": None,
+        "email": email,
+        "source": "basic_inference",
+        "primary_source": "basic_inference",
+        "all_sources": results,
+        "confidence_score": 0.3,
+        "enrichment_notes": "Basic enrichment from input data - no external providers available"
+    }
     
     return enriched_data
 

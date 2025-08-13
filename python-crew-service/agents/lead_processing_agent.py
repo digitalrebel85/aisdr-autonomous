@@ -8,7 +8,7 @@ import re
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
-from crewai.tools import BaseTool
+from crewai.tools import BaseTool, tool
 import openai
 from datetime import datetime
 
@@ -64,12 +64,14 @@ class ProcessedLead(BaseModel):
     source: str = Field(default="unknown", description="Source of the lead")
     processed_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
+@tool
 def extract_email_addresses(text: str) -> List[str]:
     """Extract email addresses from text using regex"""
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     emails = re.findall(email_pattern, text)
     return list(set(emails))  # Remove duplicates
 
+@tool
 def extract_phone_numbers(text: str) -> List[str]:
     """Extract phone numbers from text using regex"""
     phone_patterns = [
@@ -82,6 +84,7 @@ def extract_phone_numbers(text: str) -> List[str]:
     return list(set(phones))
 
 
+@tool
 def extract_linkedin_urls(text: str) -> List[str]:
     """Extract LinkedIn URLs from text"""
     linkedin_pattern = r'https?://(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+'
@@ -89,6 +92,7 @@ def extract_linkedin_urls(text: str) -> List[str]:
     return urls
 
 
+@tool
 def extract_company_domains(text: str) -> List[str]:
     """Extract potential company domains from text"""
     # Look for website patterns
@@ -104,6 +108,7 @@ def extract_company_domains(text: str) -> List[str]:
     return list(set(domains))
 
 
+@tool
 def identify_company_size_indicators(text: str) -> List[str]:
     """Identify company size indicators in text"""
     size_patterns = [
@@ -119,6 +124,7 @@ def identify_company_size_indicators(text: str) -> List[str]:
     return indicators
 
 
+@tool
 def extract_tech_stack(text: str) -> List[str]:
     """Extract technology stack from text"""
     # Common technologies and frameworks
@@ -145,6 +151,7 @@ def extract_tech_stack(text: str) -> List[str]:
     return list(technologies)
 
 
+@tool
 def extract_pain_points(text: str) -> List[str]:
     """Extract business pain points and challenges from text"""
     pain_point_patterns = [
@@ -179,6 +186,7 @@ def extract_pain_points(text: str) -> List[str]:
     return list(set(pain_points))
 
 
+@tool
 def extract_funding_stage(text: str) -> str:
     """Extract company funding stage from text"""
     funding_patterns = [
@@ -196,7 +204,8 @@ def extract_funding_stage(text: str) -> str:
     return 'unknown'
 
 
-def extract_business_context(text: str) -> Dict[str, Any]:
+@tool
+def extract_business_context(text: str) -> Dict[str, List[str]]:
     """Extract rich business context from text"""
     context = {
         'growth_stage': [],
@@ -241,6 +250,7 @@ def extract_business_context(text: str) -> Dict[str, Any]:
     return context
 
 
+@tool
 def analyze_apollo_snippet(snippet: str) -> Dict[str, Any]:
     """Analyze Apollo snippet for email personalization insights"""
     analysis = {
@@ -288,7 +298,7 @@ def analyze_apollo_snippet(snippet: str) -> Dict[str, Any]:
     
     return analysis
 
-def create_lead_processing_crew(user_api_keys: Dict[str, str] = None) -> Crew:
+def create_lead_processing_crew(raw_lead: RawLeadInput, user_api_keys: Dict[str, str] = None) -> Crew:
     """Create a crew for processing unstructured lead data"""
     
     # Lead Data Extraction Agent
@@ -337,8 +347,89 @@ def create_lead_processing_crew(user_api_keys: Dict[str, str] = None) -> Crew:
         allow_delegation=False
     )
     
+    # Task 1: Extract basic contact and company information
+    extraction_task = Task(
+        description=f"""
+        Extract structured lead information from this raw text:
+        
+        Raw Data: {raw_lead.raw_data}
+        Source: {raw_lead.source}
+        Additional Notes: {raw_lead.notes}
+        Metadata: {raw_lead.metadata}
+        
+        Extract the following information if available:
+        - Full name (separate into first/last if possible)
+        - Email address
+        - Phone number
+        - Job title/position
+        - Company name
+        - Company website/domain
+        - LinkedIn profile URL
+        - Location/geographic information
+        - Industry or business sector
+        - Company size indicators
+        - Technology stack and tools used
+        - Company funding stage and investment info
+        - Business context and recent activities
+        
+        Use the available tools to help with extraction. Be thorough but only extract
+        information that is clearly present in the text.
+        """,
+        agent=data_extractor,
+        expected_output="Structured list of extracted contact and company information"
+    )
+    
+    # Task 2: Analyze business context and qualification
+    context_task = Task(
+        description=f"""
+        Analyze the business context and sales potential from this lead data:
+        
+        Raw Data: {raw_lead.raw_data}
+        
+        Identify and extract:
+        - Pain points or business challenges mentioned
+        - Business interests or focus areas
+        - Lead temperature (hot/warm/cold) based on context
+        - Industry context and business needs
+        - Any indicators of buying intent or timeline
+        - Relationship context (how they were acquired)
+        - Technology stack and technical context
+        - Company growth stage and funding status
+        
+        Provide insights that would help with sales outreach and lead qualification.
+        """,
+        agent=context_analyzer,
+        expected_output="Business context analysis with pain points, interests, and lead qualification"
+    )
+    
+    # Task 3: Validate and score the extracted data
+    validation_task = Task(
+        description=f"""
+        Validate and score the quality of extracted lead information:
+        
+        Review all extracted data for:
+        - Email format validation
+        - Phone number standardization
+        - Data consistency and completeness
+        - Confidence scoring (0-1) for each field
+        - Overall data quality assessment
+        
+        Create a final structured lead record with:
+        - All validated and standardized data
+        - Confidence scores
+        - List of successfully extracted fields
+        - List of missing critical fields
+        - Processing notes and recommendations
+        
+        Format the output as a complete lead profile ready for database storage.
+        """,
+        agent=quality_validator,
+        expected_output="Validated and scored lead data in structured format"
+    )
+    
     return Crew(
         agents=[data_extractor, context_analyzer, quality_validator],
+        tasks=[extraction_task, context_task, validation_task],
         verbose=True
     )
 
@@ -346,113 +437,10 @@ def process_raw_lead_data(raw_lead: RawLeadInput, user_api_keys: Dict[str, str] 
     """Process raw lead data using AI agents"""
     
     try:
-        crew = create_lead_processing_crew(user_api_keys)
+        crew = create_lead_processing_crew(raw_lead, user_api_keys)
         
-        # Task 1: Extract basic contact and company information
-        extraction_task = Task(
-            description=f"""
-            Extract structured lead information from this raw text:
-            
-            Raw Data: {raw_lead.raw_data}
-            Source: {raw_lead.source}
-            Additional Notes: {raw_lead.notes}
-            Metadata: {raw_lead.metadata}
-            
-            Extract the following information if available:
-            - Full name (separate into first/last if possible)
-            - Email address
-            - Phone number
-            - Job title/position
-            - Company name
-            - Company website/domain
-            - LinkedIn profile URL
-            - Location/geographic information
-            - Industry or business sector
-            - Company size indicators
-            - Technology stack and tools used
-            - Company funding stage and investment info
-            - Business context and recent activities
-            
-            SPECIAL FOCUS FOR APOLLO EXPORTS:
-            - If there's a 'snippet' field, analyze it thoroughly for business intelligence
-            - If there's a 'tech_stack' field, extract all technologies mentioned
-            - Look for funding information, growth stage, and business model details
-            - Extract pain points, challenges, and business triggers
-            
-            Use the available tools to help with extraction. Be thorough but only extract
-            information that is clearly present in the text.
-            """,
-            agent=crew.agents[0],
-            expected_output="Structured list of extracted contact and company information"
-        )
-        
-        # Task 2: Analyze business context and qualification
-        context_task = Task(
-            description=f"""
-            Analyze the business context and sales potential from this lead data:
-            
-            Raw Data: {raw_lead.raw_data}
-            
-            Identify and extract:
-            - Pain points or business challenges mentioned
-            - Business interests or focus areas
-            - Lead temperature (hot/warm/cold) based on context
-            - Industry context and business needs
-            - Any indicators of buying intent or timeline
-            - Relationship context (how they were acquired)
-            - Technology stack and technical context
-            - Company growth stage and funding status
-            - Recent business activities and announcements
-            - Competitive landscape and positioning
-            
-            APOLLO SNIPPET ANALYSIS:
-            - Extract personalization hooks (recent funding, launches, hires)
-            - Identify business triggers (expansion, scaling, challenges)
-            - Determine messaging angles based on company context
-            - Assess urgency indicators and timing
-            - Find social proof opportunities
-            
-            EMAIL PERSONALIZATION CONTEXT:
-            - Create hooks for email opening lines
-            - Identify technical angles for product positioning
-            - Extract business triggers for timing
-            - Determine appropriate messaging tone
-            - Suggest relevant case studies or social proof
-            
-            Provide insights that would help with sales outreach and lead qualification.
-            """,
-            agent=crew.agents[1],
-            expected_output="Business context analysis with pain points, interests, and lead qualification"
-        )
-        
-        # Task 3: Validate and score the extracted data
-        validation_task = Task(
-            description=f"""
-            Validate and score the quality of extracted lead information:
-            
-            Review all extracted data for:
-            - Email format validation
-            - Phone number standardization
-            - Data consistency and completeness
-            - Confidence scoring (0-1) for each field
-            - Overall data quality assessment
-            
-            Create a final structured lead record with:
-            - All validated and standardized data
-            - Confidence scores
-            - List of successfully extracted fields
-            - List of missing critical fields
-            - Processing notes and recommendations
-            
-            Format the output as a complete lead profile ready for database storage.
-            """,
-            agent=crew.agents[2],
-            expected_output="Validated and scored lead data in structured format"
-        )
-        
-        # Execute the crew tasks
-        crew_tasks = [extraction_task, context_task, validation_task]
-        results = crew.kickoff(tasks=crew_tasks)
+        # Execute the crew (tasks are already defined in the crew)
+        results = crew.kickoff()
         
         # Parse the results and create ProcessedLead object
         processed_lead = parse_crew_results(results, raw_lead)
@@ -479,11 +467,76 @@ def parse_crew_results(results: Any, raw_lead: RawLeadInput) -> ProcessedLead:
     )
     
     try:
-        # Extract basic information using regex fallbacks
-        emails = extract_email_addresses(raw_lead.raw_data)
-        phones = extract_phone_numbers(raw_lead.raw_data)
-        linkedin_urls = extract_linkedin_urls(raw_lead.raw_data)
-        domains = extract_company_domains(raw_lead.raw_data)
+        # Try to parse AI crew results first
+        ai_extracted_data = {}
+        if results and hasattr(results, 'raw'):
+            # CrewAI results - try to parse the final output
+            result_text = str(results.raw)
+            print(f"DEBUG: AI Result Text: {result_text}")
+            
+            # Try to extract JSON from the result
+            try:
+                import json
+                # Look for JSON in the result
+                json_start = result_text.find('{')
+                json_end = result_text.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = result_text[json_start:json_end]
+                    print(f"DEBUG: Extracted JSON: {json_str}")
+                    ai_extracted_data = json.loads(json_str)
+                    print(f"DEBUG: Parsed AI Data: {ai_extracted_data}")
+            except Exception as e:
+                print(f"DEBUG: JSON parsing failed: {e}")
+        else:
+            print(f"DEBUG: No results or no raw attribute. Results type: {type(results)}")
+        
+        # Extract data from AI structure (try multiple formats)
+        # Format 1: 'Validated Lead Data' (direct)
+        validated_data = ai_extracted_data.get('Validated Lead Data', {})
+        
+        # Format 2: 'Lead Profile' -> 'Validated and Standardized Data'
+        if not validated_data:
+            lead_profile = ai_extracted_data.get('Lead Profile', {})
+            validated_data = lead_profile.get('Validated and Standardized Data', {})
+        
+        # Format 3: 'lead_profile' -> 'validated_data' (snake_case)
+        if not validated_data:
+            lead_profile = ai_extracted_data.get('lead_profile', {})
+            validated_data = lead_profile.get('validated_data', {})
+        
+        print(f"DEBUG: Validated Data keys: {list(validated_data.keys()) if validated_data else 'None'}")
+        
+        # Use AI results if available, otherwise fall back to regex
+        # Try multiple formats: snake_case, Title Case, and nested with 'Value'
+        ai_email = (validated_data.get('email') or 
+                   validated_data.get('Email Address') or 
+                   validated_data.get('Email Address', {}).get('Value'))
+        
+        ai_phone = (validated_data.get('phone_number') or 
+                   validated_data.get('Phone Number') or 
+                   validated_data.get('Phone Number', {}).get('Value'))
+        
+        ai_linkedin = (validated_data.get('linkedin_url') or 
+                      validated_data.get('LinkedIn Profile URL') or 
+                      validated_data.get('LinkedIn Profile URL', {}).get('Value'))
+        
+        ai_domain = (validated_data.get('company_website') or 
+                    validated_data.get('Company Website/Domain') or 
+                    validated_data.get('Company Website', {}).get('Value'))
+        
+        print(f"DEBUG: AI Email: {ai_email}")
+        print(f"DEBUG: AI Phone: {ai_phone}")
+        print(f"DEBUG: AI LinkedIn: {ai_linkedin}")
+        print(f"DEBUG: AI Domain: {ai_domain}")
+        
+        emails = [ai_email] if ai_email else extract_email_addresses(raw_lead.raw_data)
+        phones = [ai_phone] if ai_phone else extract_phone_numbers(raw_lead.raw_data)
+        linkedin_urls = [ai_linkedin] if ai_linkedin else extract_linkedin_urls(raw_lead.raw_data)
+        domains = [ai_domain] if ai_domain else extract_company_domains(raw_lead.raw_data)
+        
+        print(f"DEBUG: Final emails list: {emails}")
+        print(f"DEBUG: Final phones list: {phones}")
+        print(f"DEBUG: Final domains list: {domains}")
         
         # Set extracted data
         if emails:
@@ -502,41 +555,98 @@ def parse_crew_results(results: Any, raw_lead: RawLeadInput) -> ProcessedLead:
             processed_lead.company_domain = domains[0]
             processed_lead.extracted_fields.append("company_domain")
         
-        # Try to extract name patterns
-        name_patterns = [
-            r'^([A-Z][a-z]+)\s+([A-Z][a-z]+)',  # First Last at start
-            r'([A-Z][a-z]+)\s+([A-Z][a-z]+)(?:\s*,|\s*-|\s*@)',  # First Last before punctuation
-        ]
+        # Use AI results for names if available, otherwise regex
+        # Try multiple formats: snake_case, Title Case, and nested
+        ai_full_name = (validated_data.get('full_name') or 
+                       validated_data.get('Full Name'))
         
-        for pattern in name_patterns:
-            match = re.search(pattern, raw_lead.raw_data)
-            if match:
-                processed_lead.first_name = match.group(1)
-                processed_lead.last_name = match.group(2)
-                processed_lead.full_name = f"{match.group(1)} {match.group(2)}"
-                processed_lead.extracted_fields.extend(["first_name", "last_name", "full_name"])
-                break
+        ai_first_name = (validated_data.get('first_name') or 
+                        validated_data.get('Full Name', {}).get('First Name') if isinstance(validated_data.get('Full Name'), dict) else None)
         
-        # Extract company and title patterns
-        title_company_patterns = [
-            r'([A-Z][a-zA-Z\s]+)\s+at\s+([A-Z][a-zA-Z\s&.,]+)',  # Title at Company
-            r'([A-Z][a-zA-Z\s]+)\s+@\s+([A-Z][a-zA-Z\s&.,]+)',   # Title @ Company
-            r'([A-Z][a-zA-Z\s]+)\s*,\s*([A-Z][a-zA-Z\s&.,]+)',   # Title, Company
-        ]
+        ai_last_name = (validated_data.get('last_name') or 
+                       validated_data.get('Full Name', {}).get('Last Name') if isinstance(validated_data.get('Full Name'), dict) else None)
         
-        for pattern in title_company_patterns:
-            match = re.search(pattern, raw_lead.raw_data)
-            if match and not processed_lead.title:
-                potential_title = match.group(1).strip()
-                potential_company = match.group(2).strip()
-                
-                # Basic validation - titles usually contain certain words
-                title_indicators = ['CEO', 'CTO', 'VP', 'Director', 'Manager', 'Lead', 'Head', 'Chief', 'President', 'Founder']
-                if any(indicator.lower() in potential_title.lower() for indicator in title_indicators):
-                    processed_lead.title = potential_title
-                    processed_lead.company = potential_company
-                    processed_lead.extracted_fields.extend(["title", "company"])
+        # If we have full name as string, try to split it
+        if ai_full_name and isinstance(ai_full_name, str) and not ai_first_name:
+            name_parts = ai_full_name.split(' ', 1)
+            if len(name_parts) >= 2:
+                ai_first_name = name_parts[0]
+                ai_last_name = name_parts[1]
+        
+        print(f"DEBUG: AI First Name: {ai_first_name}")
+        print(f"DEBUG: AI Last Name: {ai_last_name}")
+        print(f"DEBUG: AI Full Name: {ai_full_name}")
+        
+        if ai_first_name:
+            processed_lead.first_name = ai_first_name
+            processed_lead.extracted_fields.append("first_name")
+        if ai_last_name:
+            processed_lead.last_name = ai_last_name
+            processed_lead.extracted_fields.append("last_name")
+        if ai_first_name and ai_last_name:
+            processed_lead.full_name = f"{ai_first_name} {ai_last_name}"
+            processed_lead.extracted_fields.append("full_name")
+        elif ai_full_name:
+            processed_lead.full_name = ai_full_name
+            processed_lead.extracted_fields.append("full_name")
+        
+        # If no AI results for names, try regex patterns
+        if not processed_lead.first_name and not processed_lead.last_name:
+            name_patterns = [
+                r'^([A-Z][a-z]+)\s+([A-Z][a-z]+)',  # First Last at start
+                r'([A-Z][a-z]+)\s+([A-Z][a-z]+)(?:\s*,|\s*-|\s*@)',  # First Last before punctuation
+            ]
+            
+            for pattern in name_patterns:
+                match = re.search(pattern, raw_lead.raw_data)
+                if match:
+                    processed_lead.first_name = match.group(1)
+                    processed_lead.last_name = match.group(2)
+                    processed_lead.full_name = f"{match.group(1)} {match.group(2)}"
+                    processed_lead.extracted_fields.extend(["first_name", "last_name", "full_name"])
                     break
+        
+        # Use AI results for company/title if available
+        # Try multiple formats: snake_case, Title Case, and nested with 'Value'
+        ai_title = (validated_data.get('job_title') or 
+                   validated_data.get('Job Title') or 
+                   validated_data.get('Job Title', {}).get('Value'))
+        
+        ai_company = (validated_data.get('company_name') or 
+                     validated_data.get('Company Name') or 
+                     validated_data.get('Company Name', {}).get('Value'))
+        
+        print(f"DEBUG: AI Title: {ai_title}")
+        print(f"DEBUG: AI Company: {ai_company}")
+        
+        if ai_title:
+            processed_lead.title = ai_title
+            processed_lead.extracted_fields.append("title")
+        if ai_company:
+            processed_lead.company = ai_company
+            processed_lead.extracted_fields.append("company")
+        
+        # If no AI results for company/title, try regex patterns
+        if not processed_lead.title or not processed_lead.company:
+            title_company_patterns = [
+                r'([A-Z][a-zA-Z\s]+)\s+at\s+([A-Z][a-zA-Z\s&.,]+)',  # Title at Company
+                r'([A-Z][a-zA-Z\s]+)\s+@\s+([A-Z][a-zA-Z\s&.,]+)',   # Title @ Company
+                r'([A-Z][a-zA-Z\s]+)\s*,\s*([A-Z][a-zA-Z\s&.,]+)',   # Title, Company
+            ]
+            
+            for pattern in title_company_patterns:
+                match = re.search(pattern, raw_lead.raw_data)
+                if match and not processed_lead.title:
+                    potential_title = match.group(1).strip()
+                    potential_company = match.group(2).strip()
+                    
+                    # Basic validation - titles usually contain certain words
+                    title_indicators = ['CEO', 'CTO', 'VP', 'Director', 'Manager', 'Lead', 'Head', 'Chief', 'President', 'Founder']
+                    if any(indicator.lower() in potential_title.lower() for indicator in title_indicators):
+                        processed_lead.title = potential_title
+                        processed_lead.company = potential_company
+                        processed_lead.extracted_fields.extend(["title", "company"])
+                        break
         
         # Process Apollo-specific data
         if raw_lead.metadata:

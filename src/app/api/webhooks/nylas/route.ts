@@ -266,7 +266,13 @@ async function processEvent(delta: any, supabase: any) {
           summary: analysis.summary,
           next_step_prompt: analysis.nextStepPrompt,
           raw_response: analysis,
-          sender_email: senderEmail
+          raw_email_data: messageDetails, // Store complete email data
+          sender_email: senderEmail,
+          // Enhanced fields for better inbox functionality
+          conversation_id: messageDetails.data.thread_id || message_id,
+          priority: analysis.priority || 'medium',
+          lead_temperature: analysis.lead_temperature || 'warm',
+          email_headers: messageDetails.data.headers || null
         });
 
         if (insertError) {

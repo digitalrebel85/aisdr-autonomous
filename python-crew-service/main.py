@@ -6,6 +6,10 @@ import json
 from datetime import datetime
 from supabase import create_client, Client
 
+# Load environment variables from parent directory (where .env files are located)
+load_dotenv(dotenv_path='../.env')
+load_dotenv(dotenv_path='../.env.local')
+
 # LLM Configuration
 from langchain_deepseek import ChatDeepSeek
 from langchain_openai import ChatOpenAI
@@ -360,7 +364,7 @@ async def enrich_lead(request: LeadEnrichmentRequest):
         print(f"--- ENRICHMENT RESULT ---")
         print(result.raw)
         
-        # Parse the result
+        # Parse the lead enrichment result
         try:
             enriched_data = json.loads(result.raw)
             
@@ -382,6 +386,57 @@ async def enrich_lead(request: LeadEnrichmentRequest):
                 "error": "Failed to parse enrichment result as JSON",
                 "enrichment_timestamp": json.loads(json.dumps(datetime.now(), default=str))
             }
+        
+        # --- COMPANY PROFILE ENRICHMENT ---
+        company_profile_data = {}
+        if request.company and request.company_domain:
+            try:
+                print(f"--- ENRICHING COMPANY PROFILE: {request.company} ---")
+                print(f"Domain: {request.company_domain}")
+                
+                # Create company profile crew with user's API keys
+                company_crew = create_company_profile_crew(
+                    company_data={
+                        'company_name': request.company,
+                        'domain': request.company_domain
+                    },
+                    api_keys=request.api_keys or {}
+                )
+                
+                # Execute company profile enrichment
+                company_inputs = {
+                    "company_name": request.company,
+                    "domain": request.company_domain
+                }
+                
+                print(f"Company profile inputs: {company_inputs}")
+                company_result = company_crew.kickoff(inputs=company_inputs)
+                
+                print(f"--- COMPANY PROFILE RESULT ---")
+                print(company_result.raw)
+                
+                # Parse company profile result
+                try:
+                    company_profile_data = json.loads(company_result.raw)
+                except json.JSONDecodeError:
+                    company_profile_data = {
+                        "raw_output": str(company_result.raw),
+                        "error": "Failed to parse company profile result as JSON"
+                    }
+                    
+            except Exception as e:
+                print(f"Error during company profile enrichment: {e}")
+                company_profile_data = {
+                    "error": f"Company profile enrichment failed: {str(e)}"
+                }
+        else:
+            print("Skipping company profile enrichment - missing company name or domain")
+            company_profile_data = {
+                "error": "Missing company name or domain for company profile enrichment"
+            }
+        
+        # Combine lead and company data
+        enriched_data['company_profile'] = company_profile_data
         
         return enriched_data
         

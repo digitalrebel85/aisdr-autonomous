@@ -43,13 +43,11 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.5 0.2 250); /* ConnectLead Blue #2563EB */
+  --primary: oklch(0.205 0 0); /* ConnectLead Blue #2563EB */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -74,7 +72,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  
+
   /* ConnectLead Custom Colors */
   --connectlead-blue: #2563EB;
   --connectlead-navy: #1E293B;
@@ -84,6 +82,8 @@
   --connectlead-light-gray: #F8FAFC;
   --connectlead-medium-gray: #64748B;
   --connectlead-dark-gray: #334155;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
 }
 
 .dark {

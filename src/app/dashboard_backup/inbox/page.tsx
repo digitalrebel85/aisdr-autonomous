@@ -5,18 +5,27 @@ import { useState, useEffect } from 'react';
 
 // Define types for our data to ensure type safety
 type Lead = {
+  id: string;
   email: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
+  company?: string;
 };
 
 type Reply = {
   id: string;
   grant_id: string;
-  sentiment: string;
-  summary: string;
-  action: string;
-  next_step_prompt: string;
-  leads: Lead[];
+  sentiment: string | null;
+  summary: string | null;
+  action: string | null;
+  next_step_prompt: string | null;
+  sender_email: string | null;
+  lead_id: string | null;
+  message_id: string | null;
+  thread_id: string | null;
+  created_at: string;
+  lead?: Lead;
 };
 
 export default function InboxPage() {
@@ -38,9 +47,9 @@ export default function InboxPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          message_id: reply.id, 
+          message_id: reply.message_id, 
           grant_id: reply.grant_id, 
-          sender_email: reply.leads[0]?.email,
+          sender_email: reply.sender_email || reply.lead?.email,
         }),
       });
 
@@ -65,7 +74,8 @@ export default function InboxPage() {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data, error } = await supabase
+        // First fetch replies
+        const { data: repliesData, error: repliesError } = await supabase
           .from('replies')
           .select(`
             id,
@@ -74,16 +84,43 @@ export default function InboxPage() {
             summary,
             action,
             next_step_prompt,
-            leads ( email, name )
+            sender_email,
+            lead_id,
+            message_id,
+            thread_id,
+            created_at
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching replies:', error);
-        } else {
-          setReplies(data as Reply[]);
+        if (repliesError) {
+          console.error('Error fetching replies:', repliesError);
+          setReplies([]);
+          setIsLoading(false);
+          return;
         }
+
+        // Then fetch lead data for each reply
+        const repliesWithLeads = await Promise.all(
+          (repliesData || []).map(async (reply) => {
+            if (reply.lead_id) {
+              const { data: leadData } = await supabase
+                .from('leads')
+                .select('id, email, name, first_name, last_name, company')
+                .eq('id', reply.lead_id)
+                .single();
+              
+              return { ...reply, lead: leadData };
+            }
+            return reply;
+          })
+        );
+
+        setReplies(repliesWithLeads as Reply[]);
+        const data = repliesWithLeads;
+        const error = null;
+
+        // Data is already set above
       }
       setIsLoading(false);
     };
@@ -91,7 +128,8 @@ export default function InboxPage() {
     fetchReplies();
   }, [supabase]);
 
-  const getSentimentClass = (sentiment: string) => {
+  const getSentimentClass = (sentiment: string | null) => {
+    if (!sentiment) return 'bg-gray-500';
     switch (sentiment.toLowerCase()) {
       case 'positive': return 'bg-green-500';
       case 'neutral': return 'bg-gray-500';
@@ -115,20 +153,23 @@ export default function InboxPage() {
             <div key={reply.id} className="bg-gray-800 p-6 rounded-lg shadow-md">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold">{reply.leads[0]?.name || 'Unknown Sender'}</h2>
-                  <p className="text-sm text-gray-400">{reply.leads[0]?.email}</p>
+                  <h2 className="text-xl font-bold">{reply.lead?.name || reply.lead?.first_name + ' ' + reply.lead?.last_name || 'Unknown Sender'}</h2>
+                  <p className="text-sm text-gray-400">{reply.sender_email || reply.lead?.email}</p>
+                  {reply.lead?.company && (
+                    <p className="text-sm text-gray-500">{reply.lead.company}</p>
+                  )}
                 </div>
                 <span className={`px-3 py-1 text-sm font-semibold text-white rounded-full ${getSentimentClass(reply.sentiment)}`}>
-                  {reply.sentiment}
+                  {reply.sentiment || 'Unknown'}
                 </span>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-700">
                 <p className="text-gray-300 font-semibold">Summary:</p>
-                <p className="italic text-gray-400">{reply.summary}</p>
+                <p className="italic text-gray-400">{reply.summary || 'No summary available'}</p>
               </div>
               <div className="mt-4">
                 <p className="text-gray-300 font-semibold">Suggested Action:</p>
-                <p className="text-gray-400">{reply.action}</p>
+                <p className="text-gray-400">{reply.action || 'No action suggested'}</p>
               </div>
               <div className="mt-4 p-4 bg-gray-900 rounded">
                 <p className="text-gray-300 font-semibold">AI Prompt for Next Step:</p>

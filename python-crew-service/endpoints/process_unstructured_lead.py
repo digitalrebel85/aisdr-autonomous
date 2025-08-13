@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime
 
-from agents.lead_processing_agent import RawLeadInput, ProcessedLead, create_lead_processing_crew
+from agents.lead_processing_agent import RawLeadInput, ProcessedLead, create_lead_processing_crew, process_raw_lead_data
 
 router = APIRouter()
 
@@ -86,63 +86,42 @@ async def process_unstructured_lead(request: UnstructuredLeadRequest):
             notes=request.metadata.get('user_notes', '')
         )
         
-        # Create and run the lead processing crew
-        crew = create_lead_processing_crew()
+        # Process using the lead processing agent
+        processed_lead = process_raw_lead_data(raw_input)
         
-        # Execute the crew with the raw input
-        result = crew.kickoff(inputs={
-            'raw_data': raw_input.raw_data,
-            'metadata': raw_input.metadata,
-            'source': raw_input.source,
-            'notes': raw_input.notes
-        })
-        
-        # Parse the result (should be JSON from the agent)
-        if isinstance(result, str):
-            try:
-                processed_data = json.loads(result)
-            except json.JSONDecodeError:
-                # If not JSON, treat as plain text and extract what we can
-                processed_data = extract_basic_info_fallback(request.raw_data)
-                processed_data['processing_notes'].append("AI returned non-JSON response, used fallback extraction")
-        else:
-            processed_data = result
-        
-        # Create response with all extracted data
+        # Create response with all extracted data from ProcessedLead object
         response = UnstructuredLeadResponse(
             # Core contact info
-            first_name=processed_data.get('first_name'),
-            last_name=processed_data.get('last_name'),
-            full_name=processed_data.get('full_name'),
-            email=processed_data.get('email'),
-            phone=processed_data.get('phone'),
+            first_name=processed_lead.first_name,
+            last_name=processed_lead.last_name,
+            full_name=processed_lead.full_name,
+            email=processed_lead.email,
+            phone=processed_lead.phone,
             
             # Professional info
-            title=processed_data.get('title'),
-            company=processed_data.get('company'),
-            company_domain=processed_data.get('company_domain'),
-            location=processed_data.get('location'),
-            industry=processed_data.get('industry'),
-            company_size=processed_data.get('company_size'),
-            linkedin_url=processed_data.get('linkedin_url'),
+            title=processed_lead.title,
+            company=processed_lead.company,
+            company_domain=processed_lead.company_domain,
+            location=processed_lead.location,
+            industry=processed_lead.industry,
+            company_size=processed_lead.company_size,
+            linkedin_url=processed_lead.linkedin_url,
             
             # Business intelligence
-            pain_points=processed_data.get('pain_points', []),
-            interests=processed_data.get('interests', []),
-            lead_temperature=processed_data.get('lead_temperature', 'warm'),
-            tech_stack=processed_data.get('tech_stack', []),
-            funding_stage=processed_data.get('funding_stage'),
-            business_context=processed_data.get('business_context', {}),
-            email_context=processed_data.get('email_context', {}),
+            pain_points=processed_lead.pain_points or [],
+            interests=processed_lead.interests or [],
+            lead_temperature=processed_lead.lead_temperature or 'warm',
+            tech_stack=processed_lead.tech_stack or [],
+            funding_stage=processed_lead.funding_stage,
+            business_context=processed_lead.business_context or {},
+            email_context=processed_lead.email_context or {},
             
             # Processing metadata
-            confidence_score=processed_data.get('confidence_score', 0.0),
-            extracted_fields=processed_data.get('extracted_fields', []),
-            missing_fields=processed_data.get('missing_fields', []),
-            processing_notes=processed_data.get('processing_notes', []),
-            raw_input=request.raw_data,
-            source=request.metadata.get('source', 'unstructured_input'),
-            processed_at=datetime.utcnow().isoformat()
+            confidence_score=processed_lead.confidence_score,
+            extracted_fields=processed_lead.extracted_fields or [],
+            missing_fields=processed_lead.missing_fields or [],
+            processing_notes=processed_lead.processing_notes or [],
+            raw_input=processed_lead.raw_input
         )
         
         logging.info(f"✅ Successfully processed unstructured lead. Confidence: {response.confidence_score}")

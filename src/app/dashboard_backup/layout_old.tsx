@@ -1,10 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import SignOutButton from '@/components/SignOutButton';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import DashboardLayout from '@/components/DashboardLayout';
 
 // Icon components for each section
 const Icons = {

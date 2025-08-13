@@ -1,284 +1,364 @@
-// src/app/dashboard/page.tsx
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { 
+  Users, 
+  Mail, 
+  MessageSquare, 
+  TrendingUp, 
+  Plus,
+  Bot,
+  Target,
+  Calendar,
+  BarChart3,
+  Clock,
+  CheckCircle2,
+  AlertTriangle
+} from 'lucide-react';
 import Link from 'next/link';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-// Dashboard Metrics Cards
-const MetricCard = ({ title, value, change, icon, color, href }: {
-  title: string;
-  value: string | number;
-  change?: string;
-  icon: React.ReactNode;
-  color: string;
-  href?: string;
-}) => {
-  const CardContent = (
-    <div className={`bg-white rounded-lg shadow-sm border-l-4 ${color} p-6 hover:shadow-md transition-shadow`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {change && (
-            <p className={`text-sm ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-              {change} from last month
-            </p>
-          )}
-        </div>
-        <div className={`p-3 rounded-full ${color.replace('border-l-', 'bg-').replace('-500', '-100')}`}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
+interface DashboardStats {
+  totalLeads: number;
+  enrichedLeads: number;
+  pendingLeads: number;
+  highScoreLeads: number;
+  totalEmails: number;
+  repliesReceived: number;
+  responseRate: number;
+  activeOffers: number;
+  activePersonas: number;
+}
 
-  return href ? <Link href={href}>{CardContent}</Link> : CardContent;
-};
-
-// Quick Action Cards
-const QuickActionCard = ({ title, description, icon, href, color }: {
+interface RecentActivity {
+  id: string;
+  type: 'lead_added' | 'lead_enriched' | 'email_received' | 'offer_created';
   title: string;
   description: string;
-  icon: React.ReactNode;
-  href: string;
-  color: string;
-}) => (
-  <Link href={href}>
-    <div className={`bg-white rounded-lg shadow-sm border-l-4 ${color} p-6 hover:shadow-md transition-all hover:scale-105`}>
-      <div className="flex items-start space-x-4">
-        <div className={`p-3 rounded-full ${color.replace('border-l-', 'bg-').replace('-500', '-100')}`}>
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-600 mt-1">{description}</p>
-        </div>
-      </div>
-    </div>
-  </Link>
-);
-
-// Recent Activity Item
-const ActivityItem = ({ type, description, time, status }: {
-  type: string;
-  description: string;
-  time: string;
-  status: 'success' | 'pending' | 'error';
-}) => {
-  const statusColors = {
-    success: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800'
-  };
-
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-      <div className="flex-1">
-        <p className="text-sm font-medium text-gray-900">{description}</p>
-        <p className="text-xs text-gray-500">{time}</p>
-      </div>
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[status]}`}>
-        {status}
-      </span>
-    </div>
-  );
-};
+  timestamp: string;
+  status?: 'success' | 'pending' | 'warning';
+}
 
 export default function DashboardPage() {
-  const [metrics, setMetrics] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     totalLeads: 0,
-    activeOutreach: 0,
-    bookingsThisMonth: 0,
+    enrichedLeads: 0,
+    pendingLeads: 0,
+    highScoreLeads: 0,
+    totalEmails: 0,
+    repliesReceived: 0,
     responseRate: 0,
-    conversionRate: 0,
-    aiInboxUnread: 0
+    activeOffers: 0,
+    activePersonas: 0
   });
-  const [recentActivity, setRecentActivity] = useState([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
-    const supabase = createClient();
-    
     try {
-      // Fetch metrics (simplified for demo)
-      const { data: leads } = await supabase.from('leads').select('id');
-      const { data: campaigns } = await supabase.from('outreach_campaigns').select('id').eq('status', 'active');
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id')
-        .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-      
-      setMetrics({
-        totalLeads: leads?.length || 0,
-        activeOutreach: campaigns?.length || 0,
-        bookingsThisMonth: bookings?.length || 0,
-        responseRate: 24.5, // Calculate from actual data
-        conversionRate: 8.2, // Calculate from actual data
-        aiInboxUnread: 12 // Calculate from actual data
+      // Mock data for now - replace with actual Supabase queries
+      setStats({
+        totalLeads: 47,
+        enrichedLeads: 32,
+        pendingLeads: 8,
+        highScoreLeads: 12,
+        totalEmails: 156,
+        repliesReceived: 23,
+        responseRate: 14.7,
+        activeOffers: 3,
+        activePersonas: 5
       });
-      
-      setLoading(false);
+
+      setRecentActivity([
+        {
+          id: '1',
+          type: 'lead_enriched',
+          title: 'Lead Enriched',
+          description: 'Alex Carter from Acme Inc has been enriched with AI data',
+          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+          status: 'success'
+        },
+        {
+          id: '2',
+          type: 'email_received',
+          title: 'New Reply',
+          description: 'Sarah Wilson replied to your outreach email',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          status: 'success'
+        },
+        {
+          id: '3',
+          type: 'lead_added',
+          title: 'New Lead Added',
+          description: 'Chris Hall from NovaWorks added to database',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+          status: 'pending'
+        }
+      ]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'lead_added':
+        return <Users className="w-4 h-4 text-blue-600" />;
+      case 'lead_enriched':
+        return <Bot className="w-4 h-4 text-green-600" />;
+      case 'email_received':
+        return <Mail className="w-4 h-4 text-purple-600" />;
+      case 'offer_created':
+        return <Target className="w-4 h-4 text-orange-600" />;
+      default:
+        return <CheckCircle2 className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'success':
+        return <Badge className="bg-green-50 text-green-700 border border-green-200">Success</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200">Pending</Badge>;
+      case 'warning':
+        return <Badge className="bg-orange-50 text-orange-700 border border-orange-200">Warning</Badge>;
+      default:
+        return null;
     }
   };
 
   if (loading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded"></div>
-          ))}
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">AISDR Dashboard</h1>
-          <p className="mt-2 text-gray-600">Monitor your AI-powered sales development performance</p>
-        </div>
-        <div className="flex space-x-3">
-          <Link href="/dashboard/leads" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            + Add Leads
-          </Link>
-          <Link href="/dashboard/automated-outreach" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-            + New Campaign
-          </Link>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <MetricCard
-          title="Total Leads"
-          value={metrics.totalLeads}
-          change="+12%"
-          icon={<svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
-          color="border-l-blue-500"
-          href="/dashboard/leads"
-        />
-        <MetricCard
-          title="Active Outreach"
-          value={metrics.activeOutreach}
-          change="+5%"
-          icon={<svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg>}
-          color="border-l-green-500"
-          href="/dashboard/automated-outreach"
-        />
-        <MetricCard
-          title="Bookings This Month"
-          value={metrics.bookingsThisMonth}
-          change="+18%"
-          icon={<svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path></svg>}
-          color="border-l-purple-500"
-          href="/dashboard/bookings"
-        />
-        <MetricCard
-          title="Response Rate"
-          value={`${metrics.responseRate}%`}
-          change="+2.3%"
-          icon={<svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z" clipRule="evenodd"></path></svg>}
-          color="border-l-yellow-500"
-          href="/dashboard/analytics"
-        />
-        <MetricCard
-          title="Conversion Rate"
-          value={`${metrics.conversionRate}%`}
-          change="+1.1%"
-          icon={<svg className="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>}
-          color="border-l-indigo-500"
-          href="/dashboard/analytics"
-        />
-        <MetricCard
-          title="AI Inbox Unread"
-          value={metrics.aiInboxUnread}
-          icon={<svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>}
-          color="border-l-red-500"
-          href="/dashboard/inbox"
-        />
-      </div>
-
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="space-y-4">
-            <QuickActionCard
-              title="Import Leads"
-              description="Upload CSV or connect CRM to import new leads"
-              icon={<svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.293 5.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>}
-              href="/dashboard/leads"
-              color="border-l-blue-500"
-            />
-            <QuickActionCard
-              title="Create Booking Link"
-              description="Set up new calendar booking link for lead conversion"
-              icon={<svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path></svg>}
-              href="/dashboard/bookings"
-              color="border-l-green-500"
-            />
-            <QuickActionCard
-              title="Train AI Responses"
-              description="Improve AI reply quality with custom training"
-              icon={<svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd"></path></svg>}
-              href="/dashboard/inbox"
-              color="border-l-purple-500"
-            />
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your AI SDR.</p>
           </div>
+          <div className="flex items-center space-x-3">
+            <Link href="/leads">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Leads
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Users className="w-4 h-4 mr-2 text-blue-600" />
+                  Total Leads
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.totalLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Bot className="w-4 h-4 mr-2 text-green-600" />
+                  Enriched Leads
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.enrichedLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/inbox">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Mail className="w-4 h-4 mr-2 text-purple-600" />
+                  Email Replies
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.repliesReceived.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                <TrendingUp className="w-4 h-4 mr-2 text-orange-600" />
+                Response Rate
+              </CardTitle>
+              <CardDescription className="text-2xl font-bold text-gray-900">
+                {stats.responseRate}%
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
+                  Pending Enrichment
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.pendingLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <BarChart3 className="w-4 h-4 mr-2 text-red-600" />
+                  High Score Leads
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.highScoreLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/offers">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Target className="w-4 h-4 mr-2 text-indigo-600" />
+                  Active Offers
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.activeOffers.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/offers">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Users className="w-4 h-4 mr-2 text-pink-600" />
+                  Active Personas
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.activePersonas.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
         </div>
 
         {/* Recent Activity */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <ActivityItem
-              type="outreach"
-              description="Campaign 'Q1 Tech Outreach' sent to 45 leads"
-              time="2 hours ago"
-              status="success"
-            />
-            <ActivityItem
-              type="booking"
-              description="New booking scheduled with John Smith"
-              time="4 hours ago"
-              status="success"
-            />
-            <ActivityItem
-              type="ai_reply"
-              description="AI responded to 8 lead inquiries"
-              time="6 hours ago"
-              status="success"
-            />
-            <ActivityItem
-              type="follow_up"
-              description="Strategic follow-up sequence triggered"
-              time="8 hours ago"
-              status="pending"
-            />
-            <ActivityItem
-              type="integration"
-              description="Email sync with Gmail completed"
-              time="1 day ago"
-              status="success"
-            />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-blue-600" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>Latest updates from your AI SDR system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-shrink-0 mt-1">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                        {getStatusBadge(activity.status)}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-green-600" />
+                Quick Actions
+              </CardTitle>
+              <CardDescription>Common tasks and shortcuts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href="/leads">
+                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                  <Users className="w-4 h-4 mr-2" />
+                  View All Leads
+                </Button>
+              </Link>
+              <Link href="/inbox">
+                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Check Inbox
+                </Button>
+              </Link>
+              <Link href="/offers">
+                <Button className="w-full justify-start bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200">
+                  <Target className="w-4 h-4 mr-2" />
+                  Manage Offers
+                </Button>
+              </Link>
+              <Link href="/calendar">
+                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  View Calendar
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
