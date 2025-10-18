@@ -34,6 +34,9 @@ from routes.json_lead_upload import router as json_lead_router
 # Unstructured Lead Processing
 from endpoints.process_unstructured_lead import router as unstructured_lead_router
 
+# Apollo Discovery
+from endpoints.apollo_discovery import router as apollo_discovery_router
+
 # Strategic Follow-up Agent
 from agents.strategic_followup_agent import (
     StrategicFollowUpInput, StrategicFollowUpOutput, generate_strategic_followup
@@ -504,9 +507,52 @@ async def company_profile(request: CompanyProfileRequest):
         print(f"Error during company profiling: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Apollo Discovery
+from agents.apollo_discovery_agent import create_apollo_discovery_agent
+
+@app.post("/apollo/discover")
+async def apollo_discover(request: dict):
+    """Discover leads using Apollo API based on ICP criteria - Direct execution"""
+    try:
+        print(f"--- APOLLO LEAD DISCOVERY (DIRECT) ---")
+        print(f"ICP Criteria: {request.get('icp_criteria', {})}")
+        print(f"Max Results: {request.get('max_results', 100)}")
+        
+        icp_criteria = request.get('icp_criteria', {})
+        max_results = request.get('max_results', 100)
+        session_id = request.get('session_id')
+        
+        # Create Apollo discovery agent and execute directly
+        discovery_agent = create_apollo_discovery_agent(llm)
+        
+        # Execute direct discovery (bypassing CrewAI to avoid hallucination)
+        discovery_data = discovery_agent.discover_leads(icp_criteria, max_results)
+        
+        print(f"--- APOLLO DISCOVERY RESULT ---")
+        print(f"Success: {discovery_data.get('success')}")
+        print(f"Total discovered: {discovery_data.get('total_discovered', 0)}")
+        print(f"Query used: {discovery_data.get('query_used', {})}")
+        
+        # Add metadata about the discovery process
+        discovery_data['session_id'] = session_id
+        discovery_data['discovery_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
+        discovery_data['icp_criteria_used'] = icp_criteria
+        
+        return discovery_data
+            
+    except Exception as e:
+        print(f"Error during Apollo discovery: {e}")
+        return {
+            "success": False,
+            "error": f"Apollo discovery failed: {str(e)}",
+            "total_discovered": 0,
+            "leads": []
+        }
+
 # Register routers
 app.include_router(json_lead_router)
 app.include_router(unstructured_lead_router)
+app.include_router(apollo_discovery_router)
 
 @app.get("/")
 async def root():

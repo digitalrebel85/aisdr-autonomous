@@ -45,7 +45,11 @@ const navigation: NavigationItem[] = [
     badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     children: [
       { name: 'All Leads', href: '/leads', icon: Users },
-      { name: 'Add Lead', href: '/leads/add', icon: Users },
+      {
+        name: 'Lead Discovery',
+        href: '/leads/discovery',
+        icon: Target,
+      },
       { name: 'Import CSV', href: '/leads/csv-upload', icon: FileText },
       { name: 'AI Import', href: '/leads/json-upload', icon: Bot },
     ]
@@ -56,6 +60,13 @@ const navigation: NavigationItem[] = [
     icon: Bot,
     badge: '3',
     badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+  },
+  {
+    name: 'ICP Profiles',
+    href: '/icp',
+    icon: Building2,
+    badge: 'New',
+    badgeColor: 'bg-green-100 text-green-800 border-green-200',
   },
   {
     name: 'Offers & Personas',

@@ -6,9 +6,11 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
+    let response = NextResponse.next()
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,15 +20,17 @@ export async function GET(request: NextRequest) {
             return request.cookies.get(name)?.value
           },
           set(name: string, value: string, options) {
-            request.cookies.set({ name, value, ...options })
+            response.cookies.set({ name, value, ...options })
           },
           remove(name: string, options) {
-            request.cookies.set({ name, value: '', ...options })
+            response.cookies.set({ name, value: '', ...options })
           },
         },
       }
     )
+    
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
     if (!error && data.user) {
       // Check if user needs onboarding
       const { data: profile } = await supabase
@@ -44,12 +48,13 @@ export async function GET(request: NextRequest) {
             .insert([{ id: data.user.id }])
         }
         
-        // Redirect to onboarding unless specifically going elsewhere
-        const redirectTo = next === '/' ? '/onboarding' : next
-        return NextResponse.redirect(`${origin}${redirectTo}`)
+        // Redirect to onboarding for new users
+        response = NextResponse.redirect(`${origin}/onboarding`)
+        return response
       }
       
-      return NextResponse.redirect(`${origin}${next}`)
+      response = NextResponse.redirect(`${origin}${next}`)
+      return response
     }
   }
 

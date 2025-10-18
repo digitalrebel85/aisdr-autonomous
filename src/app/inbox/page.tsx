@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -346,9 +345,8 @@ export default function InboxPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="p-6">
-          <div className="animate-pulse">
+      <div className="p-6">
+        <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               {[...Array(4)].map((_, i) => (
@@ -362,13 +360,11 @@ export default function InboxPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Inbox</h1>
         <Button onClick={fetchEmailThreads} className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -599,6 +595,5 @@ export default function InboxPage() {
         </div>
       )}
       </div>
-    </DashboardLayout>
   );
 }

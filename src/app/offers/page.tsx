@@ -14,29 +14,59 @@ import {
   Edit, 
   Trash2,
   Clock,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
 
 interface Offer {
   id: string;
   name: string;
   description: string;
+  company_description: string;
+  product_service_name: string;
   value_proposition: string;
   call_to_action: string;
   hook_snippet: string;
+  pain_points: string[];
+  benefits: string[];
+  proof_points: string[];
+  email_example: string;
+  excluded_terms: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface Persona {
+  id: string;
+  name: string;
+  description: string;
+  title_patterns: string[];
+  company_size_min?: number;
+  company_size_max?: number;
+  company_size_text?: string;
+  industries: string[];
+  pain_points: string[];
+  messaging_hooks: string[];
+  tone: 'professional' | 'casual' | 'technical' | 'friendly' | 'formal';
+  is_default: boolean;
+  usage_count: number;
+  conversion_rate: number;
+  effectiveness_score: number;
   created_at: string;
   updated_at: string;
 }
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreatePersona, setShowCreatePersona] = useState(false);
 
   const supabase = createClientComponentClient();
 
   useEffect(() => {
     fetchOffers();
+    fetchPersonas();
   }, []);
 
   const fetchOffers = async () => {
@@ -51,9 +81,16 @@ export default function OffersPage() {
           id: offer.id.toString(),
           name: offer.name,
           description: offer.description || '',
+          company_description: offer.company_description || '',
+          product_service_name: offer.product_service_name || '',
           value_proposition: offer.value_proposition || '',
           call_to_action: offer.call_to_action || '',
           hook_snippet: offer.hook_snippet || '',
+          pain_points: offer.pain_points || [],
+          benefits: offer.benefits || [],
+          proof_points: offer.proof_points || [],
+          email_example: offer.email_example || '',
+          excluded_terms: offer.excluded_terms || [],
           created_at: offer.created_at,
           updated_at: offer.updated_at,
         }));
@@ -70,19 +107,31 @@ export default function OffersPage() {
     }
   };
 
+  const fetchPersonas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('personas')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPersonas(data || []);
+    } catch (error) {
+      console.error('Error fetching personas:', error);
+      setPersonas([]);
+    }
+  };
+
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-6">
+    <div className="p-6">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -109,7 +158,7 @@ export default function OffersPage() {
               </TabsTrigger>
               <TabsTrigger value="personas">
                 <Users className="w-4 h-4 mr-2" />
-                Personas (Coming Soon)
+                Personas ({personas.length})
               </TabsTrigger>
             </TabsList>
           </div>
@@ -222,39 +271,182 @@ export default function OffersPage() {
             </div>
           </TabsContent>
 
-          {/* Personas Tab - Coming Soon */}
+          {/* Personas Tab */}
           <TabsContent value="personas">
-            <div className="flex flex-col items-center justify-center py-16 space-y-6">
-              <div className="text-center space-y-4">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-12 h-12 text-blue-600" />
-                </div>
+            <div className="space-y-6">
+              {/* Personas Header */}
+              <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Personas Coming Soon</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    We're building intelligent persona matching to automatically personalize your outreach based on lead characteristics and proven effectiveness.
-                  </p>
+                  <h2 className="text-xl font-semibold text-gray-900">AI Personas</h2>
+                  <p className="text-gray-600 text-sm">Automatically match leads to personas for personalized outreach</p>
                 </div>
+                <Button onClick={() => setShowCreatePersona(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Persona
+                </Button>
               </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-lg">
-                <div className="flex items-start space-x-3">
-                  <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-900 mb-1">What's Coming</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Automatic persona matching for leads</li>
-                      <li>• AI-generated messaging hooks</li>
-                      <li>• Performance tracking & optimization</li>
-                      <li>• Dynamic personalization at scale</li>
-                    </ul>
+
+              {/* Personas Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="shadow-sm border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-purple-600">{personas.length}</div>
+                    <div className="text-sm text-gray-600">Total Personas</div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-green-600">
+                      {personas.filter(p => p.is_default).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Default Personas</div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {personas.reduce((sum, p) => sum + p.usage_count, 0)}
+                    </div>
+                    <div className="text-sm text-gray-600">Total Usage</div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {personas.length > 0 ? Math.round(personas.reduce((sum, p) => sum + p.effectiveness_score, 0) / personas.length) : 0}%
+                    </div>
+                    <div className="text-sm text-gray-600">Avg Effectiveness</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Personas List */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {personas.map((persona) => (
+                  <Card key={persona.id} className="shadow-sm border-gray-200 hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
+                            {persona.name}
+                            {persona.is_default && (
+                              <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                Default
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription className="text-sm text-gray-600 mt-1">
+                            {persona.description}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={persona.effectiveness_score > 70 ? 'default' : 'secondary'} className="text-xs">
+                          {persona.effectiveness_score}% effective
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Title Patterns */}
+                      {persona.title_patterns.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">Target Titles</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {persona.title_patterns.slice(0, 3).map(title => (
+                              <Badge key={title} variant="outline" className="text-xs bg-gray-50">
+                                {title}
+                              </Badge>
+                            ))}
+                            {persona.title_patterns.length > 3 && (
+                              <Badge variant="outline" className="text-xs bg-gray-50">
+                                +{persona.title_patterns.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Industries */}
+                      {persona.industries.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2 text-sm">Industries</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {persona.industries.slice(0, 2).map(industry => (
+                              <Badge key={industry} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                {industry}
+                              </Badge>
+                            ))}
+                            {persona.industries.length > 2 && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                +{persona.industries.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Messaging Tone */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Tone:</span>
+                        <Badge variant="outline" className="capitalize text-xs">
+                          {persona.tone}
+                        </Badge>
+                      </div>
+
+                      {/* Usage Stats */}
+                      <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <Target className="w-4 h-4 text-purple-500" />
+                          <span>{persona.usage_count} uses</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          <span>{persona.conversion_rate}% conversion</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" variant="secondary" className="bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                          <Button size="sm" variant="secondary" className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                        <Button size="sm" variant="destructive" className="bg-red-50 text-red-700 hover:bg-red-100 border border-red-200">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Empty State */}
+              {personas.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-6">
+                  <div className="text-center space-y-4">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                      <Users className="w-12 h-12 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">No Personas Yet</h3>
+                      <p className="text-gray-600 max-w-md mx-auto">
+                        Create your first persona to start automatically matching leads and personalizing your outreach.
+                      </p>
+                    </div>
                   </div>
+                  <Button onClick={() => setShowCreatePersona(true)} className="bg-purple-600 hover:bg-purple-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Your First Persona
+                  </Button>
                 </div>
-              </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
   );
 }

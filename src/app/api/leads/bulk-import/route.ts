@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/server';
 import { planManager } from '@/lib/plans';
 
 interface LeadInput {
-  name: string;
+  // Legacy format
+  name?: string;
   email: string;
   company?: string;
   title?: string;
@@ -15,20 +16,38 @@ interface LeadInput {
   timezone?: string;
   country?: string;
   city?: string;
+  
+  // New Apollo discovery format
+  first_name?: string;
+  last_name?: string;
+  company_domain?: string;
+  phone?: string;
+  linkedin_url?: string;
+  location?: string;
+  industry?: string;
+  company_size?: string;
+  enrichment_status?: string;
+  enriched_data?: any;
 }
 
 interface LeadRecord {
   user_id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   company: string;
-  title: string;
-  pain_points: string[];
-  offer: string;
-  cta: string;
-  timezone: string;
-  country: string;
-  city: string;
+  title?: string;
+  company_domain?: string;
+  phone?: string;
+  linkedin_url?: string;
+  location?: string;
+  industry?: string;
+  company_size?: string;
+  enrichment_status?: string;
+  enriched_data?: any;
+  pain_points?: string[];
+  offer?: string;
+  cta?: string;
   created_at: string;
 }
 
@@ -74,10 +93,14 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < leads.length; i++) {
       const lead = leads[i];
       
-      if (!lead.email || !lead.name) {
+      // Handle both legacy (name) and new (first_name/last_name) formats
+      const firstName = lead.first_name || lead.name?.split(' ')[0] || '';
+      const lastName = lead.last_name || lead.name?.split(' ').slice(1).join(' ') || '';
+      
+      if (!lead.email || (!firstName && !lead.name)) {
         errors.push({
           index: i,
-          error: 'Missing required fields: name, email',
+          error: 'Missing required fields: email and name/first_name',
           lead: lead
         });
         continue;
@@ -96,16 +119,22 @@ export async function POST(request: NextRequest) {
 
       validLeads.push({
         user_id: user.id,
-        name: lead.name,
+        first_name: firstName,
+        last_name: lastName,
         email: lead.email,
         company: lead.company || '',
-        title: lead.title || '',
+        title: lead.title,
+        company_domain: lead.company_domain,
+        phone: lead.phone,
+        linkedin_url: lead.linkedin_url,
+        location: lead.location,
+        industry: lead.industry,
+        company_size: lead.company_size,
+        enrichment_status: lead.enrichment_status || 'pending',
+        enriched_data: lead.enriched_data,
         pain_points: Array.isArray(lead.pain_points) ? lead.pain_points : [],
-        offer: lead.offer || '',
-        cta: lead.cta || '',
-        timezone: lead.timezone || 'America/New_York',
-        country: lead.country || '',
-        city: lead.city || '',
+        offer: lead.offer,
+        cta: lead.cta,
         created_at: new Date().toISOString()
       });
     }

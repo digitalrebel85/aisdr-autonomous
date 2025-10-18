@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Users, 
   Mail, 
+  MessageSquare, 
   TrendingUp, 
   Plus,
   Bot,
@@ -16,8 +17,7 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Home,
-  ArrowRight
+  Home
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -26,10 +26,12 @@ interface DashboardStats {
   totalLeads: number;
   enrichedLeads: number;
   pendingLeads: number;
+  highScoreLeads: number;
   totalEmails: number;
   repliesReceived: number;
   responseRate: number;
   activeOffers: number;
+  activePersonas: number;
 }
 
 interface RecentActivity {
@@ -46,10 +48,12 @@ export default function DashboardPage() {
     totalLeads: 0,
     enrichedLeads: 0,
     pendingLeads: 0,
+    highScoreLeads: 0,
     totalEmails: 0,
     repliesReceived: 0,
     responseRate: 0,
-    activeOffers: 0
+    activeOffers: 0,
+    activePersonas: 0
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,10 +71,12 @@ export default function DashboardPage() {
         totalLeads: 47,
         enrichedLeads: 32,
         pendingLeads: 8,
+        highScoreLeads: 12,
         totalEmails: 156,
         repliesReceived: 23,
         responseRate: 14.7,
-        activeOffers: 3
+        activeOffers: 3,
+        activePersonas: 5
       });
 
       setRecentActivity([
@@ -148,7 +154,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div key={i} className="h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -173,7 +179,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <Link href="/leads">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Leads
               </Button>
@@ -183,110 +189,119 @@ export default function DashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/leads">
-            <Card className="shadow-sm border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Users className="w-4 h-4 mr-2 text-blue-600" />
-                    Total Leads
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Users className="w-4 h-4 mr-2 text-blue-600" />
+                  Total Leads
                 </CardTitle>
-                <CardDescription className="text-3xl font-bold text-gray-900 mt-2">
+                <CardDescription className="text-2xl font-bold text-gray-900">
                   {stats.totalLeads.toLocaleString()}
                 </CardDescription>
               </CardHeader>
-            </Card>
-          </Link>
+            </Link>
+          </Card>
 
-          <Link href="/leads">
-            <Card className="shadow-sm border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Bot className="w-4 h-4 mr-2 text-green-600" />
-                    Enriched Leads
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Bot className="w-4 h-4 mr-2 text-green-600" />
+                  Enriched Leads
                 </CardTitle>
-                <CardDescription className="text-3xl font-bold text-gray-900 mt-2">
+                <CardDescription className="text-2xl font-bold text-gray-900">
                   {stats.enrichedLeads.toLocaleString()}
                 </CardDescription>
               </CardHeader>
-            </Card>
-          </Link>
+            </Link>
+          </Card>
 
-          <Link href="/inbox">
-            <Card className="shadow-sm border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/inbox">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Mail className="w-4 h-4 mr-2 text-purple-600" />
-                    Email Replies
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Mail className="w-4 h-4 mr-2 text-purple-600" />
+                  Email Replies
                 </CardTitle>
-                <CardDescription className="text-3xl font-bold text-gray-900 mt-2">
+                <CardDescription className="text-2xl font-bold text-gray-900">
                   {stats.repliesReceived.toLocaleString()}
                 </CardDescription>
               </CardHeader>
-            </Card>
-          </Link>
+            </Link>
+          </Card>
 
-          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-all duration-200">
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-2 text-orange-600" />
                 Response Rate
               </CardTitle>
-              <CardDescription className="text-3xl font-bold text-orange-600 mt-2">
+              <CardDescription className="text-2xl font-bold text-gray-900">
                 {stats.responseRate}%
               </CardDescription>
             </CardHeader>
           </Card>
-        </div>
 
-        {/* Quick Actions & Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Quick Actions */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
-                Quick Actions
-              </CardTitle>
-              <CardDescription>Common tasks and shortcuts</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/leads">
-                <Button variant="outline" className="w-full justify-start hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors">
-                  <Users className="w-4 h-4 mr-2" />
-                  View All Leads
-                </Button>
-              </Link>
-              <Link href="/inbox">
-                <Button variant="outline" className="w-full justify-start hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Check Inbox
-                </Button>
-              </Link>
-              <Link href="/offers">
-                <Button variant="outline" className="w-full justify-start hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors">
-                  <Target className="w-4 h-4 mr-2" />
-                  Manage Offers
-                </Button>
-              </Link>
-              <Link href="/calendar">
-                <Button variant="outline" className="w-full justify-start hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  View Calendar
-                </Button>
-              </Link>
-            </CardContent>
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
+                  Pending Enrichment
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.pendingLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
           </Card>
 
-          {/* Recent Activity */}
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/leads">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <BarChart3 className="w-4 h-4 mr-2 text-red-600" />
+                  High Score Leads
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.highScoreLeads.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/offers">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Target className="w-4 h-4 mr-2 text-indigo-600" />
+                  Active Offers
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.activeOffers.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/offers">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Users className="w-4 h-4 mr-2 text-pink-600" />
+                  Active Personas
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900">
+                  {stats.activePersonas.toLocaleString()}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-sm border-gray-200">
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -315,6 +330,42 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-green-600" />
+                Quick Actions
+              </CardTitle>
+              <CardDescription>Common tasks and shortcuts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href="/leads">
+                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                  <Users className="w-4 h-4 mr-2" />
+                  View All Leads
+                </Button>
+              </Link>
+              <Link href="/inbox">
+                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Check Inbox
+                </Button>
+              </Link>
+              <Link href="/offers">
+                <Button className="w-full justify-start bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200">
+                  <Target className="w-4 h-4 mr-2" />
+                  Manage Offers
+                </Button>
+              </Link>
+              <Link href="/calendar">
+                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  View Calendar
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
