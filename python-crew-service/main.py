@@ -27,6 +27,7 @@ from schemas import (
 # Lead Enrichment
 from agents.lead_enrichment_agent import lead_enricher_agent, lead_enrichment_task, create_lead_enrichment_crew, USER_API_KEYS as LEAD_API_KEYS
 from agents.company_profile_agent import create_company_profile_crew, run_company_profile, USER_API_KEYS as COMPANY_API_KEYS
+from agents.website_scraper_agent import run_website_analysis
 from crewai import Crew, Process
 
 # JSON Lead Processing Routes
@@ -82,6 +83,10 @@ class CompanyProfileRequest(BaseModel):
     domain: str
     user_id: Optional[str] = None
     api_keys: Optional[Dict[str, str]] = None
+
+class WebsiteAnalysisRequest(BaseModel):
+    domain: str
+    company_name: Optional[str] = None
 
 # --- FastAPI App Initialization ---
 app = FastAPI(
@@ -493,6 +498,35 @@ async def enrich_lead(request: LeadEnrichmentRequest):
         # Combine lead and company data
         enriched_data['company_profile'] = company_profile_data
         
+        # --- WEBSITE SCRAPING & ANALYSIS ---
+        website_analysis_data = {}
+        
+        if company_domain:
+            try:
+                print(f"--- SCRAPING & ANALYZING WEBSITE: {company_domain} ---")
+                website_analysis_data = run_website_analysis(company_domain, company_name)
+                
+                print(f"--- WEBSITE ANALYSIS RESULT ---")
+                if website_analysis_data.get('analysis'):
+                    print(json.dumps(website_analysis_data['analysis'], indent=2, default=str))
+                else:
+                    print(f"Website analysis failed: {website_analysis_data.get('error')}")
+                    
+            except Exception as e:
+                print(f"Error during website analysis: {e}")
+                website_analysis_data = {
+                    "success": False,
+                    "error": f"Website analysis failed: {str(e)}"
+                }
+        else:
+            print("Skipping website analysis - no company domain available")
+            website_analysis_data = {
+                "success": False,
+                "error": "No company domain available for website analysis"
+            }
+        
+        enriched_data['website_analysis'] = website_analysis_data
+        
         return enriched_data
         
     except Exception as e:
@@ -557,6 +591,26 @@ async def company_profile(request: CompanyProfileRequest):
             
     except Exception as e:
         print(f"Error during company profiling: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analyze-website")
+async def analyze_website(request: WebsiteAnalysisRequest):
+    """Scrape and analyze a company website to extract business intelligence"""
+    try:
+        print(f"--- ANALYZING WEBSITE: {request.domain} ---")
+        
+        result = run_website_analysis(request.domain, request.company_name)
+        
+        if result.get('analysis'):
+            print(f"--- WEBSITE ANALYSIS SUCCESS ---")
+            print(json.dumps(result['analysis'], indent=2, default=str))
+        else:
+            print(f"--- WEBSITE ANALYSIS FAILED: {result.get('error')} ---")
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error during website analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Apollo Discovery

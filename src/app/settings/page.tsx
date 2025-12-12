@@ -250,14 +250,15 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Email Integrations */}
+        <div className="space-y-8">
+          {/* Email & AI Configuration */}
           <SettingsSection
-            title="Email Integrations"
-            description="Connect and manage your email accounts for automated outreach"
+            title="Email & AI Configuration"
+            description="Connect email accounts and configure AI behavior"
             icon={<Mail className="h-5 w-5 text-violet-400" />}
           >
             <div className="space-y-4">
+              {/* Connected Inboxes */}
               {inboxes.map((inbox) => {
                 const isActive = inbox.access_token && inbox.is_active;
                 return (
@@ -285,48 +286,42 @@ export default function SettingsPage() {
                   </Button>
                 </Link>
               </div>
-            </div>
-          </SettingsSection>
 
-          {/* AI Configuration */}
-          <SettingsSection
-            title="AI Configuration"
-            description="Customize AI behavior and response settings"
-            icon={<Bot className="h-5 w-5 text-fuchsia-400" />}
-          >
-            <div className="space-y-4">
-              <SettingsCard
-                icon={<Zap className="w-5 h-5 text-fuchsia-400" />}
-                title="Auto-Response"
-                description="Enable AI to automatically respond to lead inquiries"
-                status={settings.autoResponse ? 'active' : 'inactive'}
-                action={
-                  <button
-                    onClick={() => setSettings(prev => ({ ...prev, autoResponse: !prev.autoResponse }))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.autoResponse ? 'bg-violet-600' : 'bg-gray-600'
-                    }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      settings.autoResponse ? 'translate-x-6' : 'translate-x-1'
-                    }`} />
-                  </button>
-                }
-              />
-              
-              <SettingsCard
-                icon={<Bot className="w-5 h-5 text-emerald-400" />}
-                title="Response Training"
-                description="Train AI with custom responses and tone"
-                action={
-                  <Link href="/dashboard/inbox">
-                    <Button size="sm" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">
-                      <Settings className="w-3 h-3 mr-1" />
-                      Configure
-                    </Button>
-                  </Link>
-                }
-              />
+              {/* AI Configuration */}
+              <div className="pt-4 border-t border-white/5">
+                <h4 className="text-sm font-medium text-gray-400 mb-3">AI Configuration</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-1.5 bg-fuchsia-500/20 rounded-lg">
+                        <Zap className="w-4 h-4 text-fuchsia-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">Auto-Response</p>
+                        <p className="text-xs text-gray-500">AI responds to lead inquiries</p>
+                      </div>
+                    </div>
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                      Coming Soon
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-1.5 bg-emerald-500/20 rounded-lg">
+                        <Bot className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">Response Training</p>
+                        <p className="text-xs text-gray-500">Train AI with custom tone</p>
+                      </div>
+                    </div>
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                      Coming Soon
+                    </Badge>
+                  </div>
+                </div>
+              </div>
             </div>
           </SettingsSection>
 
@@ -567,48 +562,48 @@ export default function SettingsPage() {
               />
             </div>
           </SettingsSection>
-        </div>
 
-        {/* Account Information */}
-        <SettingsSection
-          title="Account Information"
-          description="View and manage your account details"
-          icon={<User className="h-5 w-5 text-gray-400" />}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Email Address</label>
-              <input
-                type="email"
-                value={user?.email || ''}
-                disabled
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Account Created</label>
-              <input
-                type="text"
-                value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}
-                disabled
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400"
-              />
-            </div>
-          </div>
-          
-          <div className="pt-6 border-t border-white/5 mt-6">
-            <div className="flex items-center justify-between">
+          {/* Account Information */}
+          <SettingsSection
+            title="Account Information"
+            description="View and manage your account details"
+            icon={<User className="h-5 w-5 text-gray-400" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-medium text-white">Danger Zone</h3>
-                <p className="text-sm text-gray-400">Irreversible and destructive actions</p>
+                <label className="block text-sm font-medium text-white mb-2">Email Address</label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400"
+                />
               </div>
-              <Button className="bg-red-600 hover:bg-red-500 text-white">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Delete Account
-              </Button>
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Account Created</label>
+                <input
+                  type="text"
+                  value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}
+                  disabled
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400"
+                />
+              </div>
             </div>
-          </div>
-        </SettingsSection>
+            
+            <div className="pt-6 border-t border-white/5 mt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-white">Danger Zone</h3>
+                  <p className="text-sm text-gray-400">Irreversible and destructive actions</p>
+                </div>
+                <Button className="bg-red-600 hover:bg-red-500 text-white">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+          </SettingsSection>
+        </div>
       </div>
     </div>
   );

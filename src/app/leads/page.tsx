@@ -752,9 +752,9 @@ export default function LeadsPage() {
                             </span>
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-white">
+                            <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-white hover:text-violet-400 transition-colors cursor-pointer">
                               {lead.first_name} {lead.last_name}
-                            </div>
+                            </Link>
                             <div className="text-sm text-gray-500 flex items-center">
                               <Mail className="w-3 h-3 mr-1" />
                               {lead.email}
@@ -814,7 +814,7 @@ export default function LeadsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-2">
                           <Link href={`/leads/${lead.id}`}>
-                            <Button size="sm" variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                            <Button size="sm" className="bg-violet-500/20 text-violet-400 border border-violet-500/30 hover:bg-violet-500/30">
                               <Eye className="w-4 h-4" />
                             </Button>
                           </Link>

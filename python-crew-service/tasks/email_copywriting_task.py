@@ -142,6 +142,44 @@ class EmailCopywritingTask():
                 if lead_data.get('pain_points') and isinstance(lead_data['pain_points'], list):
                     context_parts.append(f"Pain Points: {', '.join(lead_data['pain_points'])}")
                 
+                # Parse website analysis data for deeper personalization
+                website_analysis = lead_data.get('website_analysis', {})
+                if website_analysis and website_analysis.get('analysis'):
+                    analysis = website_analysis['analysis']
+                    context_parts.append("\n--- WEBSITE INTELLIGENCE (use for personalization) ---")
+                    if analysis.get('company_description'):
+                        context_parts.append(f"What They Do: {analysis['company_description']}")
+                    if analysis.get('value_proposition'):
+                        context_parts.append(f"Their Value Prop: {analysis['value_proposition']}")
+                    if analysis.get('target_customers'):
+                        context_parts.append(f"Their Target Customers: {analysis['target_customers']}")
+                    if analysis.get('products_services'):
+                        context_parts.append(f"Products/Services: {', '.join(analysis['products_services'][:5])}")
+                    if analysis.get('pain_points_solved'):
+                        context_parts.append(f"Problems They Solve: {', '.join(analysis['pain_points_solved'][:3])}")
+                    if analysis.get('key_differentiators'):
+                        context_parts.append(f"Their Differentiators: {', '.join(analysis['key_differentiators'][:3])}")
+                    
+                    # Recent news - great for pattern interrupts and opening hooks
+                    if analysis.get('recent_news_or_updates'):
+                        news_items = analysis['recent_news_or_updates']
+                        if isinstance(news_items, list) and news_items:
+                            context_parts.append(f"\n🔥 RECENT NEWS (use as opening hook or pattern interrupt):")
+                            for news in news_items[:3]:
+                                context_parts.append(f"  • {news}")
+                            context_parts.append("TIP: Reference their recent news to show you've done research. E.g., 'Saw you just [news item] - congrats!'")
+                        elif isinstance(news_items, str) and news_items:
+                            context_parts.append(f"\n🔥 RECENT NEWS: {news_items}")
+                            context_parts.append("TIP: Reference this to show you've done research.")
+                
+                # Parse company profile data
+                company_profile = lead_data.get('company_profile', {})
+                if company_profile and not company_profile.get('error'):
+                    if company_profile.get('description'):
+                        context_parts.append(f"Company Description: {company_profile['description']}")
+                    if company_profile.get('techStack'):
+                        context_parts.append(f"Tech Stack: {', '.join(company_profile['techStack'][:5])}")
+                
                 if context_parts:
                     context_info = f"\n\nLead Intelligence:\n{chr(10).join(context_parts)}"
             except (json.JSONDecodeError, TypeError):
@@ -183,6 +221,9 @@ class EmailCopywritingTask():
             6. Sound human - use contractions, be casual but professional
             7. NEVER mention internal data, lead scores, or tracking
             8. Subject line should be short (under 6 words) and curiosity-driven
+            9. If RECENT NEWS is provided, USE IT! Reference their news/awards/announcements as an opening hook
+               Example: "Saw you just got named Microsoft Frontier Partner for AI - congrats!"
+               This shows you've done your research and makes the email feel personal
             
             === FORMATTING RULES ===
             - Use proper paragraph breaks (blank lines) between distinct thoughts

@@ -197,16 +197,18 @@ export async function POST(request: NextRequest) {
     // 1. company_profile (from Apollo org enrichment)
     // 2. organization_data (from Apollo person enrichment)
     // 3. all_sources.apollo.organization (raw Apollo data)
+    // 4. website_analysis (from website scraper)
     const companyProfile = enrichedData.company_profile || {};
     const orgData = enrichedData.organization_data || 
       enrichedData.all_sources?.apollo?.organization ||
       enrichedData.all_sources?.apollo?.person?.organization || {};
+    const websiteAnalysis = enrichedData.website_analysis?.analysis || {};
     
-    // Merge company profile and org data
+    // Merge company profile, org data, and website analysis
     const companyData = {
       name: companyProfile.name || orgData.name || enrichedData.company,
-      description: companyProfile.description || orgData.short_description,
-      industry: companyProfile.industry || orgData.industry,
+      description: companyProfile.description || orgData.short_description || websiteAnalysis.company_description,
+      industry: companyProfile.industry || orgData.industry || websiteAnalysis.industry,
       industries: companyProfile.industries || [],
       estimated_num_employees: companyProfile.estimated_num_employees || orgData.estimated_num_employees,
       annual_revenue: companyProfile.annual_revenue || orgData.annual_revenue,
@@ -225,6 +227,14 @@ export async function POST(request: NextRequest) {
       country: companyProfile.country || orgData.country,
       logo_url: companyProfile.logo_url || orgData.logo_url,
       primary_domain: orgData.primary_domain,
+      // Website analysis data
+      value_proposition: websiteAnalysis.value_proposition,
+      target_customers: websiteAnalysis.target_customers,
+      products_services: websiteAnalysis.products_services || [],
+      pain_points_solved: websiteAnalysis.pain_points_solved || [],
+      key_differentiators: websiteAnalysis.key_differentiators || [],
+      recent_news: websiteAnalysis.recent_news_or_updates || [],
+      tone_and_style: websiteAnalysis.tone_and_style,
     };
     
     // Extract domain from enriched data or email
@@ -281,7 +291,11 @@ export async function POST(request: NextRequest) {
               state: companyData.state,
               country: companyData.country,
               logo_url: companyData.logo_url,
-              enriched_data: { ...companyProfile, organization_data: orgData },
+              enriched_data: { 
+                ...companyProfile, 
+                organization_data: orgData,
+                website_analysis: websiteAnalysis 
+              },
               enrichment_status: 'enriched',
               enrichment_source: companyProfile.primary_source || enrichedData.primary_source || 'apollo',
               enriched_at: new Date().toISOString(),
@@ -317,7 +331,11 @@ export async function POST(request: NextRequest) {
               state: companyData.state,
               country: companyData.country,
               logo_url: companyData.logo_url,
-              enriched_data: { ...companyProfile, organization_data: orgData },
+              enriched_data: { 
+                ...companyProfile, 
+                organization_data: orgData,
+                website_analysis: websiteAnalysis 
+              },
               enrichment_status: 'enriched',
               enrichment_source: companyProfile.primary_source || enrichedData.primary_source || 'apollo',
               enriched_at: new Date().toISOString(),
