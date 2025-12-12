@@ -11,6 +11,65 @@ MOCK_MODE = os.getenv("MOCK") == "true"
 
 # --- API Tools ---
 
+@tool("Apollo Organization Enrich")
+def apollo_organization_enrich(domain: str) -> Dict[str, Any]:
+    """Enriches company/organization data using Apollo.io API."""
+    apollo_key = USER_API_KEYS.get('apollo')
+    if not apollo_key:
+        apollo_key = os.getenv('APOLLO_API_KEY')
+        if not apollo_key:
+            return {"error": "Apollo API key not configured", "provider": "apollo"}
+    
+    api_url = f"https://api.apollo.io/api/v1/organizations/enrich"
+    headers = {
+        "accept": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Type": "application/json",
+        "x-api-key": apollo_key
+    }
+    params = {"domain": domain}
+    
+    try:
+        print(f"Apollo org enrich request: domain={domain}")
+        response = requests.get(api_url, headers=headers, params=params, timeout=15)
+        print(f"Apollo org response status: {response.status_code}")
+        response.raise_for_status()
+        data = response.json()
+        
+        org = data.get("organization", {})
+        
+        # Normalize Apollo organization data
+        result = {
+            "provider": "apollo",
+            "name": org.get("name"),
+            "description": org.get("short_description") or org.get("seo_description"),
+            "website_url": org.get("website_url"),
+            "linkedin_url": org.get("linkedin_url"),
+            "twitter_url": org.get("twitter_url"),
+            "facebook_url": org.get("facebook_url"),
+            "industry": org.get("industry"),
+            "industries": org.get("industries", []),
+            "estimated_num_employees": org.get("estimated_num_employees"),
+            "annual_revenue": org.get("annual_revenue"),
+            "annual_revenue_printed": org.get("annual_revenue_printed"),
+            "founded_year": org.get("founded_year"),
+            "keywords": org.get("keywords", []),
+            "technologies": org.get("technologies", []),
+            "address": org.get("raw_address"),
+            "city": org.get("city"),
+            "state": org.get("state"),
+            "country": org.get("country"),
+            "phone": org.get("phone"),
+            "logo_url": org.get("logo_url"),
+            "raw_data": org  # Keep full response for reference
+        }
+        
+        return result
+        
+    except requests.RequestException as e:
+        print(f"Apollo organization enrich failed: {e}")
+        return {"error": str(e), "provider": "apollo"}
+
 @tool("Serper Company Search")
 def serper_company_search(company_name: str, domain: str = None) -> Dict[str, Any]:
     """Fetches company information using Serper API (Google Search)."""
@@ -90,38 +149,78 @@ def builtwith_tech_stack(domain: str) -> Dict[str, Any]:
 # --- Main Function ---
 
 def run_company_profile(company_name: str, domain: str) -> Dict[str, Any]:
-    """Runs the complete company profiling process."""
+    """Runs the complete company profiling process using Apollo first, then fallback to Serper."""
     if MOCK_MODE:
         return {
             "snippet": "A mock company that makes amazing widgets.",
             "techStack": ["Python", "FastAPI", "React"],
-            "source_breakdown": {"valueserp": True, "builtwith": True},
+            "source_breakdown": {"apollo": True, "builtwith": True},
         }
 
-    company_data = serper_company_search(company_name, domain)
-    tech_data = builtwith_tech_stack(domain)
-
-    description = company_data.get("description")
-    tech_stack = tech_data.get("tech", [])
-    
-    # Extract additional company info from Serper results
-    knowledge_graph = company_data.get("knowledge_graph", {})
-    organic_results = company_data.get("organic_results", [])
-
-    if not description and not tech_stack:
-        return {"description": None, "techStack": [], "source_breakdown": {"serper": False, "builtwith": False}}
-
-    return {
-        "description": description,
-        "techStack": tech_stack,
-        "knowledge_graph": knowledge_graph,
-        "organic_results": organic_results[:3] if organic_results else [],  # Limit to top 3 results
-        "search_query": company_data.get("search_query", ""),
-        "source_breakdown": {
-            "serper": bool(company_data and not company_data.get("error")),
-            "builtwith": bool(tech_data and not tech_data.get("error")),
-        },
+    result = {
+        "description": None,
+        "techStack": [],
+        "source_breakdown": {}
     }
+    
+    # Try Apollo organization enrichment FIRST (best data)
+    print(f"Trying Apollo organization enrichment for domain: {domain}")
+    apollo_data = apollo_organization_enrich.func(domain)
+    
+    if apollo_data and not apollo_data.get("error"):
+        print("Apollo organization enrichment successful!")
+        result["description"] = apollo_data.get("description")
+        result["name"] = apollo_data.get("name")
+        result["industry"] = apollo_data.get("industry")
+        result["industries"] = apollo_data.get("industries", [])
+        result["estimated_num_employees"] = apollo_data.get("estimated_num_employees")
+        result["annual_revenue"] = apollo_data.get("annual_revenue")
+        result["annual_revenue_printed"] = apollo_data.get("annual_revenue_printed")
+        result["founded_year"] = apollo_data.get("founded_year")
+        result["keywords"] = apollo_data.get("keywords", [])
+        result["technologies"] = apollo_data.get("technologies", [])  # Apollo has tech stack!
+        result["techStack"] = apollo_data.get("technologies", [])
+        result["linkedin_url"] = apollo_data.get("linkedin_url")
+        result["twitter_url"] = apollo_data.get("twitter_url")
+        result["facebook_url"] = apollo_data.get("facebook_url")
+        result["phone"] = apollo_data.get("phone")
+        result["address"] = apollo_data.get("address")
+        result["city"] = apollo_data.get("city")
+        result["state"] = apollo_data.get("state")
+        result["country"] = apollo_data.get("country")
+        result["logo_url"] = apollo_data.get("logo_url")
+        result["primary_source"] = "apollo"
+        result["source_breakdown"]["apollo"] = True
+        result["apollo_raw"] = apollo_data.get("raw_data")
+    else:
+        print(f"Apollo failed, trying Serper: {apollo_data.get('error', 'unknown error')}")
+        result["source_breakdown"]["apollo"] = False
+        
+        # Fallback to Serper for company description
+        serper_data = serper_company_search.func(company_name, domain)
+        if serper_data and not serper_data.get("error"):
+            result["description"] = serper_data.get("description")
+            result["knowledge_graph"] = serper_data.get("knowledge_graph", {})
+            result["organic_results"] = serper_data.get("organic_results", [])[:3]
+            result["search_query"] = serper_data.get("search_query", "")
+            result["primary_source"] = "serper"
+            result["source_breakdown"]["serper"] = True
+        else:
+            result["source_breakdown"]["serper"] = False
+    
+    # Try BuiltWith for additional tech stack (if Apollo didn't provide enough)
+    if not result.get("techStack") or len(result.get("techStack", [])) < 3:
+        tech_data = builtwith_tech_stack.func(domain)
+        if tech_data and tech_data.get("tech"):
+            # Merge with existing tech stack
+            existing_tech = set(result.get("techStack", []))
+            new_tech = set(tech_data.get("tech", []))
+            result["techStack"] = list(existing_tech | new_tech)
+            result["source_breakdown"]["builtwith"] = True
+        else:
+            result["source_breakdown"]["builtwith"] = False
+
+    return result
 
 # --- CrewAI Agent & Task ---
 

@@ -47,14 +47,17 @@ export default function SettingsLayout({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 animate-ping"></div>
+          <div className="absolute inset-2 rounded-full border-2 border-t-violet-500 border-r-fuchsia-500 border-b-cyan-500 border-l-transparent animate-spin"></div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#0a0a0f]">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <SideNavigation 
@@ -66,7 +69,7 @@ export default function SettingsLayout({
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-0 bg-black/75" onClick={() => setMobileMenuOpen(false)} />
           <div className="fixed top-0 left-0 h-full">
             <SideNavigation />
           </div>
@@ -76,17 +79,17 @@ export default function SettingsLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="lg:hidden bg-[#0a0a0f] border-b border-white/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">AI</span>
             </div>
-            <h1 className="text-lg font-bold text-gray-900">AISDR</h1>
+            <h1 className="text-lg font-bold text-white">AISDR</h1>
           </div>
           <Button
-            variant="outline"
             size="sm"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="bg-white/5 border-white/10 text-white hover:bg-white/10"
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
@@ -95,17 +98,16 @@ export default function SettingsLayout({
         {/* Desktop Toggle Button */}
         <div className="hidden lg:block absolute top-4 left-4 z-10">
           <Button
-            variant="outline"
             size="sm"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="bg-white shadow-sm"
+            className="bg-white/5 border-white/10 text-white hover:bg-white/10"
           >
             <Menu className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]">
           {children}
         </main>
       </div>

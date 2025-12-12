@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Supabase Cookies</title>
+</head>
+<body>
+    <h1>Clearing Supabase Cookies...</h1>
+    <p id="status">Processing...</p>
+    <script>
+        // Clear all cookies
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        // Clear localStorage
+        localStorage.clear();
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        
+        // Clear IndexedDB (where Supabase stores session)
+        if (window.indexedDB) {
+            indexedDB.databases().then(dbs => {
+                dbs.forEach(db => {
+                    if (db.name) {
+                        indexedDB.deleteDatabase(db.name);
+                    }
+                });
+            });
+        }
+        
+        document.getElementById('status').innerHTML = '✅ All storage cleared!<br><br>Close this tab and go to: <a href="http://localhost:3000/login">http://localhost:3000/login</a>';
+    </script>
+</body>
+</html>

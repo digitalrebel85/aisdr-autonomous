@@ -93,62 +93,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare the ICP profile data
-    const icpData = {
+    // Append pain points to description since icp_profiles table may not have pain_points column
+    let description = body.description || '';
+    if (body.pain_points?.length > 0) {
+      const painPointsText = `\n\nPain Points: ${body.pain_points.join(', ')}`;
+      description += painPointsText;
+    }
+    
+    const icpData: Record<string, any> = {
       user_id: user.id,
       name: body.name,
-      description: body.description || '',
-      industries: body.industries || [],
-      company_sizes: body.company_sizes || [],
-      locations: body.locations || [],
-      job_titles: body.job_titles || [],
-      seniority_levels: body.seniority_levels || [],
-      departments: body.departments || [],
-      technologies: body.technologies || [],
-      funding_stages: body.funding_stages || [],
-      keywords: body.keywords || [],
-      employee_count_min: body.employee_count_min || null,
-      employee_count_max: body.employee_count_max || null,
-      revenue_min: body.revenue_min || null,
-      revenue_max: body.revenue_max || null,
+      description: description.trim(),
       status: 'draft'
     };
 
-    // Create Apollo filters object
-    const apolloFilters: any = {};
-    
-    if (icpData.industries.length > 0) {
-      apolloFilters.organization_industry_tag_ids = icpData.industries;
-    }
-    
-    if (icpData.company_sizes.length > 0) {
-      apolloFilters.organization_num_employees_ranges = icpData.company_sizes;
-    }
-    
-    if (icpData.locations.length > 0) {
-      apolloFilters.person_locations = icpData.locations;
-    }
-    
-    if (icpData.job_titles.length > 0) {
-      apolloFilters.person_titles = icpData.job_titles;
-    }
-    
-    if (icpData.seniority_levels.length > 0) {
-      apolloFilters.person_seniorities = icpData.seniority_levels;
-    }
-    
-    if (icpData.departments.length > 0) {
-      apolloFilters.person_departments = icpData.departments;
-    }
-    
-    if (icpData.technologies.length > 0) {
-      apolloFilters.organization_technology_names = icpData.technologies;
-    }
-    
-    if (icpData.keywords.length > 0) {
-      apolloFilters.q_keywords = icpData.keywords.join(' ');
-    }
-
-    (icpData as any).apollo_filters = apolloFilters;
+    // Only add array fields if they have values
+    if (body.industries?.length > 0) icpData.industries = body.industries;
+    if (body.company_sizes?.length > 0) icpData.company_sizes = body.company_sizes;
+    if (body.locations?.length > 0) icpData.locations = body.locations;
+    if (body.job_titles?.length > 0) icpData.job_titles = body.job_titles;
+    if (body.seniority_levels?.length > 0) icpData.seniority_levels = body.seniority_levels;
+    if (body.departments?.length > 0) icpData.departments = body.departments;
+    if (body.technologies?.length > 0) icpData.technologies = body.technologies;
+    if (body.funding_stages?.length > 0) icpData.funding_stages = body.funding_stages;
+    if (body.keywords?.length > 0) icpData.keywords = body.keywords;
+    // Note: pain_points may not exist in all database schemas - will be added to description if column doesn't exist
+    // if (body.pain_points?.length > 0) icpData.pain_points = body.pain_points;
+    if (body.employee_count_min) icpData.employee_count_min = body.employee_count_min;
+    if (body.employee_count_max) icpData.employee_count_max = body.employee_count_max;
+    if (body.revenue_min) icpData.revenue_min = body.revenue_min;
+    if (body.revenue_max) icpData.revenue_max = body.revenue_max;
 
     // Insert the ICP profile
     const { data: profile, error } = await supabase
@@ -159,7 +133,10 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating ICP profile:', error);
-      return NextResponse.json({ error: 'Failed to create ICP profile' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to create ICP profile', 
+        details: error.message 
+      }, { status: 500 });
     }
 
     return NextResponse.json({ profile }, { status: 201 });

@@ -19,15 +19,30 @@ def apollo_person_lookup(email: str = None, linkedin_url: str = None) -> dict:
     if not email and not linkedin_url:
         return {"error": "Either email or linkedin_url is required.", "provider": "apollo"}
 
-    api_url = "https://api.apollo.io/v1/person/enrich"
-    params = {"api_key": apollo_key}
+    # Apollo people/match endpoint - email goes in URL params, not body
+    api_url = "https://api.apollo.io/api/v1/people/match"
+    headers = {
+        "accept": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Type": "application/json",
+        "x-api-key": apollo_key
+    }
+    
+    # Build query params - Apollo expects email in URL
+    params = {}
     if email:
         params['email'] = email
-    elif linkedin_url:
+    if linkedin_url:
         params['linkedin_url'] = linkedin_url
+    
+    # Empty body for POST
+    body = {}
 
     try:
-        response = requests.get(api_url, params=params, timeout=15)
+        print(f"Apollo request: {api_url} params={params}")
+        response = requests.post(api_url, headers=headers, params=params, json=body, timeout=15)
+        print(f"Apollo response status: {response.status_code}")
+        print(f"Apollo response: {response.text[:500] if response.text else 'empty'}")
         response.raise_for_status()
         data = response.json()
         data['provider'] = 'apollo'
@@ -315,15 +330,38 @@ def _normalize_provider_data(data: dict, provider: str) -> dict:
             "title": person.get('title'),
             "linkedin_url": person.get('linkedin_url'),
             "email": person.get('email'),
-            "phone": person.get('phone_numbers', [{}])[0].get('raw_number') if person.get('phone_numbers') else None
+            "phone": person.get('phone_numbers', [{}])[0].get('raw_number') if person.get('phone_numbers') else None,
+            "location": f"{person.get('city', '')}, {person.get('country', '')}".strip(', ') if person.get('city') or person.get('country') else None
         })
         
-        org = person.get('organization', {})
+        # Get organization data - can be at root level or under person
+        org = data.get('organization', {}) or person.get('organization', {})
         if org:
             normalized.update({
                 "company": org.get('name'),
                 "industry": org.get('industry'),
-                "company_size": f"{org.get('estimated_num_employees')} employees" if org.get('estimated_num_employees') else None
+                "company_size": f"{org.get('estimated_num_employees')} employees" if org.get('estimated_num_employees') else None,
+                # Store organization data for company enrichment
+                "organization_data": {
+                    "name": org.get('name'),
+                    "website_url": org.get('website_url'),
+                    "primary_domain": org.get('primary_domain'),
+                    "linkedin_url": org.get('linkedin_url'),
+                    "twitter_url": org.get('twitter_url'),
+                    "facebook_url": org.get('facebook_url'),
+                    "phone": org.get('phone'),
+                    "industry": org.get('industry'),
+                    "estimated_num_employees": org.get('estimated_num_employees'),
+                    "annual_revenue": org.get('annual_revenue'),
+                    "founded_year": org.get('founded_year'),
+                    "short_description": org.get('short_description'),
+                    "keywords": org.get('keywords', []),
+                    "logo_url": org.get('logo_url'),
+                    "city": org.get('city'),
+                    "state": org.get('state'),
+                    "country": org.get('country'),
+                    "raw_address": org.get('raw_address'),
+                }
             })
     
     elif provider == 'pdl':

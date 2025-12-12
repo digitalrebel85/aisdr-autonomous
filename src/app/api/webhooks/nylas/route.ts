@@ -173,25 +173,47 @@ async function processEvent(delta: any, supabase: any) {
   try {
     console.log(`Processing delta type: ${delta.type}`);
 
-    if (delta.type === 'message.created') {
+    // Handle both message.created and message.updated (Gmail often sends updated for new thread messages)
+    if (delta.type === 'message.created' || delta.type === 'message.updated') {
+      // Get message data from either object_data (old format) or object (new format)
+      const messageData = delta.object_data || delta.object || {};
+      const messageId = messageData.id;
+      
+      if (!messageId) {
+        console.log('SKIP: No message ID found in delta.');
+        return;
+      }
+      
       // Skip if we've already processed this message
-      const messageId = delta.object_data.id;
       if (processedMessages.has(messageId)) {
         console.log(`SKIP: Message ${messageId} already processed.`);
         return;
       }
       
       // Skip sent emails (emails sent by the user)
-      const folders = delta.object_data.folders || [];
+      const folders = messageData.folders || [];
       if (folders.includes('SENT')) {
         console.log(`SKIP: Message ${messageId} is a sent email (in SENT folder).`);
         return;
       }
       
-      // Mark as processed
+      // Mark as processed in memory
       processedMessages.add(messageId);
-      console.log('STEP 3: Event is message.created.');
-      const { grant_id, id: message_id } = delta.object_data;
+      console.log(`STEP 3: Event is ${delta.type}.`);
+      const grant_id = messageData.grant_id;
+      const message_id = messageData.id;
+
+      // STEP 3.5: Check database for existing reply (persistent deduplication)
+      const { data: existingReply } = await supabase
+        .from('replies')
+        .select('id')
+        .eq('nylas_message_id', message_id)
+        .maybeSingle();
+      
+      if (existingReply) {
+        console.log(`SKIP: Message ${message_id} already exists in replies table (id: ${existingReply.id}).`);
+        return;
+      }
 
       console.log(`STEP 4: Calling Python service for message_id: ${message_id}`);
       const messageDetailsRes = await fetch(`${process.env.PYTHON_SERVICE_URL}/get-message-details`, {
@@ -254,11 +276,32 @@ async function processEvent(delta: any, supabase: any) {
           return; // Exit early, don't save to database
         }
 
+        // STEP 11a: Look up the original campaign from outreach_queue using thread_id
+        let originalCampaignId = null;
+        const emailThreadId = messageDetails.data.thread_id;
+        if (emailThreadId) {
+          console.log(`STEP 11a: Looking up campaign for thread_id: ${emailThreadId}`);
+          const { data: outreachData, error: outreachError } = await supabase
+            .from('outreach_queue')
+            .select('campaign_id')
+            .eq('thread_id', emailThreadId)
+            .not('campaign_id', 'is', null)
+            .limit(1)
+            .single();
+          
+          if (outreachData && !outreachError) {
+            originalCampaignId = outreachData.campaign_id;
+            console.log(`STEP 11a SUCCESS: Found campaign_id: ${originalCampaignId}`);
+          } else {
+            console.log('STEP 11a: No matching campaign found for thread_id');
+          }
+        }
+
         console.log('STEP 11: Saving analysis to Supabase replies table.');
         const { error: insertError } = await supabase.from('replies').insert({
           grant_id: grant_id,
           user_id: inboxData.user_id,
-          message_id: message_id,
+          nylas_message_id: message_id,
           thread_id: messageDetails.data.thread_id || null,
           lead_id: analysis.lead_id,
           sentiment: analysis.sentiment,
@@ -272,7 +315,8 @@ async function processEvent(delta: any, supabase: any) {
           conversation_id: messageDetails.data.thread_id || message_id,
           priority: analysis.priority || 'medium',
           lead_temperature: analysis.lead_temperature || 'warm',
-          email_headers: messageDetails.data.headers || null
+          email_headers: messageDetails.data.headers || null,
+          original_campaign_id: originalCampaignId // Link reply to campaign
         });
 
         if (insertError) {

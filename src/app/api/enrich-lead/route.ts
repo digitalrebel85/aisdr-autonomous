@@ -190,12 +190,165 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Update lead with enriched data
+    // 3. Handle company data - check if exists, create if not, link to lead
+    let companyId: number | null = null;
+    
+    // Get company data from multiple sources:
+    // 1. company_profile (from Apollo org enrichment)
+    // 2. organization_data (from Apollo person enrichment)
+    // 3. all_sources.apollo.organization (raw Apollo data)
+    const companyProfile = enrichedData.company_profile || {};
+    const orgData = enrichedData.organization_data || 
+      enrichedData.all_sources?.apollo?.organization ||
+      enrichedData.all_sources?.apollo?.person?.organization || {};
+    
+    // Merge company profile and org data
+    const companyData = {
+      name: companyProfile.name || orgData.name || enrichedData.company,
+      description: companyProfile.description || orgData.short_description,
+      industry: companyProfile.industry || orgData.industry,
+      industries: companyProfile.industries || [],
+      estimated_num_employees: companyProfile.estimated_num_employees || orgData.estimated_num_employees,
+      annual_revenue: companyProfile.annual_revenue || orgData.annual_revenue,
+      annual_revenue_printed: companyProfile.annual_revenue_printed,
+      founded_year: companyProfile.founded_year || orgData.founded_year,
+      keywords: companyProfile.keywords || orgData.keywords || [],
+      technologies: companyProfile.technologies || companyProfile.techStack || [],
+      website_url: companyProfile.website_url || orgData.website_url,
+      linkedin_url: companyProfile.linkedin_url || orgData.linkedin_url,
+      twitter_url: companyProfile.twitter_url || orgData.twitter_url,
+      facebook_url: companyProfile.facebook_url || orgData.facebook_url,
+      phone: companyProfile.phone || orgData.phone,
+      address: companyProfile.address || orgData.raw_address,
+      city: companyProfile.city || orgData.city,
+      state: companyProfile.state || orgData.state,
+      country: companyProfile.country || orgData.country,
+      logo_url: companyProfile.logo_url || orgData.logo_url,
+      primary_domain: orgData.primary_domain,
+    };
+    
+    // Extract domain from enriched data or email
+    const enrichedDomain = companyDomain || 
+      companyData.primary_domain ||
+      companyData.website_url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] ||
+      email.split('@')[1];
+    
+    console.log('Company data extraction:', { 
+      enrichedDomain, 
+      hasCompanyProfile: !!enrichedData.company_profile,
+      hasOrgData: !!orgData.name,
+      companyName: companyData.name 
+    });
+    
+    // Create/update company if we have domain and some useful data
+    const hasUsefulData = companyData.name || companyData.description || companyData.industry;
+    
+    if (enrichedDomain && hasUsefulData) {
+      try {
+        // Check if company already exists for this user
+        const { data: existingCompany } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('domain', enrichedDomain.toLowerCase())
+          .single();
+        
+        if (existingCompany) {
+          // Company exists - update it with new data and link lead
+          companyId = existingCompany.id;
+          console.log(`Company already exists (id: ${companyId}), updating...`);
+          
+          await supabase
+            .from('companies')
+            .update({
+              name: companyData.name,
+              description: companyData.description,
+              industry: companyData.industry,
+              industries: companyData.industries,
+              estimated_num_employees: companyData.estimated_num_employees,
+              annual_revenue: companyData.annual_revenue,
+              annual_revenue_printed: companyData.annual_revenue_printed,
+              founded_year: companyData.founded_year,
+              keywords: companyData.keywords,
+              technologies: companyData.technologies,
+              website_url: companyData.website_url,
+              linkedin_url: companyData.linkedin_url,
+              twitter_url: companyData.twitter_url,
+              facebook_url: companyData.facebook_url,
+              phone: companyData.phone,
+              address: companyData.address,
+              city: companyData.city,
+              state: companyData.state,
+              country: companyData.country,
+              logo_url: companyData.logo_url,
+              enriched_data: { ...companyProfile, organization_data: orgData },
+              enrichment_status: 'enriched',
+              enrichment_source: companyProfile.primary_source || enrichedData.primary_source || 'apollo',
+              enriched_at: new Date().toISOString(),
+            })
+            .eq('id', companyId);
+            
+        } else {
+          // Company doesn't exist - create it
+          console.log(`Creating new company for domain: ${enrichedDomain}`);
+          
+          const { data: newCompany, error: companyError } = await supabase
+            .from('companies')
+            .insert({
+              user_id: user.id,
+              domain: enrichedDomain.toLowerCase(),
+              name: companyData.name,
+              description: companyData.description,
+              industry: companyData.industry,
+              industries: companyData.industries,
+              estimated_num_employees: companyData.estimated_num_employees,
+              annual_revenue: companyData.annual_revenue,
+              annual_revenue_printed: companyData.annual_revenue_printed,
+              founded_year: companyData.founded_year,
+              keywords: companyData.keywords,
+              technologies: companyData.technologies,
+              website_url: companyData.website_url,
+              linkedin_url: companyData.linkedin_url,
+              twitter_url: companyData.twitter_url,
+              facebook_url: companyData.facebook_url,
+              phone: companyData.phone,
+              address: companyData.address,
+              city: companyData.city,
+              state: companyData.state,
+              country: companyData.country,
+              logo_url: companyData.logo_url,
+              enriched_data: { ...companyProfile, organization_data: orgData },
+              enrichment_status: 'enriched',
+              enrichment_source: companyProfile.primary_source || enrichedData.primary_source || 'apollo',
+              enriched_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+          
+          if (companyError) {
+            console.error('Error creating company:', companyError);
+          } else {
+            companyId = newCompany?.id;
+            console.log(`Created new company with id: ${companyId}`);
+          }
+        }
+      } catch (companyErr) {
+        console.error('Error handling company data:', companyErr);
+        // Continue with lead update even if company handling fails
+      }
+    }
+
+    // 4. Update lead with enriched data and company link
     const updateData: any = {
       enrichment_status: 'completed',
       enrichment_completed_at: new Date().toISOString(),
       enriched_data: enrichedData,
     };
+
+    // Link lead to company if we have one
+    if (companyId) {
+      updateData.company_id = companyId;
+    }
 
     // Extract key fields from enriched data for easier querying
     if (enrichedData.title) updateData.title = enrichedData.title;
@@ -223,7 +376,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Lead enriched successfully',
-      enrichedData
+      enrichedData,
+      companyId
     });
 
   } catch (error) {

@@ -27,7 +27,14 @@ import {
   Edit,
   Trash2,
   Star,
-  MoreHorizontal
+  MoreHorizontal,
+  X,
+  Loader2,
+  Check,
+  FileSpreadsheet,
+  ArrowRight,
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -47,6 +54,10 @@ interface Lead {
   company_size?: string;
   enrichment_status?: 'pending' | 'enriching' | 'completed' | 'failed';
   enriched_data?: any;
+  icp_score?: number;
+  icp_profile_id?: string;
+  icp_match_details?: any;
+  icp_scored_at?: string;
   created_at: string;
   updated_at: string;
   last_contacted?: string;
@@ -68,7 +79,36 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'enriched' | 'high_score'>('all');
+  const [icpScoreFilter, setIcpScoreFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  
+  // Add Lead Modal State
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [isAddingLead, setIsAddingLead] = useState(false);
+  const [addLeadError, setAddLeadError] = useState<string | null>(null);
+  const [newLead, setNewLead] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    company: '',
+    title: '',
+    phone: '',
+    linkedin_url: '',
+    location: '',
+    industry: '',
+    company_size: ''
+  });
+
+  // CSV Upload Wizard State
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [csvStep, setCsvStep] = useState<1 | 2 | 3>(1);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvData, setCsvData] = useState<string[][]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvMapping, setCsvMapping] = useState<Record<string, string>>({});
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+  const [csvUploadError, setCsvUploadError] = useState<string | null>(null);
+  const [csvUploadResult, setCsvUploadResult] = useState<{ success: number; failed: number } | null>(null);
 
   const supabase = createClientComponentClient();
 
@@ -79,138 +119,62 @@ export default function LeadsPage() {
 
   const fetchLeads = async () => {
     try {
-      // Mock leads data - replace with actual Supabase query
-      const mockLeads: Lead[] = [
-        {
-          id: '1',
-          first_name: 'Alex',
-          last_name: 'Carter',
-          email: 'alex@acme.com',
-          company: 'Acme Inc',
-          title: 'VP of Sales',
-          company_domain: 'acme.com',
-          phone: '+1-555-0123',
-          linkedin_url: 'https://linkedin.com/in/alexcarter',
-          location: 'San Francisco, CA',
-          industry: 'Technology',
-          company_size: '51-200',
-          enrichment_status: 'completed',
-          enriched_data: {
-            confidence_score: 0.95,
-            primary_source: 'apollo',
-            intent_score: 92
-          },
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          last_contacted: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-          lead_score: 92,
-          tags: ['hot', 'demo-requested']
-        },
-        {
-          id: '2',
-          first_name: 'Jamie',
-          last_name: 'Lee',
-          email: 'jamie@brightlabs.io',
-          company: 'BrightLabs',
-          title: 'CTO',
-          company_domain: 'brightlabs.io',
-          location: 'New York, NY',
-          industry: 'Software',
-          company_size: '11-50',
-          enrichment_status: 'completed',
-          enriched_data: {
-            confidence_score: 0.87,
-            primary_source: 'serper',
-            intent_score: 78
-          },
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-          lead_score: 78,
-          tags: ['technical', 'integration']
-        },
-        {
-          id: '3',
-          first_name: 'Sarah',
-          last_name: 'Wilson',
-          email: 'sarah@cloudtech.com',
-          company: 'CloudTech Solutions',
-          title: 'Marketing Director',
-          company_domain: 'cloudtech.com',
-          phone: '+1-555-0456',
-          location: 'Denver, CO',
-          industry: 'Cloud Services',
-          company_size: '201-500',
-          enrichment_status: 'enriching',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-          updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          lead_score: 85,
-          tags: ['enterprise', 'follow-up']
-        },
-        {
-          id: '4',
-          first_name: 'Chris',
-          last_name: 'Hall',
-          email: 'chris@novaworks.co',
-          company: 'NovaWorks',
-          title: 'CEO',
-          company_domain: 'novaworks.co',
-          location: 'Austin, TX',
-          industry: 'Startup',
-          company_size: '1-10',
-          enrichment_status: 'pending',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-          lead_score: 45,
-          tags: ['startup', 'nurture']
-        },
-        {
-          id: '5',
-          first_name: 'Maria',
-          last_name: 'Rodriguez',
-          email: 'maria@techflow.com',
-          company: 'TechFlow',
-          title: 'Head of Operations',
-          company_domain: 'techflow.com',
-          phone: '+1-555-0789',
-          linkedin_url: 'https://linkedin.com/in/mariarodriguez',
-          location: 'Chicago, IL',
-          industry: 'Technology',
-          company_size: '101-500',
-          enrichment_status: 'completed',
-          enriched_data: {
-            confidence_score: 0.91,
-            primary_source: 'apollo',
-            intent_score: 67
-          },
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-          last_contacted: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-          lead_score: 67,
-          tags: ['qualified', 'operations']
-        }
-      ];
-
-      setLeads(mockLeads);
+      const response = await fetch('/api/leads');
+      if (response.ok) {
+        const data = await response.json();
+        const transformedLeads: Lead[] = (data.leads || []).map((lead: any) => ({
+          id: lead.id?.toString() || '',
+          first_name: lead.first_name || lead.name?.split(' ')[0] || '',
+          last_name: lead.last_name || lead.name?.split(' ').slice(1).join(' ') || '',
+          email: lead.email || '',
+          company: lead.company || '',
+          title: lead.title || '',
+          company_domain: lead.company_domain || '',
+          phone: lead.phone || '',
+          linkedin_url: lead.linkedin_url || '',
+          location: lead.location || '',
+          industry: lead.industry || '',
+          company_size: lead.company_size || '',
+          enrichment_status: lead.enrichment_status || 'pending',
+          enriched_data: lead.enriched_data || null,
+          icp_score: lead.icp_score,
+          icp_profile_id: lead.icp_profile_id,
+          icp_match_details: lead.icp_match_details,
+          icp_scored_at: lead.icp_scored_at,
+          created_at: lead.created_at || new Date().toISOString(),
+          updated_at: lead.updated_at || new Date().toISOString(),
+          last_contacted: lead.last_contacted,
+          lead_score: lead.lead_score,
+          tags: lead.tags || []
+        }));
+        setLeads(transformedLeads);
+      } else {
+        console.error('Failed to fetch leads');
+        setLeads([]);
+      }
     } catch (error) {
       console.error('Error fetching leads:', error);
+      setLeads([]);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchStats = async () => {
-    try {
-      // Mock stats - replace with actual calculations
-      setStats({
-        total: 47,
-        enriched: 32,
-        pending: 8,
-        high_score: 12,
-        contacted_this_week: 18
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
+    // Stats will be calculated from leads data after fetch
+    // This is called after fetchLeads, so we calculate from state
+  };
+
+  // Calculate stats from leads data
+  const calculateStats = (): LeadStats => {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return {
+      total: leads.length,
+      enriched: leads.filter(l => l.enrichment_status === 'completed').length,
+      pending: leads.filter(l => l.enrichment_status === 'pending').length,
+      high_score: leads.filter(l => (l.lead_score || 0) >= 80 || (l.icp_score || 0) >= 80).length,
+      contacted_this_week: leads.filter(l => l.last_contacted && new Date(l.last_contacted) > oneWeekAgo).length
+    };
   };
 
   const handleEnrich = async (leadId: string) => {
@@ -252,16 +216,227 @@ export default function LeadsPage() {
     }
   };
 
+  // Add Lead Handler
+  const handleAddLead = async () => {
+    if (!newLead.first_name.trim() || !newLead.last_name.trim() || !newLead.email.trim() || !newLead.company.trim()) {
+      setAddLeadError('Please fill in all required fields');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newLead.email)) {
+      setAddLeadError('Please enter a valid email address');
+      return;
+    }
+
+    setIsAddingLead(true);
+    setAddLeadError(null);
+
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLead),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await fetchLeads();
+        await fetchStats();
+        setShowAddLead(false);
+        setNewLead({
+          first_name: '',
+          last_name: '',
+          email: '',
+          company: '',
+          title: '',
+          phone: '',
+          linkedin_url: '',
+          location: '',
+          industry: '',
+          company_size: ''
+        });
+      } else {
+        setAddLeadError(data.error || 'Failed to add lead');
+      }
+    } catch (error) {
+      console.error('Error adding lead:', error);
+      setAddLeadError('Network error - please try again');
+    } finally {
+      setIsAddingLead(false);
+    }
+  };
+
+  // CSV File Handler
+  const handleCSVFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      setCsvUploadError('Please select a CSV file');
+      return;
+    }
+
+    setCsvFile(file);
+    setCsvUploadError(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        setCsvUploadError('CSV file must have at least a header row and one data row');
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = lines.slice(1).map(line => {
+        // Handle quoted values with commas
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (const char of line) {
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        
+        return values;
+      });
+
+      setCsvHeaders(headers);
+      setCsvData(data);
+      
+      // Auto-map common field names - matches leads table schema
+      const autoMapping: Record<string, string> = {};
+      const fieldMappings: Record<string, string[]> = {
+        // Required fields
+        first_name: ['first_name', 'firstname', 'first name', 'given name', 'first'],
+        last_name: ['last_name', 'lastname', 'last name', 'surname', 'family name', 'last'],
+        name: ['name', 'full name', 'fullname', 'contact name'],
+        email: ['email', 'email address', 'e-mail', 'email_address'],
+        company: ['company', 'company name', 'organization', 'org', 'company_name'],
+        // Optional fields from leads table
+        title: ['title', 'job title', 'position', 'role', 'job_title'],
+        phone: ['phone', 'phone number', 'telephone', 'mobile', 'phone_number', 'cell'],
+        linkedin_url: ['linkedin', 'linkedin_url', 'linkedin url', 'linkedin profile', 'linkedin_profile'],
+        location: ['location', 'address', 'full_address'],
+        city: ['city', 'town'],
+        country: ['country', 'nation'],
+        timezone: ['timezone', 'time zone', 'time_zone', 'tz'],
+        industry: ['industry', 'sector', 'vertical'],
+        company_size: ['company_size', 'company size', 'employees', 'size', 'employee_count', 'headcount'],
+        // Additional context fields
+        pain_points: ['pain_points', 'pain points', 'challenges', 'problems'],
+        offer: ['offer', 'product', 'service', 'solution'],
+        cta: ['cta', 'call to action', 'call_to_action', 'next step']
+      };
+
+      headers.forEach((header, index) => {
+        const headerLower = header.toLowerCase();
+        for (const [field, aliases] of Object.entries(fieldMappings)) {
+          if (aliases.includes(headerLower)) {
+            autoMapping[field] = header;
+            break;
+          }
+        }
+      });
+
+      setCsvMapping(autoMapping);
+      setCsvStep(2);
+    };
+
+    reader.readAsText(file);
+  };
+
+  // CSV Upload Handler
+  const handleCSVUpload = async () => {
+    // Validate required fields - either name OR (first_name + last_name), plus email and company
+    const hasName = csvMapping.name || (csvMapping.first_name && csvMapping.last_name);
+    if (!csvMapping.email || !hasName || !csvMapping.company) {
+      setCsvUploadError('Please map at least: Name (or First Name + Last Name), Email, and Company');
+      return;
+    }
+
+    setIsUploadingCSV(true);
+    setCsvUploadError(null);
+
+    try {
+      const leadsToUpload = csvData.map(row => {
+        const lead: Record<string, string> = {};
+        
+        for (const [field, csvHeader] of Object.entries(csvMapping)) {
+          const headerIndex = csvHeaders.indexOf(csvHeader);
+          if (headerIndex !== -1 && row[headerIndex]) {
+            lead[field] = row[headerIndex];
+          }
+        }
+        
+        return lead;
+      }).filter(lead => {
+        // Must have email and company
+        if (!lead.email || !lead.company) return false;
+        // Must have either name OR (first_name AND last_name)
+        const hasName = lead.name || (lead.first_name && lead.last_name);
+        return hasName;
+      });
+
+      const response = await fetch('/api/leads/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: leadsToUpload }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCsvUploadResult({ success: data.success || leadsToUpload.length, failed: data.failed || 0 });
+        setCsvStep(3);
+        await fetchLeads();
+        await fetchStats();
+      } else {
+        setCsvUploadError(data.error || 'Failed to upload leads');
+      }
+    } catch (error) {
+      console.error('Error uploading CSV:', error);
+      setCsvUploadError('Network error - please try again');
+    } finally {
+      setIsUploadingCSV(false);
+    }
+  };
+
+  // Reset CSV Wizard
+  const resetCSVWizard = () => {
+    setShowCSVUpload(false);
+    setCsvStep(1);
+    setCsvFile(null);
+    setCsvData([]);
+    setCsvHeaders([]);
+    setCsvMapping({});
+    setCsvUploadError(null);
+    setCsvUploadResult(null);
+  };
+
   const getEnrichmentStatusBadge = (status?: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1" />Enriched</Badge>;
+        return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Enriched</Badge>;
       case 'enriching':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Enriching</Badge>;
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30"><Clock className="w-3 h-3 mr-1" />Enriching</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800 border-red-200"><AlertTriangle className="w-3 h-3 mr-1" />Failed</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30"><AlertTriangle className="w-3 h-3 mr-1" />Failed</Badge>;
       default:
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">Pending</Badge>;
     }
   };
 
@@ -269,11 +444,38 @@ export default function LeadsPage() {
     if (!score) return null;
     
     if (score >= 80) {
-      return <Badge className="bg-green-100 text-green-800 border-green-200">Hot ({score})</Badge>;
+      return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Hot ({score})</Badge>;
     } else if (score >= 60) {
-      return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Warm ({score})</Badge>;
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Warm ({score})</Badge>;
     } else {
-      return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Cold ({score})</Badge>;
+      return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">Cold ({score})</Badge>;
+    }
+  };
+
+  const getICPScoreBadge = (score?: number) => {
+    if (!score && score !== 0) {
+      return <Badge variant="outline" className="text-gray-500 border-gray-500/30">Not Scored</Badge>;
+    }
+    
+    if (score >= 80) {
+      return (
+        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-semibold">
+          <TrendingUp className="w-3 h-3 mr-1" />
+          {score} - High Match
+        </Badge>
+      );
+    } else if (score >= 50) {
+      return (
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 font-semibold">
+          {score} - Medium
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-semibold">
+          {score} - Low Match
+        </Badge>
+      );
     }
   };
 
@@ -290,13 +492,25 @@ export default function LeadsPage() {
       (statusFilter === 'enriched' && lead.enrichment_status === 'completed') ||
       (statusFilter === 'high_score' && (lead.lead_score || 0) >= 80);
 
-    return matchesSearch && matchesFilter;
+    const matchesICPScore =
+      icpScoreFilter === 'all' ||
+      (icpScoreFilter === 'high' && (lead.icp_score || 0) >= 80) ||
+      (icpScoreFilter === 'medium' && (lead.icp_score || 0) >= 50 && (lead.icp_score || 0) < 80) ||
+      (icpScoreFilter === 'low' && (lead.icp_score || 0) < 50 && lead.icp_score !== undefined);
+
+    return matchesSearch && matchesFilter && matchesICPScore;
   });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 animate-ping"></div>
+          <div className="absolute inset-2 rounded-full border-2 border-t-violet-500 border-r-fuchsia-500 border-b-cyan-500 border-l-transparent animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Bot className="w-6 h-6 text-violet-400" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -304,25 +518,29 @@ export default function LeadsPage() {
   return (
     <div className="p-6">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 rounded-2xl border border-white/10 p-6 mb-6 backdrop-blur-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                <Users className="h-7 w-7 mr-3 text-blue-600" />
-                Leads
-              </h1>
-              <p className="text-gray-600 mt-1">Manage and enrich your lead database</p>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl shadow-lg shadow-violet-500/20">
+                <Users className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white flex items-center">
+                  Lead Database
+                </h1>
+                <p className="text-gray-400 mt-1">AI-powered lead management and enrichment</p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button variant="secondary" className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200">
+              <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white">
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
-              <Button variant="secondary" className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200">
+              <Button variant="outline" onClick={() => setShowCSVUpload(true)} className="bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white">
                 <Upload className="w-4 h-4 mr-2" />
                 Import CSV
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setShowAddLead(true)} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 shadow-lg shadow-violet-500/25">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Lead
               </Button>
@@ -331,130 +549,176 @@ export default function LeadsPage() {
         </div>
 
         {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <Card className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-                <div className="text-sm text-gray-600">Total Leads</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">{stats.enriched}</div>
-                <div className="text-sm text-gray-600">Enriched</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-                <div className="text-sm text-gray-600">Pending</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-red-600">{stats.high_score}</div>
-                <div className="text-sm text-gray-600">High Score</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-purple-600">{stats.contacted_this_week}</div>
-                <div className="text-sm text-gray-600">Contacted This Week</div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {(() => {
+          const stats = calculateStats();
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-violet-500/20 rounded-lg">
+                    <Users className="w-4 h-4 text-violet-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-white">{stats.total}</div>
+                <div className="text-sm text-gray-500">Total Leads</div>
+              </div>
+              <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-emerald-500/20 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-emerald-400">{stats.enriched}</div>
+                <div className="text-sm text-gray-500">Enriched</div>
+              </div>
+              <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-amber-400">{stats.pending}</div>
+                <div className="text-sm text-gray-500">Pending</div>
+              </div>
+              <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-fuchsia-500/20 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-fuchsia-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-fuchsia-400">{stats.high_score}</div>
+                <div className="text-sm text-gray-500">High Score</div>
+              </div>
+              <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-cyan-500/20 rounded-lg">
+                    <Mail className="w-4 h-4 text-cyan-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-cyan-400">{stats.contacted_this_week}</div>
+                <div className="text-sm text-gray-500">Contacted This Week</div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4 mb-6">
           <div className="flex items-center space-x-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10"
+                className="w-full pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50"
               />
             </div>
             <div className="flex items-center space-x-2">
               <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter('all')}
+                className={statusFilter === 'all' ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
               >
                 All
               </Button>
               <Button
-                variant={statusFilter === 'pending' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter('pending')}
-                className={statusFilter === 'pending' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                className={statusFilter === 'pending' ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
               >
                 <Clock className="w-4 h-4 mr-1" />
                 Pending
               </Button>
               <Button
-                variant={statusFilter === 'enriched' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter('enriched')}
-                className={statusFilter === 'enriched' ? 'bg-green-600 hover:bg-green-700' : ''}
+                className={statusFilter === 'enriched' ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 Enriched
               </Button>
               <Button
-                variant={statusFilter === 'high_score' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter('high_score')}
-                className={statusFilter === 'high_score' ? 'bg-red-600 hover:bg-red-700' : ''}
+                className={statusFilter === 'high_score' ? 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
               >
                 <TrendingUp className="w-4 h-4 mr-1" />
                 High Score
+              </Button>
+            </div>
+            <div className="border-l border-white/10 pl-4 flex items-center space-x-2">
+              <span className="text-sm text-gray-400 font-medium">ICP Match:</span>
+              <Button
+                size="sm"
+                onClick={() => setIcpScoreFilter('all')}
+                className={icpScoreFilter === 'all' ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIcpScoreFilter('high')}
+                className={icpScoreFilter === 'high' ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
+              >
+                High (80+)
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIcpScoreFilter('medium')}
+                className={icpScoreFilter === 'medium' ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
+              >
+                Medium (50-79)
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIcpScoreFilter('low')}
+                className={icpScoreFilter === 'low' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}
+              >
+                Low (&lt;50)
               </Button>
             </div>
           </div>
         </div>
 
         {/* Leads Table */}
-        <Card className="shadow-sm border-gray-200">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Leads ({filteredLeads.length})</span>
-              <div className="flex items-center space-x-2">
-                <Button variant="secondary" size="sm" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
-                  <Bot className="w-4 h-4 mr-1" />
-                  Bulk Enrich
-                </Button>
-                <Button variant="secondary" size="sm" className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200">
-                  <Filter className="w-4 h-4 mr-1" />
-                  Filters
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input type="checkbox" className="rounded border-gray-300" />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Lead
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Company
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Score
-                    </th>
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
+          <div className="p-4 border-b border-white/5 flex items-center justify-between">
+            <span className="text-lg font-semibold text-white">Leads ({filteredLeads.length})</span>
+            <div className="flex items-center space-x-2">
+              <Button size="sm" className="bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-500/30">
+                <Bot className="w-4 h-4 mr-1" />
+                Bulk Enrich
+              </Button>
+              <Button size="sm" className="bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10">
+                <Filter className="w-4 h-4 mr-1" />
+                Filters
+              </Button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-white/[0.02] border-b border-white/5">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input type="checkbox" className="rounded border-white/20 bg-white/5" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lead
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ICP Score
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lead Score
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Contact
                     </th>
@@ -463,13 +727,13 @@ export default function LeadsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-white/5">
                   {filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={lead.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input 
                           type="checkbox" 
-                          className="rounded border-gray-300"
+                          className="rounded border-white/20 bg-white/5"
                           checked={selectedLeads.includes(lead.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -482,13 +746,13 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-600 font-semibold text-sm">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
+                            <span className="text-white font-semibold text-sm">
                               {lead.first_name[0]}{lead.last_name[0]}
                             </span>
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-white">
                               {lead.first_name} {lead.last_name}
                             </div>
                             <div className="text-sm text-gray-500 flex items-center">
@@ -506,8 +770,8 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 flex items-center">
-                            <Building2 className="w-4 h-4 mr-1 text-gray-400" />
+                          <div className="text-sm font-medium text-white flex items-center">
+                            <Building2 className="w-4 h-4 mr-1 text-gray-500" />
                             {lead.company}
                           </div>
                           {lead.title && (
@@ -534,6 +798,9 @@ export default function LeadsPage() {
                             </div>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getICPScoreBadge(lead.icp_score)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getLeadScoreBadge(lead.lead_score)}
@@ -579,8 +846,433 @@ export default function LeadsPage() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+        {/* Add Lead Modal */}
+        {showAddLead && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#12121a] rounded-2xl border border-white/10 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Add New Lead</h2>
+                  <p className="text-sm text-gray-400 mt-1">Enter lead details manually</p>
+                </div>
+                <button
+                  onClick={() => setShowAddLead(false)}
+                  className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-5">
+                {/* Name Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      First Name <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLead.first_name}
+                      onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
+                      placeholder="John"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Last Name <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLead.last_name}
+                      onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
+                      placeholder="Smith"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    placeholder="john.smith@company.com"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+
+                {/* Company & Title Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Company <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLead.company}
+                      onChange={(e) => setNewLead({ ...newLead, company: e.target.value })}
+                      placeholder="Acme Inc"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Job Title</label>
+                    <input
+                      type="text"
+                      value={newLead.title}
+                      onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
+                      placeholder="VP of Sales"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Phone & LinkedIn Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      value={newLead.phone}
+                      onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                      placeholder="+1-555-0123"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn URL</label>
+                    <input
+                      type="url"
+                      value={newLead.linkedin_url}
+                      onChange={(e) => setNewLead({ ...newLead, linkedin_url: e.target.value })}
+                      placeholder="https://linkedin.com/in/johnsmith"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Location & Industry Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={newLead.location}
+                      onChange={(e) => setNewLead({ ...newLead, location: e.target.value })}
+                      placeholder="San Francisco, CA"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Industry</label>
+                    <input
+                      type="text"
+                      value={newLead.industry}
+                      onChange={(e) => setNewLead({ ...newLead, industry: e.target.value })}
+                      placeholder="Technology"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Company Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Company Size</label>
+                  <select
+                    value={newLead.company_size}
+                    onChange={(e) => setNewLead({ ...newLead, company_size: e.target.value })}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  >
+                    <option value="" className="bg-[#12121a]">Select size...</option>
+                    <option value="1-10" className="bg-[#12121a]">1-10 employees</option>
+                    <option value="11-50" className="bg-[#12121a]">11-50 employees</option>
+                    <option value="51-200" className="bg-[#12121a]">51-200 employees</option>
+                    <option value="201-500" className="bg-[#12121a]">201-500 employees</option>
+                    <option value="501-1000" className="bg-[#12121a]">501-1000 employees</option>
+                    <option value="1001+" className="bg-[#12121a]">1001+ employees</option>
+                  </select>
+                </div>
+
+                {/* Error Message */}
+                {addLeadError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {addLeadError}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10 bg-white/[0.02] rounded-b-2xl">
+                <Button variant="outline" onClick={() => setShowAddLead(false)} className="px-6 bg-white/5 border-white/10 text-white hover:bg-white/10">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddLead}
+                  disabled={!newLead.first_name.trim() || !newLead.last_name.trim() || !newLead.email.trim() || !newLead.company.trim() || isAddingLead}
+                  className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 px-6"
+                >
+                  {isAddingLead ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Add Lead
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CSV Upload Wizard Modal */}
+        {showCSVUpload && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#12121a] rounded-2xl border border-white/10 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Import Leads from CSV</h2>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Step {csvStep} of 3: {csvStep === 1 ? 'Upload File' : csvStep === 2 ? 'Map Columns' : 'Complete'}
+                  </p>
+                </div>
+                <button
+                  onClick={resetCSVWizard}
+                  className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Step Indicator */}
+              <div className="px-6 pt-4">
+                <div className="flex items-center justify-between">
+                  <div className={`flex items-center ${csvStep >= 1 ? 'text-violet-400' : 'text-gray-500'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${csvStep >= 1 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' : 'bg-white/10'}`}>
+                      1
+                    </div>
+                    <span className="ml-2 font-medium">Upload</span>
+                  </div>
+                  <div className={`flex-1 h-1 mx-4 rounded ${csvStep >= 2 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-white/10'}`} />
+                  <div className={`flex items-center ${csvStep >= 2 ? 'text-violet-400' : 'text-gray-500'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${csvStep >= 2 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' : 'bg-white/10'}`}>
+                      2
+                    </div>
+                    <span className="ml-2 font-medium">Map</span>
+                  </div>
+                  <div className={`flex-1 h-1 mx-4 rounded ${csvStep >= 3 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-white/10'}`} />
+                  <div className={`flex items-center ${csvStep >= 3 ? 'text-violet-400' : 'text-gray-500'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${csvStep >= 3 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white' : 'bg-white/10'}`}>
+                      3
+                    </div>
+                    <span className="ml-2 font-medium">Done</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                {/* Step 1: Upload File */}
+                {csvStep === 1 && (
+                  <div className="space-y-6">
+                    <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-violet-500/50 transition-colors bg-white/[0.02]">
+                      <FileSpreadsheet className="w-12 h-12 mx-auto text-violet-400 mb-4" />
+                      <h3 className="text-lg font-medium text-white mb-2">Upload your CSV file</h3>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Drag and drop or click to browse. File should have headers in the first row.
+                      </p>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleCSVFileSelect}
+                        className="hidden"
+                        id="csv-upload"
+                      />
+                      <label
+                        htmlFor="csv-upload"
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-lg cursor-pointer transition-all shadow-lg shadow-violet-500/25"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Select CSV File
+                      </label>
+                    </div>
+
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h4 className="font-medium text-white mb-2">Required columns:</h4>
+                      <ul className="text-sm text-gray-300 space-y-1">
+                        <li>• <strong className="text-violet-400">Name</strong> (or First Name + Last Name) - Contact's name</li>
+                        <li>• <strong className="text-violet-400">Email</strong> - Contact's email address</li>
+                        <li>• <strong className="text-violet-400">Company</strong> - Company name</li>
+                      </ul>
+                      <p className="text-sm text-gray-500 mt-3">
+                        Optional: Title, Phone, LinkedIn URL, Location, City, Country, Timezone, Industry, Company Size, Pain Points, Offer, CTA
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Map Columns */}
+                {csvStep === 2 && (
+                  <div className="space-y-6">
+                    <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+                      <p className="text-sm text-violet-300">
+                        <strong className="text-white">{csvData.length}</strong> leads found in <strong className="text-white">{csvFile?.name}</strong>. 
+                        Map your CSV columns to lead fields below.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        // Required fields - either name OR first_name + last_name
+                        { key: 'name', label: 'Full Name', required: false, hint: 'Or use First + Last Name' },
+                        { key: 'first_name', label: 'First Name', required: false, hint: 'Required if no Full Name' },
+                        { key: 'last_name', label: 'Last Name', required: false, hint: 'Required if no Full Name' },
+                        { key: 'email', label: 'Email', required: true },
+                        { key: 'company', label: 'Company', required: true },
+                        // Optional fields from leads table
+                        { key: 'title', label: 'Job Title', required: false },
+                        { key: 'phone', label: 'Phone', required: false },
+                        { key: 'linkedin_url', label: 'LinkedIn URL', required: false },
+                        { key: 'location', label: 'Location', required: false },
+                        { key: 'city', label: 'City', required: false },
+                        { key: 'country', label: 'Country', required: false },
+                        { key: 'timezone', label: 'Timezone', required: false },
+                        { key: 'industry', label: 'Industry', required: false },
+                        { key: 'company_size', label: 'Company Size', required: false },
+                        // Context fields
+                        { key: 'pain_points', label: 'Pain Points', required: false },
+                        { key: 'offer', label: 'Offer/Product', required: false },
+                        { key: 'cta', label: 'Call to Action', required: false },
+                      ].map(field => (
+                        <div key={field.key}>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            {field.label} {field.required && <span className="text-red-400">*</span>}
+                          </label>
+                          <select
+                            value={csvMapping[field.key] || ''}
+                            onChange={(e) => setCsvMapping({ ...csvMapping, [field.key]: e.target.value })}
+                            className={`w-full px-3 py-2 bg-white/5 border rounded-lg text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 ${
+                              field.required && !csvMapping[field.key] ? 'border-red-500/50' : 'border-white/10'
+                            }`}
+                          >
+                            <option value="" className="bg-[#12121a]">-- Select column --</option>
+                            {csvHeaders.map(header => (
+                              <option key={header} value={header} className="bg-[#12121a]">{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Preview */}
+                    <div>
+                      <h4 className="font-medium text-white mb-2">Preview (first 3 rows):</h4>
+                      <div className="overflow-x-auto border border-white/10 rounded-xl">
+                        <table className="w-full text-sm">
+                          <thead className="bg-white/5">
+                            <tr>
+                              {csvHeaders.slice(0, 5).map(header => (
+                                <th key={header} className="px-3 py-2 text-left font-medium text-gray-400">{header}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {csvData.slice(0, 3).map((row, i) => (
+                              <tr key={i} className="border-t border-white/10">
+                                {row.slice(0, 5).map((cell, j) => (
+                                  <td key={j} className="px-3 py-2 text-gray-300">{cell || '-'}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Complete */}
+                {csvStep === 3 && csvUploadResult && (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Import Complete!</h3>
+                    <p className="text-gray-400 mb-6">
+                      Successfully imported <strong className="text-emerald-400">{csvUploadResult.success}</strong> leads
+                      {csvUploadResult.failed > 0 && (
+                        <span className="text-red-400"> ({csvUploadResult.failed} failed)</span>
+                      )}
+                    </p>
+                    <Button onClick={resetCSVWizard} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0">
+                      Done
+                    </Button>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {csvUploadError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm mt-4">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {csvUploadError}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              {csvStep !== 3 && (
+                <div className="flex items-center justify-between p-6 border-t border-white/10 bg-white/[0.02] rounded-b-2xl">
+                  <Button
+                    variant="outline"
+                    onClick={csvStep === 1 ? resetCSVWizard : () => setCsvStep(1)}
+                    className="px-6 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                  >
+                    {csvStep === 1 ? 'Cancel' : (
+                      <>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                      </>
+                    )}
+                  </Button>
+                  
+                  {csvStep === 2 && (
+                    <Button
+                      onClick={handleCSVUpload}
+                      disabled={!csvMapping.email || !(csvMapping.name || (csvMapping.first_name && csvMapping.last_name)) || !csvMapping.company || isUploadingCSV}
+                      className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 px-6"
+                    >
+                      {isUploadingCSV ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          Import {csvData.length} Leads
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
   );
 }

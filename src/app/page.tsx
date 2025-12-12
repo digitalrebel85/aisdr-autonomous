@@ -1,9 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import MegaMenu from '@/components/MegaMenu';
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -16,62 +14,62 @@ import {
   Zap,
   Target,
   Bot,
-  ChevronRight,
-  Quote,
-  MessageSquare
+  Sparkles,
+  Brain,
+  Rocket,
+  Shield,
+  Clock,
+  TrendingUp,
+  MessageSquare,
+  Activity,
+  CircuitBoard
 } from 'lucide-react';
 
 export default function HomePage() {
-  const socialProofLogos = [
-    "TechCorp", "GrowthLab", "ScaleUp Inc", "DataFlow", "CloudTech", "SalesBoost"
-  ];
-
-  const howItWorksSteps = [
-    {
-      step: "1",
-      title: "Identify",
-      description: "AI finds prospects showing buying intent from your website visitors and CRM data",
-      details: ["Reverse IP lookup", "Intent data analysis", "CRM integration"]
-    },
-    {
-      step: "2", 
-      title: "Personalize",
-      description: "Generate hyper-relevant messages using company data and behavioral signals",
-      details: ["AI copywriting", "Dynamic personalization", "A/B testing"]
-    },
-    {
-      step: "3",
-      title: "Engage",
-      description: "Send perfectly timed outreach and automatically book qualified meetings",
-      details: ["Timezone optimization", "Reply classification", "Calendar booking"]
-    }
-  ];
-
   const features = [
     {
-      icon: Bot,
-      title: "AI Personalization",
-      benefit: "100 relevant messages beat 10,000 generic ones",
-      description: "Advanced AI writes personalized emails that sound human and get responses"
+      icon: Brain,
+      title: "AI Lead Enrichment",
+      description: "Automatically enrich leads with company data, intent signals, and contact information using multiple AI providers.",
+      gradient: "from-violet-500 to-fuchsia-500"
     },
     {
-      icon: MessageSquare,
-      title: "Smart Sequencing",
-      benefit: "Perfect timing, every time",
-      description: "Multi-channel sequences that adapt based on prospect behavior and engagement"
+      icon: Sparkles,
+      title: "Hyper-Personalized Emails",
+      description: "AI writes unique, contextual emails for each prospect based on their company, role, and pain points.",
+      gradient: "from-cyan-500 to-blue-500"
+    },
+    {
+      icon: Bot,
+      title: "Autonomous Follow-ups",
+      description: "Smart sequences that adapt based on engagement. AI handles replies and escalates hot leads.",
+      gradient: "from-emerald-500 to-teal-500"
     },
     {
       icon: Target,
-      title: "Inbox AI",
-      benefit: "Never miss a hot lead",
-      description: "AI classifies replies, schedules follow-ups, and routes qualified prospects"
+      title: "ICP Scoring",
+      description: "AI scores every lead against your ideal customer profile to prioritize the best opportunities.",
+      gradient: "from-amber-500 to-orange-500"
+    },
+    {
+      icon: Calendar,
+      title: "Auto Meeting Booking",
+      description: "Qualified prospects book directly into your calendar. No back-and-forth scheduling.",
+      gradient: "from-pink-500 to-rose-500"
     },
     {
       icon: BarChart3,
-      title: "CRM Sync",
-      benefit: "Your data, always up-to-date",
-      description: "Seamless integration with Salesforce, HubSpot, and all major CRMs"
+      title: "Real-time Analytics",
+      description: "Track every metric that matters. See what's working and optimize in real-time.",
+      gradient: "from-indigo-500 to-purple-500"
     }
+  ];
+
+  const stats = [
+    { value: "3x", label: "More Qualified Demos" },
+    { value: "70%", label: "Cost Reduction" },
+    { value: "24/7", label: "Always Working" },
+    { value: "89%", label: "Positive Reply Rate" }
   ];
 
   const testimonials = [
@@ -79,433 +77,382 @@ export default function HomePage() {
       name: "Sarah Chen",
       role: "VP Sales",
       company: "TechCorp",
-      content: "From 12 meetings per month to 47. AISDR doesn't just book more meetings—it books better meetings.",
-      metric: "+292% qualified meetings",
-      rating: 5
+      content: "From 12 meetings per month to 47. ConnectLead doesn't just book more meetings—it books better meetings.",
+      metric: "+292%",
+      metricLabel: "qualified meetings"
     },
     {
       name: "Mike Rodriguez", 
       role: "Founder",
       company: "GrowthLab",
-      content: "We replaced our $240K SDR team with AISDR. Same results, 70% lower cost, zero management headaches.",
-      metric: "$168K annual savings",
-      rating: 5
+      content: "We replaced our $240K SDR team with ConnectLead. Same results, 70% lower cost, zero management headaches.",
+      metric: "$168K",
+      metricLabel: "annual savings"
     },
     {
       name: "Emily Watson",
       role: "Head of Growth",
       company: "ScaleUp Inc", 
       content: "The personalization is scary good. Prospects think they're talking to our best SDR, not an AI.",
-      metric: "89% positive reply rate",
-      rating: 5
-    }
-  ];
-
-  const faqs = [
-    {
-      question: "How quickly can I see results?",
-      answer: "Most customers see their first qualified meetings within 7 days of setup. Full ROI typically achieved within 30 days."
-    },
-    {
-      question: "Do I need technical skills to use AISDR?",
-      answer: "No. Our setup wizard guides you through connecting your email and CRM in under 30 minutes. No coding required."
-    },
-    {
-      question: "How does AISDR compare to hiring SDRs?",
-      answer: "AISDR costs 70% less than a human SDR team, works 24/7, never gets sick, and consistently delivers high-quality outreach."
-    },
-    {
-      question: "What if prospects realize it's AI?",
-      answer: "Our AI is trained to write naturally and personally. Most prospects never realize they're talking to AI, but we're always transparent when asked."
-    },
-    {
-      question: "Can I try before I buy?",
-      answer: "Yes! Start with our 14-day free trial. No credit card required. Cancel anytime."
+      metric: "89%",
+      metricLabel: "positive replies"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-fuchsia-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl"></div>
+      </div>
+
       {/* Navigation */}
-      <MegaMenu />
+      <nav className="relative z-50 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white">ConnectLead</span>
+            </div>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="#features" className="text-gray-400 hover:text-white transition-colors">Features</Link>
+              <Link href="#how-it-works" className="text-gray-400 hover:text-white transition-colors">How It Works</Link>
+              <Link href="#testimonials" className="text-gray-400 hover:text-white transition-colors">Testimonials</Link>
+              <Link href="/login" className="text-gray-400 hover:text-white transition-colors">Login</Link>
+              <Link href="/signup">
+                <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 pb-12">
+      <section className="relative pt-20 pb-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-8">
-            <div className="space-y-4">
-              <h1 className="text-4xl lg:text-7xl font-bold text-gray-900 leading-tight">
-                Replace Your Entire SDR Team
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> with AI Automation</span>
+            {/* AI Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-300">AI-Powered Sales Automation</span>
+              <Sparkles className="w-4 h-4 text-violet-400" />
+            </div>
+
+            <div className="space-y-6">
+              <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+                <span className="text-white">Replace Your SDR Team</span>
+                <br />
+                <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
+                  With Autonomous AI Agents
+                </span>
               </h1>
-              <p className="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-ConnectLead uses AI agents to intelligently automate SDR activities at scale. Enrich leads, write personalized emails, follow up strategically, and reply to all emails - increasing efficiency while saving companies money.
+              <p className="text-xl lg:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+                ConnectLead uses AI agents to enrich leads, write hyper-personalized emails, 
+                follow up intelligently, and book qualified meetings — all on autopilot.
               </p>
             </div>
             
-            {/* Dual CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/demo">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-8 py-4 text-lg">
-                  Book a Demo
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Link href="/signup">
+                <Button size="lg" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 px-8 py-6 text-lg shadow-lg shadow-violet-500/25">
+                  Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/signup">
-                <Button variant="outline" size="lg" className="px-8 py-4 text-lg">
-                  Try It Free
+              <Link href="/demo">
+                <Button variant="outline" size="lg" className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-8 py-6 text-lg">
+                  <Play className="mr-2 h-5 w-5" />
+                  Watch Demo
                 </Button>
               </Link>
             </div>
             
-            {/* Social Proof */}
-            <div className="pt-8">
-              <p className="text-sm text-gray-500 mb-6">Trusted by 200+ sales teams</p>
-              <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-                <div className="text-gray-400 font-semibold">TechCorp</div>
-                <div className="text-gray-400 font-semibold">SalesForce</div>
-                <div className="text-gray-400 font-semibold">GrowthCo</div>
-                <div className="text-gray-400 font-semibold">ScaleUp</div>
-                <div className="text-gray-400 font-semibold">RevTech</div>
+            {/* Stats */}
+            <div className="pt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Dashboard Preview */}
+        <div className="max-w-5xl mx-auto mt-20 px-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 rounded-2xl blur-xl"></div>
+            <div className="relative bg-[#12121a] rounded-2xl border border-white/10 p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-violet-500/20 rounded-lg">
+                    <Activity className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Live Campaign Dashboard</h3>
+                    <p className="text-gray-500 text-sm">Real-time AI agent activity</p>
+                  </div>
+                </div>
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+                  Live
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="text-2xl font-bold text-white">1,247</div>
+                  <div className="text-sm text-gray-500">Leads Enriched</div>
+                  <div className="text-xs text-emerald-400 mt-1">+23% this week</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="text-2xl font-bold text-white">342</div>
+                  <div className="text-sm text-gray-500">Emails Sent Today</div>
+                  <div className="text-xs text-violet-400 mt-1">AI personalized</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="text-2xl font-bold text-white">89%</div>
+                  <div className="text-sm text-gray-500">Positive Replies</div>
+                  <div className="text-xs text-cyan-400 mt-1">Above average</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="text-2xl font-bold text-white">47</div>
+                  <div className="text-sm text-gray-500">Meetings Booked</div>
+                  <div className="text-xs text-fuchsia-400 mt-1">This month</div>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="relative py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-16">
+            <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 px-4 py-1">
+              <CircuitBoard className="w-4 h-4 mr-2" />
+              Powerful Features
+            </Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold text-white">
+              Everything You Need to
+              <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent"> Scale Sales</span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              AI agents handle the entire SDR workflow — from lead enrichment to meeting booking
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <div 
+                key={index} 
+                className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-white/10 transition-all hover:bg-white/[0.04]"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} p-0.5 mb-4`}>
+                  <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section id="how-it-works" className="relative py-32 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900">
-              How ConnectLead Works
+            <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-4 py-1">
+              <Rocket className="w-4 h-4 mr-2" />
+              Simple Process
+            </Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold text-white">
+              How ConnectLead
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent"> Works</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our AI-powered platform handles your entire SDR workflow automatically
-            </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <Users className="h-10 w-10 text-blue-600" />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-2xl font-semibold text-gray-900">AI Lead Enrichment</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Our AI agents automatically enrich leads using intent data, visitor tracking, and your API keys to build comprehensive prospect profiles.
-                </p>
-              </div>
-            </div>
-            
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <Mail className="h-10 w-10 text-blue-600" />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-2xl font-semibold text-gray-900">Personalized Outreach</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Generate highly personalized emails based on prospect data, company information, and buying intent signals for maximum engagement.
-                </p>
-              </div>
-            </div>
-            
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <Bot className="h-10 w-10 text-blue-600" />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-2xl font-semibold text-gray-900">Intelligent Follow-ups</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  AI handles all follow-up sequences, replies to emails intelligently, and escalates qualified prospects to your sales team.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Core Features */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-              Everything You Need to Scale Your Sales Development
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-ConnectLead combines intent data, visitor tracking, and AI automation to create the most powerful SDR platform on the market.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Target className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Precision Lead Targeting</h3>
-                <p className="text-gray-600 leading-relaxed">Use intent data and visitor tracking to identify high-quality prospects automatically.</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Bot className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">AI-Powered Automation</h3>
-                <p className="text-gray-600 leading-relaxed">Intelligent agents handle lead enrichment, email writing, and follow-ups at scale.</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <BarChart3 className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Advanced Analytics</h3>
-                <p className="text-gray-600 leading-relaxed">Track performance metrics, conversion rates, and ROI with comprehensive dashboards.</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Zap className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Seamless Integrations</h3>
-                <p className="text-gray-600 leading-relaxed">Connect with your existing CRM, email platforms, and sales tools effortlessly.</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Lightning Fast Setup</h3>
-                <p className="text-gray-600 leading-relaxed">Get up and running in minutes, not weeks. No technical expertise required.</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Star className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Proven Results</h3>
-                <p className="text-gray-600 leading-relaxed">Companies see 3x more qualified demos and 70% cost reduction on average.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Product Tour Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                See AISDR in Action
-              </h2>
-              <p className="text-xl text-gray-600">
-                Watch how AISDR identifies prospects, writes personalized messages, and books qualified meetings automatically.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">Real-time prospect identification</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">AI-powered message personalization</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">Automated meeting booking</span>
-                </div>
-              </div>
-              <Link href="/demo">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                  Watch 3-Minute Demo
-                  <Play className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="relative">
-              <div className="bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl p-8">
-                <div className="bg-white rounded-xl shadow-2xl p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">Live Campaign Results</h3>
-                      <Badge className="bg-green-100 text-green-800">Live</Badge>
+              <div className="absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-violet-500/50 to-transparent hidden md:block"></div>
+              <div className="text-center space-y-4">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 rounded-2xl border border-violet-500/30 flex items-center justify-center">
+                  <Users className="w-10 h-10 text-violet-400" />
+                </div>
+                <div className="text-sm text-violet-400 font-medium">Step 1</div>
+                <h3 className="text-2xl font-semibold text-white">Import & Enrich</h3>
+                <p className="text-gray-400">
+                  Upload your leads or connect your CRM. AI agents automatically enrich with company data, intent signals, and contact info.
+                </p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-fuchsia-500/50 to-transparent hidden md:block"></div>
+              <div className="text-center space-y-4">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-fuchsia-600/20 to-pink-600/20 rounded-2xl border border-fuchsia-500/30 flex items-center justify-center">
+                  <Mail className="w-10 h-10 text-fuchsia-400" />
+                </div>
+                <div className="text-sm text-fuchsia-400 font-medium">Step 2</div>
+                <h3 className="text-2xl font-semibold text-white">AI Outreach</h3>
+                <p className="text-gray-400">
+                  AI writes hyper-personalized emails based on each prospect's company, role, and pain points. Every message is unique.
+                </p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="text-center space-y-4">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-2xl border border-cyan-500/30 flex items-center justify-center">
+                  <Calendar className="w-10 h-10 text-cyan-400" />
+                </div>
+                <div className="text-sm text-cyan-400 font-medium">Step 3</div>
+                <h3 className="text-2xl font-semibold text-white">Book Meetings</h3>
+                <p className="text-gray-400">
+                  AI handles follow-ups, responds to replies, and books qualified meetings directly into your calendar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="relative py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-16">
+            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 px-4 py-1">
+              <Star className="w-4 h-4 mr-2" />
+              Customer Stories
+            </Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold text-white">
+              Loved by
+              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Sales Teams</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-white/10 transition-all">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <blockquote className="text-lg text-gray-300 leading-relaxed mb-6">
+                  "{testimonial.content}"
+                </blockquote>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-white">{testimonial.name}</div>
+                    <div className="text-sm text-gray-500">{testimonial.role}, {testimonial.company}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                      {testimonial.metric}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-blue-600">47</div>
-                        <div className="text-sm text-gray-600">Meetings This Month</div>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-green-600">89%</div>
-                        <div className="text-sm text-gray-600">Positive Replies</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Prospects Identified</span>
-                        <span className="text-blue-600">1,247 this week</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Messages Sent</span>
-                        <span className="text-green-600">342 today</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Meetings Booked</span>
-                        <span className="text-purple-600">12 this week</span>
-                      </div>
-                    </div>
+                    <div className="text-xs text-gray-500">{testimonial.metricLabel}</div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-              Loved by Sales Teams Worldwide
-            </h2>
-            <p className="text-xl text-gray-600">
-              Real results from real customers
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-1">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <blockquote className="text-lg text-gray-700 italic leading-relaxed">
-                      "{testimonial.content}"
-                    </blockquote>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="text-sm font-semibold text-blue-800">{testimonial.metric}</div>
-                    </div>
-                    <div className="border-t pt-4">
-                      <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                      <div className="text-sm text-gray-600">{testimonial.role}</div>
-                      <div className="text-xs text-gray-500">{testimonial.company}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-20 bg-white">
+      {/* CTA Section */}
+      <section className="relative py-32">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-gray-600">
-              Everything you need to know about AISDR
-            </p>
-          </div>
-
-          <div className="space-y-8">
-            {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-gray-200 pb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{faq.question}</h3>
-                <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 rounded-3xl blur-xl"></div>
+            <div className="relative bg-gradient-to-br from-white/[0.05] to-white/[0.02] rounded-3xl border border-white/10 p-12 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 mb-6">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-emerald-300">No credit card required</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-8">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white">
-              Ready to Stop Scaling Noise?
-            </h2>
-            <p className="text-xl text-blue-100">
-              Join 500+ sales teams using AISDR to book more qualified meetings with less effort.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/demo">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 text-lg">
-                  Book a Demo
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg">
-                  Try Free for 14 Days
-                </Button>
-              </Link>
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+                Ready to Automate Your Sales?
+              </h2>
+              <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Join hundreds of sales teams using ConnectLead to book more qualified meetings with AI.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/signup">
+                  <Button size="lg" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 px-8 py-6 text-lg shadow-lg shadow-violet-500/25">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/demo">
+                  <Button variant="outline" size="lg" className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-8 py-6 text-lg">
+                    Book a Demo
+                  </Button>
+                </Link>
+              </div>
+              <p className="text-sm text-gray-500 mt-6">
+                Setup in 30 minutes • Cancel anytime • 14-day free trial
+              </p>
             </div>
-            <p className="text-sm text-blue-200">
-              No credit card required • Setup in 30 minutes • Cancel anytime
-            </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="relative border-t border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                AISDR
-              </h3>
-              <p className="text-gray-400">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold text-white">ConnectLead</span>
+              </div>
+              <p className="text-gray-500">
                 AI-powered sales development that books more qualified demos automatically.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 <li><Link href="/demo" className="hover:text-white transition-colors">Demo</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
                 <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold text-white mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
                 <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
                 <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 AISDR. All rights reserved.</p>
+          <div className="border-t border-white/5 mt-8 pt-8 text-center text-gray-500">
+            <p>&copy; 2025 ConnectLead. All rights reserved.</p>
           </div>
         </div>
       </footer>

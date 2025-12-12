@@ -49,19 +49,29 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // New schema fields
+        // Lead info
         name: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
         title: lead.title || '',
         company: lead.company,
         email: lead.email,
-        offer: lead.offer,
-        hook_snippet: '', // Default empty hook
-        lead_context: JSON.stringify(leadContext),
         
-        // Legacy fields for backward compatibility
+        // Offer & messaging
+        offer: lead.offer || '',
+        hook_snippet: lead.hook_snippet || '',
         pain_points: Array.isArray(lead.pain_points) 
           ? lead.pain_points.join(', ')
-          : lead.pain_points || ''
+          : lead.pain_points || '',
+        
+        // Sequence context - CRITICAL for unique emails per step
+        step_number: lead.step_number || 1,
+        total_steps: lead.total_steps || 3,
+        objective: lead.objective || 'meetings',
+        framework: lead.framework || '',
+        
+        // Full lead context for AI
+        lead_context: JSON.stringify(leadContext),
       }),
     });
 

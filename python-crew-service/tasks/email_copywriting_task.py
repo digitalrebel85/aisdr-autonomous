@@ -2,8 +2,128 @@ from crewai import Task
 from schemas import EmailCopywritingResult
 import json
 
+# Elite sequence psychology - each step has a specific purpose
+SEQUENCE_PSYCHOLOGY = {
+    "meetings": {
+        1: {
+            "purpose": "Pattern Interrupt + Pain + Unique Insight",
+            "angle": "Challenge conventional thinking. Most people think X, but data shows Y.",
+            "cta_style": "Curiosity-driven question, no hard ask. 'Want me to send the breakdown?'",
+            "tone": "Intriguing, thought-provoking"
+        },
+        2: {
+            "purpose": "Soft Proof + Micro-Value Drop",
+            "angle": "Give ONE actionable takeaway to earn trust before asking for anything.",
+            "cta_style": "Conversational. 'Worth a deeper look?' or 'If this resonates, I can share more.'",
+            "tone": "Helpful, value-first"
+        },
+        3: {
+            "purpose": "Direct Ask + Value Incentive",
+            "angle": "Clear meeting request, but offer something valuable upfront. 'I'll send you X before we meet.'",
+            "cta_style": "Direct but generous. Include calendar link offer.",
+            "tone": "Confident, giving"
+        },
+        4: {
+            "purpose": "Breakup with Fork in the Road",
+            "angle": "Permission to close file OR offer ultra-short version. Give them two easy reply options.",
+            "cta_style": "Fork: 'Reply close or send it' - makes replying easy.",
+            "tone": "Respectful, no pressure"
+        }
+    },
+    "demos": {
+        1: {
+            "purpose": "Visual Hook + Problem Framing",
+            "angle": "Offer to show something quick (12 seconds, 1 minute). Make it tangible.",
+            "cta_style": "'Can I show you in 12 seconds?' or 'Want me to send the clip?'",
+            "tone": "Curious, visual"
+        },
+        2: {
+            "purpose": "Social Proof Story + Micro-Demo",
+            "angle": "Share what happened when a similar company used the solution. Before/after.",
+            "cta_style": "'Worth a look?' or 'Want to see how they did it?'",
+            "tone": "Story-driven, proof-focused"
+        },
+        3: {
+            "purpose": "FOMO Demo - Personalization, Not Pressure",
+            "angle": "Offer to show it on THEIR data/situation. Make it specific to them.",
+            "cta_style": "'Want to see this on YOUR data?' Reply 'show me'.",
+            "tone": "Personalized, exclusive"
+        }
+    },
+    "trials": {
+        1: {
+            "purpose": "Risk Reversal + Desired Outcome",
+            "angle": "Emphasize zero risk - runs in parallel, no migration, no commitment.",
+            "cta_style": "'Want me to set up a sandbox?' Low friction ask.",
+            "tone": "Safe, easy"
+        },
+        2: {
+            "purpose": "Quickstart + 1-Minute Success Path",
+            "angle": "Show exact steps to first win. Make it feel achievable in 60 seconds.",
+            "cta_style": "'Want the link?' Simple yes/no.",
+            "tone": "Action-oriented, quick"
+        },
+        3: {
+            "purpose": "Trial Expiring + Soft CTA with Micro-Commitment",
+            "angle": "Offer a 15-second video or ultra-quick demo. Lowest friction possible.",
+            "cta_style": "Reply 'send it' for video + trial link.",
+            "tone": "Last chance, but gentle"
+        }
+    },
+    "sales": {
+        1: {
+            "purpose": "Insight Reframe",
+            "angle": "Challenge conventional thinking. 'Everyone thinks X, but data shows Y.'",
+            "cta_style": "Curiosity question. 'Curious if you've seen this at [company]?'",
+            "tone": "Thought leader, challenger"
+        },
+        2: {
+            "purpose": "Solution + Differentiator",
+            "angle": "Why you vs alternatives. What makes this different from the dozen other tools.",
+            "cta_style": "'Worth a quick conversation to see if it fits?'",
+            "tone": "Confident, differentiated"
+        },
+        3: {
+            "purpose": "Before/After Transformation Narrative",
+            "angle": "Tell a story: company like theirs, what changed in 14 days, specific results.",
+            "cta_style": "'Want me to share how they did it?'",
+            "tone": "Story-driven, results-focused"
+        },
+        4: {
+            "purpose": "Special Offer + Real Deadline",
+            "angle": "Time-limited offer. 'For companies that move forward this week...'",
+            "cta_style": "'Interested? Just reply and I'll send details.'",
+            "tone": "Urgent but not pushy"
+        },
+        5: {
+            "purpose": "Breakup Fork",
+            "angle": "Easy opt-out + curiosity hook. Two simple reply options.",
+            "cta_style": "Reply 'close' or 'short version'.",
+            "tone": "Respectful, final"
+        }
+    }
+}
+
+PATTERN_INTERRUPTS = [
+    "Quick one:",
+    "This might be left-field, but...",
+    "Not sure if this is relevant — tell me if it's not.",
+    "Might be off-base here, but...",
+    ""
+]
+
 class EmailCopywritingTask():
-    def __init__(self, agent, name, title, company, pain_points, offer, hook_snippet, lead_context=None):
+    def __init__(self, agent, name, title, company, pain_points, offer, hook_snippet, 
+                 lead_context=None, step_number=1, total_steps=3, objective="meetings", 
+                 framework="", first_name=""):
+        
+        # Get step-specific psychology
+        obj_psychology = SEQUENCE_PSYCHOLOGY.get(objective, SEQUENCE_PSYCHOLOGY["meetings"])
+        step_psychology = obj_psychology.get(step_number, obj_psychology.get(1))
+        
+        # Get pattern interrupt for variety
+        pattern_interrupt = PATTERN_INTERRUPTS[step_number % len(PATTERN_INTERRUPTS)]
+        
         # Parse lead context if provided
         context_info = ""
         if lead_context:
@@ -11,69 +131,80 @@ class EmailCopywritingTask():
                 lead_data = json.loads(lead_context) if isinstance(lead_context, str) else lead_context
                 context_parts = []
                 
-                # Add enriched data context
                 if lead_data.get('industry'):
                     context_parts.append(f"Industry: {lead_data['industry']}")
                 if lead_data.get('company_size'):
                     context_parts.append(f"Company Size: {lead_data['company_size']}")
                 if lead_data.get('location'):
                     context_parts.append(f"Location: {lead_data['location']}")
-                if lead_data.get('linkedin_url'):
-                    context_parts.append(f"LinkedIn: {lead_data['linkedin_url']}")
-                if lead_data.get('phone'):
-                    context_parts.append(f"Phone: {lead_data['phone']}")
                 if lead_data.get('company_domain'):
                     context_parts.append(f"Company Website: {lead_data['company_domain']}")
-                
-                # Add AI-identified pain points if available
                 if lead_data.get('pain_points') and isinstance(lead_data['pain_points'], list):
-                    context_parts.append(f"AI-Identified Pain Points: {', '.join(lead_data['pain_points'])}")
-                
-                # Add any additional enriched data
-                if lead_data.get('enriched_data'):
-                    enriched = lead_data['enriched_data']
-                    if isinstance(enriched, dict):
-                        # Handle CSV custom fields
-                        if 'csv_upload' in enriched and 'custom_fields' in enriched['csv_upload']:
-                            custom_fields = enriched['csv_upload']['custom_fields']
-                            for field_name, field_value in custom_fields.items():
-                                if field_value:
-                                    context_parts.append(f"{field_name.replace('_', ' ').title()}: {field_value}")
-                        
-                        # Handle other enriched data sources
-                        for key, value in enriched.items():
-                            if key not in ['name', 'email', 'company', 'title', 'csv_upload'] and value:
-                                if isinstance(value, dict):
-                                    # Handle nested objects (like API responses)
-                                    for sub_key, sub_value in value.items():
-                                        if sub_key not in ['name', 'email', 'company', 'title'] and sub_value:
-                                            context_parts.append(f"{sub_key.replace('_', ' ').title()}: {sub_value}")
-                                else:
-                                    context_parts.append(f"{key.replace('_', ' ').title()}: {value}")
+                    context_parts.append(f"Pain Points: {', '.join(lead_data['pain_points'])}")
                 
                 if context_parts:
-                    context_info = f"\n\nAdditional Lead Intelligence:\n{chr(10).join(context_parts)}"
+                    context_info = f"\n\nLead Intelligence:\n{chr(10).join(context_parts)}"
             except (json.JSONDecodeError, TypeError):
-                # Fallback if JSON parsing fails
-                context_info = f"\n\nAdditional Context: {lead_context}"
+                context_info = ""
+        
+        # Use first_name if available, otherwise extract from name
+        display_name = first_name if first_name else name.split()[0] if name else "there"
         
         self.task = Task(
             description=f"""
-            Write a personalized cold email to {name}, the {title} at {company}.
-            The prospect's pain points are: {pain_points}
-            The offer is: {offer}
-            Use this hook snippet to start the email: {hook_snippet}{context_info}
+            Write email #{step_number} of {total_steps} in a {objective} sequence for {display_name}, the {title} at {company}.
 
-            IMPORTANT INSTRUCTIONS:
-            - NEVER mention internal data like lead scores, marketing sources, or tracking data - the prospect doesn't know about these
-            - Use custom fields to understand their business context, but don't reference the data directly
-            - If custom data suggests they work in SEO, mention SEO challenges generally, not "your SEO data shows..."
-            - Focus on their likely challenges based on their role/industry, not on data they never shared with you
-            - Keep the tone professional but conversational
-            - Make it sound like you researched their company publicly, not like you have internal tracking data
+            === SEQUENCE CONTEXT ===
+            Objective: {objective}
+            This is email {step_number} of {total_steps}
+            Framework: {framework if framework else 'Conversational'}
             
-            Your final answer MUST be a JSON object with keys 'subject' and 'body'.
+            === THIS EMAIL'S PURPOSE ===
+            Purpose: {step_psychology['purpose']}
+            Angle: {step_psychology['angle']}
+            CTA Style: {step_psychology['cta_style']}
+            Tone: {step_psychology['tone']}
+            
+            === LEAD & OFFER INFO ===
+            Prospect: {display_name} ({title} at {company})
+            Pain Points: {pain_points}
+            Offer: {offer}
+            Hook (optional): {hook_snippet}{context_info}
+            
+            === PATTERN INTERRUPT (use if appropriate) ===
+            {pattern_interrupt if pattern_interrupt else '(No pattern interrupt for this email)'}
+            
+            === CRITICAL RULES ===
+            1. This email MUST be DIFFERENT from other emails in the sequence
+            2. Follow the PURPOSE and ANGLE above - don't just write a generic cold email
+            3. Keep it SHORT - under 100 words for body
+            4. Use conversational CTAs, NOT "book a call" or "schedule a meeting"
+            5. If this is a breakup email (last in sequence), offer a fork: "Reply X or Y"
+            6. Sound human - use contractions, be casual but professional
+            7. NEVER mention internal data, lead scores, or tracking
+            8. Subject line should be short (under 6 words) and curiosity-driven
+            
+            === FORMATTING RULES ===
+            - Use proper paragraph breaks (blank lines) between distinct thoughts
+            - Keep paragraphs short (2-3 sentences max)
+            - Add a blank line before the sign-off
+            - Structure: Greeting → Opening → Main point → CTA → Sign-off
+            - Example:
+              Hi [Name],
+              
+              First paragraph here.
+              
+              Second paragraph here.
+              
+              CTA here.
+              
+              Best,
+              [Your name]
+            
+            === OUTPUT FORMAT ===
+            Return ONLY a JSON object with 'subject' and 'body' keys. No other text.
+            The body MUST include proper line breaks (\\n\\n) between paragraphs.
             """,
-            expected_output="A JSON object with the email's subject and body.",
+            expected_output="A JSON object with 'subject' and 'body' keys.",
             agent=agent
         )

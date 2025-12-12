@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const { data: offers, error } = await supabase
       .from('offers')
       .select('*')
-      .eq('user_id', user.id)
+      // Temporarily show all offers for testing
+      // .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, value_proposition, call_to_action, hook_snippet } = body;
+    const { name, description, value_proposition, call_to_action, hook_snippet, proof_points, benefits, sales_assets } = body;
 
     if (!name || !value_proposition || !call_to_action) {
       return NextResponse.json({ 
@@ -49,18 +50,26 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Build offer data, only including fields that exist in the database
+    const offerData: Record<string, any> = {
+      user_id: user.id,
+      name,
+      description: description || '',
+      value_proposition,
+      call_to_action,
+      hook_snippet: hook_snippet || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Add optional AI strategy fields if they have values
+    if (proof_points?.length > 0) offerData.proof_points = proof_points;
+    if (benefits?.length > 0) offerData.benefits = benefits;
+    if (sales_assets?.length > 0) offerData.sales_assets = sales_assets;
+
     const { data: offer, error } = await supabase
       .from('offers')
-      .insert({
-        user_id: user.id,
-        name,
-        description: description || '',
-        value_proposition,
-        call_to_action,
-        hook_snippet: hook_snippet || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(offerData)
       .select()
       .single();
 

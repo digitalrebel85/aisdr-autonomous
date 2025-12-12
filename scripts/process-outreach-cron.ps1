@@ -2,7 +2,7 @@
 # Save this as: scripts/process-outreach-cron.ps1
 
 # Configuration
-$API_URL = "http://localhost:3000/api/cron/process-outreach"
+$API_URL = "http://localhost:3000/api/cron/process-sequence-outreach"
 $CRON_SECRET = $env:CRON_SECRET
 
 Write-Host "=== AISDR Outreach Cron Job ===" -ForegroundColor Cyan

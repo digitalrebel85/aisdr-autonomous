@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -200,32 +200,20 @@ export default function InboxPage() {
   const fetchEmailThreads = async () => {
     try {
       setLoading(true);
-      console.log('Initializing Supabase client with service role key...');
+      console.log('Initializing Supabase client...');
       
-      // Initialize Supabase with service role key for full database access
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!
-      );
+      // Initialize Supabase with proper auth
+      const supabase = createClient();
 
-      const specificUserId = 'f7ee9f97-dead-4f92-99de-23cd707e3f0c';
-      
-      console.log('Testing basic replies query first...');
-      // First, try a simple query to test the connection
-      const { data: testData, error: testError } = await supabase
-        .from('replies')
-        .select('id, user_id, sender_email, created_at')
-        .limit(5);
-        
-      console.log('Test query result:', { testData, testError });
-      
-      if (testError) {
-        console.error('Basic query failed:', testError);
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Auth error:', authError);
         showMockData();
         return;
       }
       
-      console.log('Basic query successful. Now trying enhanced query without leads join...');
+      console.log('Fetching replies for user:', user.id);
       const { data: repliesData, error: repliesError } = await supabase
         .from('replies')
         .select(`
@@ -248,7 +236,7 @@ export default function InboxPage() {
           auto_reply_sent_at,
           created_at
         `)
-        .eq('user_id', specificUserId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
       console.log('Enhanced replies query result:', { repliesData, repliesError });
@@ -263,18 +251,44 @@ export default function InboxPage() {
       if (repliesData && repliesData.length > 0) {
         console.log('Sample enhanced reply:', repliesData[0]);
         
-        const transformedReplies = repliesData.map(reply => {
-          // Extract sender name from email or use email as fallback
-          const senderName = reply.raw_email_data?.data?.from?.[0]?.name || 
-                            reply.sender_email?.split('@')[0] || 
-                            'Unknown Lead';
+        // Fetch lead data for company names
+        const leadIds = repliesData
+          .filter((r: any) => r.lead_id)
+          .map((r: any) => r.lead_id);
+        
+        let leadsMap: Record<string, any> = {};
+        if (leadIds.length > 0) {
+          const { data: leadsData } = await supabase
+            .from('leads')
+            .select('id, first_name, last_name, company')
+            .in('id', leadIds);
+          
+          if (leadsData) {
+            leadsData.forEach((lead: any) => {
+              leadsMap[lead.id] = lead;
+            });
+          }
+        }
+        
+        const transformedReplies = repliesData.map((reply: any) => {
+          // Get lead data if available
+          const lead = reply.lead_id ? leadsMap[reply.lead_id] : null;
+          
+          // Extract sender name from lead data, email data, or use email as fallback
+          const senderName = lead 
+            ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim() 
+            : reply.raw_email_data?.data?.from?.[0]?.name || 
+              reply.sender_email?.split('@')[0] || 
+              'Unknown Lead';
+          
+          const leadCompany = lead?.company || 'Unknown Company';
           
           return {
             id: reply.id.toString(),
             lead_id: reply.lead_id?.toString() || '',
             lead_name: senderName,
             lead_email: reply.sender_email || 'unknown@email.com',
-            lead_company: 'Unknown Company', // Will be populated when we fix the relationship
+            lead_company: leadCompany,
             thread_subject: reply.raw_email_data?.data?.subject || `Reply from ${reply.sender_email}`,
             lead_reply: {
               content: extractReplyContent(reply.raw_email_data?.data?.body || reply.summary || ''),
@@ -347,246 +361,281 @@ export default function InboxPage() {
     return (
       <div className="p-6">
         <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
+          <div className="h-8 bg-white/10 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-white/5 rounded-xl border border-white/10"></div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-white/5 rounded-xl border border-white/10"></div>
+            ))}
           </div>
         </div>
+      </div>
     );
   }
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Inbox</h1>
-        <Button onClick={fetchEmailThreads} className="bg-blue-600 hover:bg-blue-700 text-white">
-          Refresh
-        </Button>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 rounded-2xl border border-white/10 p-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="p-3 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl shadow-lg shadow-violet-500/20">
+                <Bot className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#0a0a0f] flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">AI Inbox</h1>
+              <p className="text-gray-400 mt-1">Automated conversation management</p>
+            </div>
+          </div>
+          <Button onClick={fetchEmailThreads} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 shadow-lg shadow-violet-500/25">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Conversations</p>
-                <p className="text-3xl font-bold">{inboxStats.totalConversations}</p>
+        <div className="group relative bg-white/[0.03] rounded-2xl border border-white/10 p-5 hover:border-violet-500/30 transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-gradient-to-br from-violet-500/20 to-violet-600/10 rounded-xl border border-violet-500/20">
+                <MessageSquare className="w-5 h-5 text-violet-400" />
               </div>
-              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+              <span className="text-sm text-gray-500">Total Conversations</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-4xl font-bold text-white">{inboxStats.totalConversations}</div>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Auto Replied</p>
-                <p className="text-3xl font-bold text-green-600">{inboxStats.autoReplied}</p>
+        <div className="group relative bg-white/[0.03] rounded-2xl border border-white/10 p-5 hover:border-emerald-500/30 transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-xl border border-emerald-500/20">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <span className="text-sm text-gray-500">Auto Replied</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-4xl font-bold text-emerald-400">{inboxStats.autoReplied}</div>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Needs Attention</p>
-                <p className="text-3xl font-bold text-orange-600">{inboxStats.needsAttention}</p>
+        <div className="group relative bg-white/[0.03] rounded-2xl border border-white/10 p-5 hover:border-amber-500/30 transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-xl border border-amber-500/20">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-600" />
+              <span className="text-sm text-gray-500">Needs Attention</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-4xl font-bold text-amber-400">{inboxStats.needsAttention}</div>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Response Rate</p>
-                <p className="text-3xl font-bold text-blue-600">{inboxStats.responseRate}%</p>
+        <div className="group relative bg-white/[0.03] rounded-2xl border border-white/10 p-5 hover:border-cyan-500/30 transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 rounded-xl border border-cyan-500/20">
+                <TrendingUp className="w-5 h-5 text-cyan-400" />
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+              <span className="text-sm text-gray-500">Response Rate</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-4xl font-bold text-cyan-400">{inboxStats.responseRate}%</div>
+          </div>
+        </div>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="bg-white/[0.03] rounded-2xl border border-white/10 p-4 backdrop-blur-sm">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-11 h-11 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 rounded-xl"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="h-11 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-violet-500/50 cursor-pointer hover:bg-white/10 transition-colors"
+            >
+              <option value="all" className="bg-[#12121a]">All Conversations</option>
+              <option value="needs_attention" className="bg-[#12121a]">Needs Attention</option>
+              <option value="replied" className="bg-[#12121a]">Auto Replied</option>
+              <option value="positive" className="bg-[#12121a]">Positive Responses</option>
+            </select>
+          </div>
         </div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Conversations</option>
-          <option value="needs_attention">Needs Attention</option>
-          <option value="replied">Auto Replied</option>
-          <option value="positive">Positive Responses</option>
-        </select>
       </div>
 
       {/* Email Threads */}
       <div className="space-y-4">
         {filteredThreads.map((thread) => (
-          <Card key={thread.id} className="border border-gray-200 hover:border-gray-300 transition-colors">
-            <CardContent className="p-6">
+          <div key={thread.id} className="group relative bg-white/[0.03] rounded-2xl border border-white/10 p-6 hover:border-violet-500/30 transition-all duration-300 overflow-hidden">
+            {/* Hover gradient effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/5 via-fuchsia-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <div className="relative">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-gray-900">{thread.lead_name}</h3>
-                    <span className="text-sm text-gray-500">from {thread.lead_company}</span>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center">
+                      <span className="text-sm font-bold text-violet-400">
+                        {thread.lead_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{thread.lead_name}</h3>
+                      <span className="text-sm text-gray-500">{thread.lead_company}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-1">{thread.lead_email}</p>
-                  <p className="text-sm font-medium text-gray-800">{thread.thread_subject}</p>
+                  <p className="text-sm text-gray-400 mb-1 ml-13">{thread.lead_email}</p>
+                  <p className="text-sm font-medium text-gray-300 ml-13">{thread.thread_subject}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">
+                <div className="text-right flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Clock className="w-3.5 h-3.5" />
                     {new Date(thread.lead_reply.received_at).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-gray-400">
+                  </div>
+                  <p className="text-xs text-gray-600">
                     {new Date(thread.lead_reply.received_at).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                <Badge 
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    thread.lead_reply.sentiment === 'positive' || thread.lead_reply.sentiment === 'interested' 
-                      ? 'bg-green-100 text-green-800 border border-green-200' 
-                      : thread.lead_reply.sentiment === 'negative' || thread.lead_reply.sentiment === 'not_interested'
-                      ? 'bg-red-100 text-red-800 border border-red-200'
-                      : 'bg-gray-100 text-gray-800 border border-gray-200'
-                  }`}
-                >
-                  {thread.lead_reply.sentiment}
+              <Badge 
+                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  thread.lead_reply.sentiment === 'positive' || thread.lead_reply.sentiment === 'interested' 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : thread.lead_reply.sentiment === 'negative' || thread.lead_reply.sentiment === 'not_interested'
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                }`}
+              >
+                {thread.lead_reply.sentiment}
+              </Badge>
+              
+              <Badge 
+                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  thread.ai_analysis.action_taken === 'schedule_call' 
+                    ? 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30' 
+                    : thread.ai_analysis.action_taken === 'reply'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                }`}
+              >
+                {thread.ai_analysis.action_taken.replace('_', ' ')}
+              </Badge>
+              
+              {thread.requires_attention && (
+                <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-1 text-xs font-medium rounded-full">
+                  Needs Attention
                 </Badge>
-                
-                <Badge 
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    thread.ai_analysis.action_taken === 'schedule_call' 
-                      ? 'bg-red-100 text-red-800 border border-red-200' 
-                      : thread.ai_analysis.action_taken === 'reply'
-                      ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                      : 'bg-blue-100 text-blue-800 border border-blue-200'
-                  }`}
-                >
-                  {thread.ai_analysis.action_taken.replace('_', ' ')}
+              )}
+              
+              {thread.ai_response && (
+                <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 text-xs font-medium rounded-full">
+                  AI Replied
                 </Badge>
-                
-                {thread.requires_attention && (
-                  <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 px-2 py-1 text-xs font-medium rounded-full">
-                    Needs Attention
-                  </Badge>
-                )}
-                
-                {thread.ai_response && (
-                  <Badge className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 text-xs font-medium rounded-full">
-                    AI Replied
-                  </Badge>
-                )}
-              </div>
+              )}
+            </div>
 
-              {/* Lead's Reply */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Mail className="h-4 w-4 text-gray-600" />
-                  <span className="font-medium text-gray-900">Lead Reply</span>
-                </div>
-                <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                  {thread.lead_reply.content}
-                </p>
+            {/* Lead's Reply */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="h-4 w-4 text-cyan-400" />
+                <span className="font-medium text-white">Lead Reply</span>
               </div>
+              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {thread.lead_reply.content}
+              </p>
+            </div>
 
-              {/* AI Analysis */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-yellow-600" />
-                  <span className="font-medium text-yellow-900">AI Analysis</span>
+            {/* AI Analysis */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-amber-400" />
+                <span className="font-medium text-amber-300">AI Analysis</span>
+              </div>
+              <p className="text-amber-200/80 text-sm leading-relaxed">
+                {thread.ai_analysis.summary}
+              </p>
+              <div className="mt-2 pt-2 border-t border-amber-500/20">
+                <span className="text-xs text-amber-400/70">
+                  Action: {thread.ai_analysis.action_taken.replace('_', ' ')} • Confidence: {Math.round(thread.ai_analysis.confidence * 100)}%
+                </span>
+              </div>
+            </div>
+
+            {/* AI Response */}
+            {thread.ai_response ? (
+              <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-violet-400" />
+                    <span className="font-medium text-violet-300">AI Response (Sent)</span>
+                  </div>
+                  <span className="text-xs text-violet-400/70">
+                    Sent {new Date(thread.ai_response.sent_at).toLocaleString()}
+                  </span>
                 </div>
-                <p className="text-yellow-800 text-sm leading-relaxed">
-                  {thread.ai_analysis.summary}
+                <p className="text-violet-200/80 text-sm leading-relaxed whitespace-pre-wrap">
+                  {thread.ai_response.content}
                 </p>
-                <div className="mt-2 pt-2 border-t border-yellow-200">
-                  <span className="text-xs text-yellow-700">
-                    Action: {thread.ai_analysis.action_taken.replace('_', ' ')} • Confidence: {Math.round(thread.ai_analysis.confidence * 100)}%
+                <div className="mt-2 pt-2 border-t border-violet-500/20">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    thread.ai_response.status === 'sent' 
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : thread.ai_response.status === 'failed'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-amber-500/20 text-amber-400'
+                  }`}>
+                    Status: {thread.ai_response.status}
                   </span>
                 </div>
               </div>
-
-              {/* AI Response */}
-              {thread.ai_response ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-blue-900">
-                        AI Response (Sent)
-                      </span>
-                    </div>
-                    <span className="text-xs text-blue-600">
-                      Sent {new Date(thread.ai_response.sent_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-blue-800 text-sm leading-relaxed whitespace-pre-wrap">
-                    {thread.ai_response.content}
-                  </p>
-                  <div className="mt-2 pt-2 border-t border-blue-200">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      thread.ai_response.status === 'sent' 
-                        ? 'bg-green-100 text-green-800'
-                        : thread.ai_response.status === 'failed'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      Status: {thread.ai_response.status}
-                    </span>
-                  </div>
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <span className="font-medium text-amber-300">Awaiting AI Response</span>
                 </div>
-              ) : (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                    <span className="font-medium text-orange-900">
-                      Awaiting AI Response
-                    </span>
-                  </div>
-                  <p className="text-orange-800 text-sm">
-                    This reply requires attention. The AI system will generate and send a response automatically.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                <p className="text-amber-200/70 text-sm">
+                  This reply requires attention. The AI system will generate and send a response automatically.
+                </p>
+              </div>
+            )}
+            </div>
+          </div>
         ))}
       </div>
 
       {filteredThreads.length === 0 && (
         <div className="text-center py-12">
-          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations found</h3>
-          <p className="text-gray-500">
+          <div className="w-20 h-20 mx-auto mb-6 bg-violet-500/20 rounded-2xl flex items-center justify-center">
+            <MessageSquare className="h-10 w-10 text-violet-400" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-2">No conversations found</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
             {searchQuery || filter !== 'all' 
               ? 'Try adjusting your search or filter criteria.'
               : 'Email replies from leads will appear here once your outreach campaigns start receiving responses.'
@@ -594,6 +643,6 @@ export default function InboxPage() {
           </p>
         </div>
       )}
-      </div>
+    </div>
   );
 }

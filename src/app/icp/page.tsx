@@ -95,10 +95,18 @@ interface ICPProfile {
   
   // System Fields
   usage_count: number;
-  leads_discovered: number;
+  leads_scored: number;
   status: 'active' | 'draft' | 'archived';
   created_at: string;
   last_used_at?: string;
+  scoring_weights?: {
+    industry: number;
+    company_size: number;
+    job_title: number;
+    geography: number;
+    technology: number;
+    revenue: number;
+  };
 }
 
 const INDUSTRY_OPTIONS = [
@@ -197,30 +205,7 @@ export default function ICPPage() {
     // Advanced Filters
     intent_signals: [] as string[],
     verified_emails_only: false,
-    keywords: [] as string[],
-    locations: [] as string[],
-    
-    // New Apollo API filters
-    campaign_name: '',
-    exclude_job_titles: [] as string[],
-    company_domain_names: [] as string[],
-    company_domain_exact_match: false,
-    exclude_company_domains: [] as string[],
-    exclude_domains_exact_match: false,
-    contact_locations: [] as string[],
-    exclude_contact_locations: [] as string[],
-    intent_signals: [] as string[],
-    industry_keywords: [] as string[],
-    exclude_industry_keywords: [] as string[],
-    verified_emails_only: false,
-    lead_names: [] as string[],
-    company_hq_locations: [] as string[],
-    currently_hiring_for: [] as string[],
-    yearly_headcount_growth_min: '',
-    yearly_headcount_growth_max: '',
-    funding_types: [] as string[],
-    funding_amount_min: '',
-    funding_amount_max: ''
+    keywords: [] as string[]
   });
 
   const supabase = createClient();
@@ -331,9 +316,10 @@ export default function ICPPage() {
     }
   };
 
-  const handleDiscoverLeads = async (profile: ICPProfile) => {
+  const handleScoreLeads = async (profile: ICPProfile) => {
     try {
-      const response = await fetch('/api/apollo/discover', {
+      setLoading(true);
+      const response = await fetch('/api/icp/score-leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ icp_profile_id: profile.id })
@@ -341,11 +327,17 @@ export default function ICPPage() {
       
       if (response.ok) {
         const result = await response.json();
-        alert(`Discovery started! Session ID: ${result.session_id}`);
+        alert(`Scoring complete! ${result.total_scored} leads scored.\n\nScore Distribution:\n- High (80+): ${result.score_distribution.high}\n- Medium (50-79): ${result.score_distribution.medium}\n- Low (<50): ${result.score_distribution.low}\n\nAverage Score: ${result.average_score}`);
         await fetchICPProfiles();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error starting lead discovery:', error);
+      console.error('Error scoring leads:', error);
+      alert('Failed to score leads. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -369,7 +361,13 @@ export default function ICPPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 animate-ping"></div>
+            <div className="absolute inset-2 rounded-full border-2 border-t-violet-500 border-r-fuchsia-500 border-b-cyan-500 border-l-transparent animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Target className="w-6 h-6 text-violet-400" />
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -379,16 +377,21 @@ export default function ICPPage() {
     <DashboardLayout>
       <div className="p-6">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 rounded-2xl border border-white/10 p-6 mb-6 backdrop-blur-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Ideal Customer Profiles</h1>
-              <p className="text-gray-600 mt-1">Define your target customers for Apollo lead discovery</p>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl shadow-lg shadow-violet-500/20">
+                <Target className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Ideal Customer Profiles</h1>
+                <p className="text-gray-400 mt-1">Define your ideal customer criteria to score and prioritize existing leads</p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
                 onClick={() => setShowCreateForm(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create ICP
@@ -399,66 +402,68 @@ export default function ICPPage() {
 
         {/* Create/Edit Form */}
         {showCreateForm && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>{editingProfile ? 'Edit' : 'Create'} ICP Profile</CardTitle>
-              <CardDescription>
-                Define your ideal customer profile for automated lead discovery
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/[0.03] rounded-2xl border border-white/10 mb-6 overflow-hidden">
+            <div className="p-5 border-b border-white/5">
+              <h3 className="text-lg font-semibold text-white">{editingProfile ? 'Edit' : 'Create'} ICP Profile</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Define your ideal customer profile to score and qualify existing leads (1-100 score)
+              </p>
+            </div>
+            <div className="p-5">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <Tabs defaultValue="basic" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                    <TabsTrigger value="company">Company</TabsTrigger>
-                    <TabsTrigger value="contacts">Contacts</TabsTrigger>
-                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-4 bg-white/5 border border-white/10 p-1 rounded-xl">
+                    <TabsTrigger value="basic" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-fuchsia-600 data-[state=active]:text-white text-gray-400 rounded-lg">Basic Info</TabsTrigger>
+                    <TabsTrigger value="company" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-fuchsia-600 data-[state=active]:text-white text-gray-400 rounded-lg">Company</TabsTrigger>
+                    <TabsTrigger value="contacts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-fuchsia-600 data-[state=active]:text-white text-gray-400 rounded-lg">Contacts</TabsTrigger>
+                    <TabsTrigger value="advanced" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-fuchsia-600 data-[state=active]:text-white text-gray-400 rounded-lg">Advanced</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="basic" className="space-y-4">
+                  <TabsContent value="basic" className="space-y-4 mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="name">Profile Name</Label>
+                        <Label htmlFor="name" className="text-gray-300">Profile Name</Label>
                         <Input
                           id="name"
                           value={formData.name}
                           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="e.g., SaaS Sales Directors"
                           required
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description" className="text-gray-300">Description</Label>
                         <Textarea
                           id="description"
                           value={formData.description}
                           onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                           placeholder="Brief description of this ICP"
                           rows={3}
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20"
                         />
                       </div>
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="company" className="space-y-4">
+                  <TabsContent value="company" className="space-y-4 mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Industries */}
                       <div>
-                        <Label>Industries</Label>
+                        <Label className="text-gray-300">Industries</Label>
                         <Select onValueChange={(value) => addToArray('industries', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="Add industry" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-[#1a1a24] border-white/10">
                             {INDUSTRY_OPTIONS.map(industry => (
-                              <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                              <SelectItem key={industry} value={industry} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{industry}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.industries.map(industry => (
-                            <Badge key={industry} variant="secondary" className="cursor-pointer" 
+                            <Badge key={industry} className="cursor-pointer bg-violet-500/20 text-violet-300 border-violet-500/30 hover:bg-violet-500/30" 
                                    onClick={() => removeFromArray('industries', industry)}>
                               {industry} ×
                             </Badge>
@@ -468,20 +473,20 @@ export default function ICPPage() {
 
                       {/* Company Sizes */}
                       <div>
-                        <Label>Company Sizes</Label>
+                        <Label className="text-gray-300">Company Sizes</Label>
                         <Select onValueChange={(value) => addToArray('company_sizes', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="Add company size" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-[#1a1a24] border-white/10">
                             {COMPANY_SIZE_OPTIONS.map(size => (
-                              <SelectItem key={size} value={size}>{size} employees</SelectItem>
+                              <SelectItem key={size} value={size} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{size} employees</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.company_sizes.map(size => (
-                            <Badge key={size} variant="secondary" className="cursor-pointer"
+                            <Badge key={size} className="cursor-pointer bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30"
                                    onClick={() => removeFromArray('company_sizes', size)}>
                               {size} ×
                             </Badge>
@@ -491,51 +496,56 @@ export default function ICPPage() {
 
                       {/* Employee Count Range */}
                       <div>
-                        <Label>Employee Count Range</Label>
+                        <Label className="text-gray-300">Employee Count Range</Label>
                         <div className="flex space-x-2">
                           <Input
                             type="number"
                             placeholder="Min"
                             value={formData.employee_count_min}
                             onChange={(e) => setFormData(prev => ({ ...prev, employee_count_min: e.target.value }))}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
                           <Input
                             type="number"
                             placeholder="Max"
                             value={formData.employee_count_max}
                             onChange={(e) => setFormData(prev => ({ ...prev, employee_count_max: e.target.value }))}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
                         </div>
                       </div>
 
                       {/* Revenue Range */}
                       <div>
-                        <Label>Annual Revenue Range</Label>
+                        <Label className="text-gray-300">Annual Revenue Range</Label>
                         <div className="flex space-x-2">
                           <Input
                             type="number"
                             placeholder="Min ($)"
                             value={formData.revenue_min}
                             onChange={(e) => setFormData(prev => ({ ...prev, revenue_min: e.target.value }))}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
                           <Input
                             type="number"
                             placeholder="Max ($)"
                             value={formData.revenue_max}
                             onChange={(e) => setFormData(prev => ({ ...prev, revenue_max: e.target.value }))}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
                         </div>
                       </div>
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="contacts" className="space-y-4">
+                  <TabsContent value="contacts" className="space-y-4 mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Job Titles */}
                       <div>
-                        <Label>Job Titles</Label>
+                        <Label className="text-gray-300">Job Titles</Label>
                         <Input
                           placeholder="Add job title and press Enter"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -546,7 +556,7 @@ export default function ICPPage() {
                         />
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.job_titles.map(title => (
-                            <Badge key={title} variant="secondary" className="cursor-pointer"
+                            <Badge key={title} className="cursor-pointer bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 hover:bg-fuchsia-500/30"
                                    onClick={() => removeFromArray('job_titles', title)}>
                               {title} ×
                             </Badge>
@@ -556,20 +566,20 @@ export default function ICPPage() {
 
                       {/* Seniority Levels */}
                       <div>
-                        <Label>Seniority Levels</Label>
+                        <Label className="text-gray-300">Seniority Levels</Label>
                         <Select onValueChange={(value) => addToArray('seniority_levels', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="Add seniority level" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-[#1a1a24] border-white/10">
                             {SENIORITY_OPTIONS.map(level => (
-                              <SelectItem key={level} value={level}>{level}</SelectItem>
+                              <SelectItem key={level} value={level} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{level}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.seniority_levels.map(level => (
-                            <Badge key={level} variant="secondary" className="cursor-pointer"
+                            <Badge key={level} className="cursor-pointer bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30"
                                    onClick={() => removeFromArray('seniority_levels', level)}>
                               {level} ×
                             </Badge>
@@ -579,20 +589,20 @@ export default function ICPPage() {
 
                       {/* Departments */}
                       <div>
-                        <Label>Departments</Label>
+                        <Label className="text-gray-300">Departments</Label>
                         <Select onValueChange={(value) => addToArray('departments', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="Add department" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-[#1a1a24] border-white/10">
                             {DEPARTMENT_OPTIONS.map(dept => (
-                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                              <SelectItem key={dept} value={dept} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{dept}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.departments.map(dept => (
-                            <Badge key={dept} variant="secondary" className="cursor-pointer"
+                            <Badge key={dept} className="cursor-pointer bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
                                    onClick={() => removeFromArray('departments', dept)}>
                               {dept} ×
                             </Badge>
@@ -602,13 +612,14 @@ export default function ICPPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="advanced" className="space-y-4">
+                  <TabsContent value="advanced" className="space-y-4 mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Technologies */}
                       <div>
-                        <Label>Technologies</Label>
+                        <Label className="text-gray-300">Technologies</Label>
                         <Input
                           placeholder="Add technology and press Enter"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -619,7 +630,7 @@ export default function ICPPage() {
                         />
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.technologies.map(tech => (
-                            <Badge key={tech} variant="secondary" className="cursor-pointer"
+                            <Badge key={tech} className="cursor-pointer bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30"
                                    onClick={() => removeFromArray('technologies', tech)}>
                               {tech} ×
                             </Badge>
@@ -629,20 +640,20 @@ export default function ICPPage() {
 
                       {/* Funding Stages */}
                       <div>
-                        <Label>Funding Stages</Label>
+                        <Label className="text-gray-300">Funding Stages</Label>
                         <Select onValueChange={(value) => addToArray('funding_stages', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
                             <SelectValue placeholder="Add funding stage" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-[#1a1a24] border-white/10">
                             {FUNDING_STAGE_OPTIONS.map(stage => (
-                              <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                              <SelectItem key={stage} value={stage} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{stage}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.funding_stages.map(stage => (
-                            <Badge key={stage} variant="secondary" className="cursor-pointer"
+                            <Badge key={stage} className="cursor-pointer bg-pink-500/20 text-pink-300 border-pink-500/30 hover:bg-pink-500/30"
                                    onClick={() => removeFromArray('funding_stages', stage)}>
                               {stage} ×
                             </Badge>
@@ -652,9 +663,10 @@ export default function ICPPage() {
 
                       {/* Keywords */}
                       <div>
-                        <Label>Keywords</Label>
+                        <Label className="text-gray-300">Keywords</Label>
                         <Input
                           placeholder="Add keyword and press Enter"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -665,7 +677,7 @@ export default function ICPPage() {
                         />
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.keywords.map(keyword => (
-                            <Badge key={keyword} variant="secondary" className="cursor-pointer"
+                            <Badge key={keyword} className="cursor-pointer bg-orange-500/20 text-orange-300 border-orange-500/30 hover:bg-orange-500/30"
                                    onClick={() => removeFromArray('keywords', keyword)}>
                               {keyword} ×
                             </Badge>
@@ -675,9 +687,10 @@ export default function ICPPage() {
 
                       {/* Locations */}
                       <div>
-                        <Label>Locations</Label>
+                        <Label className="text-gray-300">Locations</Label>
                         <Input
                           placeholder="Add location and press Enter"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -688,7 +701,7 @@ export default function ICPPage() {
                         />
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.locations.map(location => (
-                            <Badge key={location} variant="secondary" className="cursor-pointer"
+                            <Badge key={location} className="cursor-pointer bg-teal-500/20 text-teal-300 border-teal-500/30 hover:bg-teal-500/30"
                                    onClick={() => removeFromArray('locations', location)}>
                               {location} ×
                             </Badge>
@@ -699,152 +712,149 @@ export default function ICPPage() {
                   </TabsContent>
                 </Tabs>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                  <Button type="button" onClick={resetForm} className="bg-white/5 border-white/10 text-gray-300 hover:text-white hover:bg-white/10">
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button type="submit" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
                     {editingProfile ? 'Update' : 'Create'} Profile
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* ICP Profiles List */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {icpProfiles.map((profile) => (
-            <Card key={profile.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{profile.name}</CardTitle>
-                    <CardDescription className="mt-1">{profile.description}</CardDescription>
-                  </div>
-                  <Badge variant={profile.status === 'active' ? 'default' : 'secondary'}>
-                    {profile.status}
-                  </Badge>
+            <div key={profile.id} className="bg-white/[0.03] rounded-2xl border border-white/10 p-5 hover:border-violet-500/30 transition-all">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{profile.name}</h3>
+                  <p className="text-sm text-gray-400 mt-1">{profile.description}</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {/* Key Criteria */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="flex items-center text-gray-600 mb-1">
-                        <Building className="w-4 h-4 mr-1" />
-                        Industries
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {profile.industries.slice(0, 2).map(industry => (
-                          <Badge key={industry} variant="outline" className="text-xs">
-                            {industry}
-                          </Badge>
-                        ))}
-                        {profile.industries.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{profile.industries.length - 2}
-                          </Badge>
-                        )}
-                      </div>
+                <Badge className={profile.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-gray-500/20 text-gray-400 border-gray-500/30'}>
+                  {profile.status}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Key Criteria */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <Building className="w-4 h-4 mr-1 text-violet-400" />
+                      Industries
                     </div>
-
-                    <div>
-                      <div className="flex items-center text-gray-600 mb-1">
-                        <Users className="w-4 h-4 mr-1" />
-                        Company Size
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {profile.company_sizes.slice(0, 2).map(size => (
-                          <Badge key={size} variant="outline" className="text-xs">
-                            {size}
-                          </Badge>
-                        ))}
-                        {profile.company_sizes.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{profile.company_sizes.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center text-gray-600 mb-1">
-                        <Briefcase className="w-4 h-4 mr-1" />
-                        Job Titles
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {profile.job_titles.slice(0, 2).map(title => (
-                          <Badge key={title} variant="outline" className="text-xs">
-                            {title}
-                          </Badge>
-                        ))}
-                        {profile.job_titles.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{profile.job_titles.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center text-gray-600 mb-1">
-                        <TrendingUp className="w-4 h-4 mr-1" />
-                        Performance
-                      </div>
-                      <div className="text-sm">
-                        <div>{profile.leads_discovered} leads found</div>
-                        <div className="text-gray-500">{profile.usage_count} runs</div>
-                      </div>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.industries.slice(0, 2).map(industry => (
+                        <Badge key={industry} className="text-xs bg-violet-500/20 text-violet-300 border-violet-500/30">
+                          {industry}
+                        </Badge>
+                      ))}
+                      {profile.industries.length > 2 && (
+                        <Badge className="text-xs bg-white/5 text-gray-400 border-white/10">
+                          +{profile.industries.length - 2}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="bg-blue-50 text-blue-700 hover:bg-blue-100"
-                        onClick={() => handleEdit(profile)}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleDiscoverLeads(profile)}
-                      >
-                        <Search className="w-4 h-4 mr-1" />
-                        Discover
-                      </Button>
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <Users className="w-4 h-4 mr-1 text-cyan-400" />
+                      Company Size
                     </div>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.company_sizes.slice(0, 2).map(size => (
+                        <Badge key={size} className="text-xs bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                          {size}
+                        </Badge>
+                      ))}
+                      {profile.company_sizes.length > 2 && (
+                        <Badge className="text-xs bg-white/5 text-gray-400 border-white/10">
+                          +{profile.company_sizes.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <Briefcase className="w-4 h-4 mr-1 text-fuchsia-400" />
+                      Job Titles
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.job_titles.slice(0, 2).map(title => (
+                        <Badge key={title} className="text-xs bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30">
+                          {title}
+                        </Badge>
+                      ))}
+                      {profile.job_titles.length > 2 && (
+                        <Badge className="text-xs bg-white/5 text-gray-400 border-white/10">
+                          +{profile.job_titles.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <TrendingUp className="w-4 h-4 mr-1 text-emerald-400" />
+                      Performance
+                    </div>
+                    <div className="text-sm">
+                      <div className="text-white">{profile.leads_scored || 0} leads scored</div>
+                      <div className="text-gray-500">{profile.usage_count} scoring runs</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                  <div className="flex items-center space-x-2">
                     <Button 
                       size="sm" 
-                      variant="destructive" 
-                      className="bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-                      onClick={() => handleDelete(profile.id)}
+                      className="bg-violet-500/20 text-violet-400 border-violet-500/30 hover:bg-violet-500/30"
+                      onClick={() => handleEdit(profile)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
+                      onClick={() => handleScoreLeads(profile)}
+                      disabled={loading}
+                    >
+                      <TrendingUp className="w-4 h-4 mr-1" />
+                      Score Leads
                     </Button>
                   </div>
+                  <Button 
+                    size="sm" 
+                    className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                    onClick={() => handleDelete(profile.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 
         {icpProfiles.length === 0 && !showCreateForm && (
           <div className="text-center py-12">
-            <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No ICP Profiles Yet</h3>
-            <p className="text-gray-600 mb-4">
-              Create your first Ideal Customer Profile to start discovering leads with Apollo
+            <div className="w-20 h-20 mx-auto mb-6 bg-violet-500/20 rounded-2xl flex items-center justify-center">
+              <Target className="w-10 h-10 text-violet-400" />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">No ICP Profiles Yet</h3>
+            <p className="text-gray-400 mb-4 max-w-md mx-auto">
+              Create your first Ideal Customer Profile to score and prioritize your existing leads
             </p>
-            <Button onClick={() => setShowCreateForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={() => setShowCreateForm(true)} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Create Your First ICP
             </Button>

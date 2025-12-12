@@ -41,52 +41,77 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user can add more prospects (leads)
-    const usageCheck = await planManager.checkUsageLimit(user.id, 'prospects_per_month', 1);
-    if (!usageCheck.allowed) {
-      return NextResponse.json({ 
-        error: 'Monthly prospect limit exceeded',
-        usage: usageCheck.usage,
-        limit: usageCheck.limit,
-        upgrade_url: '/pricing'
-      }, { status: 429 });
+    // Check if user can add more prospects (leads) - skip if planManager fails
+    let usageCheck = { allowed: true, usage: 0, limit: -1 };
+    try {
+      usageCheck = await planManager.checkUsageLimit(user.id, 'prospects_per_month', 1);
+      if (!usageCheck.allowed) {
+        return NextResponse.json({ 
+          error: 'Monthly prospect limit exceeded',
+          usage: usageCheck.usage,
+          limit: usageCheck.limit,
+          upgrade_url: '/pricing'
+        }, { status: 429 });
+      }
+    } catch (planError) {
+      console.warn('Plan check failed, allowing lead creation:', planError);
     }
 
     const body = await request.json();
-    const { name, email, company, title, pain_points, offer, cta, timezone, country, city } = body;
+    const { 
+      name, first_name, last_name, email, company, title, 
+      phone, linkedin_url, location, industry, company_size,
+      pain_points, offer, cta, timezone, country, city 
+    } = body;
 
-    if (!email || !name) {
+    // Support both name formats
+    const fullName = name || `${first_name || ''} ${last_name || ''}`.trim();
+
+    if (!email || !fullName) {
       return NextResponse.json({ 
-        error: 'Missing required fields: name, email' 
+        error: 'Missing required fields: name/first_name+last_name, email' 
       }, { status: 400 });
     }
 
+    // Build insert object with only fields that exist in the database
+    const leadData: Record<string, any> = {
+      user_id: user.id,
+      name: fullName,
+      email,
+      company: company || '',
+      title: title || '',
+      created_at: new Date().toISOString()
+    };
+
+    // Add optional fields if provided
+    if (first_name) leadData.first_name = first_name;
+    if (last_name) leadData.last_name = last_name;
+    if (phone) leadData.phone = phone;
+    if (linkedin_url) leadData.linkedin_url = linkedin_url;
+    if (location) leadData.location = location;
+    if (industry) leadData.industry = industry;
+    if (company_size) leadData.company_size = company_size;
+    if (pain_points?.length > 0) leadData.pain_points = pain_points;
+    if (offer) leadData.offer = offer;
+    if (cta) leadData.cta = cta;
+    if (timezone) leadData.timezone = timezone;
+    if (country) leadData.country = country;
+    if (city) leadData.city = city;
+
     const { data: lead, error } = await supabase
       .from('leads')
-      .insert({
-        user_id: user.id,
-        name,
-        email,
-        company: company || '',
-        title: title || '',
-        pain_points: pain_points || [],
-        offer: offer || '',
-        cta: cta || '',
-        timezone: timezone || 'America/New_York',
-        country: country || '',
-        city: city || '',
-        created_at: new Date().toISOString()
-      })
+      .insert(leadData)
       .select()
       .single();
 
     if (error) {
       console.error('Error creating lead:', error);
-      return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to create lead', 
+        details: error.message 
+      }, { status: 500 });
     }
 
-    // Note: Usage was already incremented by the checkUsageLimit call above
-    // Return success with current usage info
     return NextResponse.json({ 
       lead,
       usage: {

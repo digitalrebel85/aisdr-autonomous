@@ -19,7 +19,13 @@ import {
   FileText,
   Zap,
   ChevronRight,
-  Home
+  Home,
+  Rocket,
+  Sparkles,
+  Brain,
+  CircuitBoard,
+  Activity,
+  Cpu
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -33,25 +39,30 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
   {
-    name: 'Dashboard',
+    name: 'Command Center',
     href: '/dashboard',
-    icon: LayoutDashboard,
+    icon: Cpu,
   },
   {
-    name: 'Leads',
+    name: 'Lead Database',
     href: '/leads',
     icon: Users,
-    badge: 'New',
-    badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+    badge: 'AI',
+    badgeColor: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
     children: [
       { name: 'All Leads', href: '/leads', icon: Users },
-      {
-        name: 'Lead Discovery',
-        href: '/leads/discovery',
-        icon: Target,
-      },
-      { name: 'Import CSV', href: '/leads/csv-upload', icon: FileText },
-      { name: 'AI Import', href: '/leads/json-upload', icon: Bot },
+      { name: 'Companies', href: '/dashboard/companies', icon: Building2 },
+    ]
+  },
+  {
+    name: 'Campaigns',
+    href: '/dashboard/campaigns',
+    icon: Rocket,
+    badge: 'Live',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    children: [
+      { name: 'All Campaigns', href: '/dashboard/campaigns', icon: Rocket },
+      { name: 'AI Strategy', href: '/dashboard/campaigns/strategy', icon: Sparkles },
     ]
   },
   {
@@ -59,14 +70,14 @@ const navigation: NavigationItem[] = [
     href: '/inbox',
     icon: Bot,
     badge: '3',
-    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
   },
   {
-    name: 'ICP Profiles',
+    name: 'ICP Scoring',
     href: '/icp',
-    icon: Building2,
-    badge: 'New',
-    badgeColor: 'bg-green-100 text-green-800 border-green-200',
+    icon: Target,
+    badge: 'AI',
+    badgeColor: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
   },
   {
     name: 'Offers & Personas',
@@ -74,18 +85,11 @@ const navigation: NavigationItem[] = [
     icon: Target,
   },
   {
-    name: 'Pipeline',
-    href: '/pipeline',
-    icon: BarChart3,
-    badge: 'Soon',
-    badgeColor: 'bg-gray-100 text-gray-600 border-gray-200',
-  },
-  {
     name: 'Calendar',
     href: '/calendar',
     icon: Calendar,
     badge: '2',
-    badgeColor: 'bg-green-100 text-green-800 border-green-200',
+    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   },
   {
     name: 'Settings',
@@ -121,26 +125,50 @@ export default function SideNavigation({ collapsed = false, onToggle }: SideNavi
   };
 
   return (
-    <div className={`bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ${
-      collapsed ? 'w-16' : 'w-64'
-    } flex flex-col h-screen`}>
+    <div className={`bg-[#0a0a0f] border-r border-white/5 transition-all duration-300 ${
+      collapsed ? 'w-16' : 'w-72'
+    } flex flex-col h-screen relative`}>
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-violet-600/5 via-transparent to-fuchsia-600/5 pointer-events-none"></div>
+      
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="relative p-5 border-b border-white/5">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="relative">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a0a0f]"></div>
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-gray-900">AISDR</h1>
-              <p className="text-xs text-gray-500">AI Sales Assistant</p>
+              <h1 className="text-lg font-bold text-white">AISDR</h1>
+              <p className="text-xs text-gray-500">Autonomous Sales Agent</p>
             </div>
           )}
         </div>
       </div>
 
+      {/* AI Status Banner */}
+      {!collapsed && (
+        <div className="relative mx-4 mt-4 p-3 rounded-xl bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-violet-500/20 rounded-lg">
+                <Activity className="w-3.5 h-3.5 text-violet-400" />
+              </div>
+              <span className="text-xs font-medium text-white">Agent Status</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-emerald-400">Online</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="relative flex-1 p-4 space-y-1.5 overflow-y-auto">
         {navigation.map((item) => {
           const isItemActive = isActive(item.href) || isChildActive(item);
           const hasChildren = item.children && item.children.length > 0;
@@ -149,14 +177,16 @@ export default function SideNavigation({ collapsed = false, onToggle }: SideNavi
             <div key={item.name}>
               <Link
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isItemActive
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 text-white border border-violet-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <item.icon className={`w-5 h-5 ${isItemActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                  <div className={`p-1.5 rounded-lg ${isItemActive ? 'bg-violet-500/20' : 'bg-white/5'}`}>
+                    <item.icon className={`w-4 h-4 ${isItemActive ? 'text-violet-400' : 'text-gray-500'}`} />
+                  </div>
                   {!collapsed && <span>{item.name}</span>}
                 </div>
                 
@@ -165,13 +195,13 @@ export default function SideNavigation({ collapsed = false, onToggle }: SideNavi
                     {item.badge && (
                       <Badge 
                         variant="outline" 
-                        className={`text-xs px-2 py-0.5 ${item.badgeColor || 'bg-gray-100 text-gray-600 border-gray-200'}`}
+                        className={`text-xs px-2 py-0.5 border ${item.badgeColor || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}
                       >
                         {item.badge}
                       </Badge>
                     )}
                     {hasChildren && (
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isItemActive ? 'rotate-90 text-violet-400' : 'text-gray-600'}`} />
                     )}
                   </div>
                 )}
@@ -179,19 +209,19 @@ export default function SideNavigation({ collapsed = false, onToggle }: SideNavi
 
               {/* Sub-navigation */}
               {!collapsed && hasChildren && isItemActive && (
-                <div className="ml-8 mt-2 space-y-1">
+                <div className="ml-4 mt-1.5 pl-4 border-l border-white/10 space-y-1">
                   {item.children?.map((child) => (
                     <Link
                       key={child.name}
                       href={child.href}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-all ${
                         pathname === child.href
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-violet-500/10 text-violet-300 font-medium'
+                          : 'text-gray-500 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <child.icon className={`w-4 h-4 ${
-                        pathname === child.href ? 'text-blue-600' : 'text-gray-400'
+                        pathname === child.href ? 'text-violet-400' : 'text-gray-600'
                       }`} />
                       <span>{child.name}</span>
                     </Link>
@@ -204,23 +234,39 @@ export default function SideNavigation({ collapsed = false, onToggle }: SideNavi
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="relative p-4 border-t border-white/5">
         {!collapsed && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">AI Status</span>
+          <div className="bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-cyan-500/20 rounded-lg">
+                  <CircuitBoard className="w-4 h-4 text-cyan-400" />
+                </div>
+                <span className="text-sm font-medium text-white">AI Processing</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-blue-700">Processing leads...</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">Leads enriched</span>
+                <span className="text-emerald-400">24 today</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">Emails sent</span>
+                <span className="text-violet-400">156 today</span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-2">
+                <div className="h-full w-3/4 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"></div>
+              </div>
             </div>
           </div>
         )}
         
         {collapsed && (
-          <div className="flex justify-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="p-2 bg-violet-500/20 rounded-lg">
+              <Bot className="w-4 h-4 text-violet-400" />
+            </div>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
           </div>
         )}
       </div>

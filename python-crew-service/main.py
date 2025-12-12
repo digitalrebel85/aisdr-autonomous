@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import httpx
@@ -24,8 +25,8 @@ from schemas import (
 )
 
 # Lead Enrichment
-from agents.lead_enrichment_agent import lead_enricher_agent, lead_enrichment_task, create_lead_enrichment_crew
-from agents.company_profile_agent import create_company_profile_crew
+from agents.lead_enrichment_agent import lead_enricher_agent, lead_enrichment_task, create_lead_enrichment_crew, USER_API_KEYS as LEAD_API_KEYS
+from agents.company_profile_agent import create_company_profile_crew, run_company_profile, USER_API_KEYS as COMPANY_API_KEYS
 from crewai import Crew, Process
 
 # JSON Lead Processing Routes
@@ -36,6 +37,12 @@ from endpoints.process_unstructured_lead import router as unstructured_lead_rout
 
 # Apollo Discovery
 from endpoints.apollo_discovery import router as apollo_discovery_router
+
+# Campaign Strategy Analysis
+from routes.campaign_strategy import router as campaign_strategy_router
+
+# Test Strategy Decision Engine
+from routes.test_strategy import router as test_strategy_router
 
 # Strategic Follow-up Agent
 from agents.strategic_followup_agent import (
@@ -80,6 +87,15 @@ class CompanyProfileRequest(BaseModel):
 app = FastAPI(
     title="CrewAI Advanced Email Analysis Service",
     description="A service to analyze email replies using a context-aware CrewAI agent.",
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
 
 # --- Environment Variable Loading & Validation ---
@@ -261,12 +277,23 @@ async def generate_follow_up(request: FollowUpRequest):
 async def generate_cold_email(request: EmailCopywritingRequest):
     try:
         print("--- GENERATING COLD EMAIL ---")
-        print(f"Lead Context: {request.lead_context}")
+        print(f"Step {request.step_number}/{request.total_steps} | Objective: {request.objective}")
+        print(f"Lead: {request.name} at {request.company}")
         
         email_crew = create_email_copywriter_crew(
-            llm, request.name, request.title, request.company, 
-            request.pain_points, request.offer, request.hook_snippet,
-            request.lead_context
+            llm=llm,
+            name=request.name,
+            title=request.title,
+            company=request.company,
+            pain_points=request.pain_points,
+            offer=request.offer,
+            hook_snippet=request.hook_snippet,
+            lead_context=request.lead_context,
+            step_number=request.step_number,
+            total_steps=request.total_steps,
+            objective=request.objective,
+            framework=request.framework,
+            first_name=request.first_name
         )
         result = email_crew.kickoff()
         print(f"--- RAW CREW RESULT ---\n{result.raw}")
@@ -339,93 +366,118 @@ async def enrich_lead(request: LeadEnrichmentRequest):
         print(f"--- ENRICHING LEAD: {request.email} ---")
         print(f"Available data: name={request.name}, company={request.company}, domain={request.company_domain}")
         
-        # Create enrichment crew with user's API keys
-        enrichment_crew = create_lead_enrichment_crew(
-            lead_data={
-                'email': request.email,
-                'name': request.name,
-                'company': request.company,
-                'company_domain': request.company_domain
-            },
-            api_keys=request.api_keys or {}
+        # Set API keys for the enrichment agent
+        from agents.lead_enrichment_agent import USER_API_KEYS as LEAD_API_KEYS, multi_provider_enrichment
+        LEAD_API_KEYS.clear()
+        LEAD_API_KEYS.update(request.api_keys or {})
+        
+        # Call the enrichment function directly (bypasses LLM reformatting which drops organization_data)
+        print(f"Enrichment inputs: email={request.email}, linkedin_url={request.linkedin_url}, name={request.name}, company={request.company}, domain={request.company_domain}")
+        
+        enriched_data = multi_provider_enrichment.func(
+            email=request.email or None,
+            linkedin_url=request.linkedin_url or None,
+            name=request.name or None,
+            company=request.company or None,
+            company_domain=request.company_domain or None
         )
         
-        # Prepare comprehensive inputs for the crew
-        inputs = {
-            "email": request.email or "",
-            "linkedin_url": request.linkedin_url or "",
-            "name": request.name or "",
-            "company": request.company or "",
-            "company_domain": request.company_domain or ""
-        }
-        
-        print(f"Enrichment inputs: {inputs}")
-        
-        # Execute the enrichment
-        result = enrichment_crew.kickoff(inputs=inputs)
-        
         print(f"--- ENRICHMENT RESULT ---")
-        print(result.raw)
+        print(json.dumps(enriched_data, indent=2, default=str))
         
-        # Parse the lead enrichment result
-        try:
-            enriched_data = json.loads(result.raw)
-            
-            # Add metadata about the enrichment process
-            enriched_data['enrichment_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
-            enriched_data['input_data'] = {
-                'email': request.email,
-                'name': request.name,
-                'company': request.company,
-                'company_domain': request.company_domain,
-                'linkedin_url': request.linkedin_url
-            }
-            
-        except json.JSONDecodeError:
-            # If the result isn't valid JSON, wrap it
-            enriched_data = {
-                "raw_output": str(result.raw),
-                "primary_source": "none",
-                "error": "Failed to parse enrichment result as JSON",
-                "enrichment_timestamp": json.loads(json.dumps(datetime.now(), default=str))
-            }
+        # Add metadata about the enrichment process
+        enriched_data['enrichment_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
+        enriched_data['input_data'] = {
+            'email': request.email,
+            'name': request.name,
+            'company': request.company,
+            'company_domain': request.company_domain,
+            'linkedin_url': request.linkedin_url
+        }
         
         # --- COMPANY PROFILE ENRICHMENT ---
         company_profile_data = {}
-        if request.company and request.company_domain:
+        
+        # Try to get company name and domain from multiple sources:
+        # 1. Request params (user provided)
+        # 2. Apollo enrichment result (organization.website_url or primary_domain)
+        # 3. Enriched data company field
+        
+        company_name = request.company or enriched_data.get('company')
+        company_domain = request.company_domain
+        
+        # Extract domain from Apollo's organization data if available
+        # Check multiple locations: organization_data (normalized), all_sources.apollo
+        if not company_domain:
+            from urllib.parse import urlparse
+            
+            # First try the normalized organization_data field
+            org_data = enriched_data.get('organization_data', {})
+            print(f"Checking organization_data: {bool(org_data)}")
+            
+            # If not found, try all_sources.apollo (multiple paths)
+            if not org_data:
+                apollo_data = enriched_data.get('all_sources', {}).get('apollo', {})
+                print(f"Checking all_sources.apollo: {bool(apollo_data)}, keys: {list(apollo_data.keys()) if apollo_data else []}")
+                
+                # Try direct organization first
+                org_data = apollo_data.get('organization', {})
+                
+                # If not found, try under person
+                if not org_data:
+                    person_data = apollo_data.get('person', {})
+                    print(f"Checking person data: {bool(person_data)}, keys: {list(person_data.keys()) if person_data else []}")
+                    org_data = person_data.get('organization', {})
+                    
+                    # If still not found, we need to fetch org data from Apollo using the organization_id
+                    if not org_data and person_data.get('organization_id'):
+                        org_id = person_data.get('organization_id')
+                        print(f"No org data in person, but found organization_id: {org_id}")
+                        # We'll extract what we can from employment_history
+                        employment = person_data.get('employment_history', [])
+                        if employment:
+                            current_job = next((e for e in employment if e.get('current')), employment[0] if employment else {})
+                            org_name = current_job.get('organization_name')
+                            if org_name:
+                                company_name = org_name
+                                print(f"Extracted company name from employment_history: {company_name}")
+            
+            print(f"Organization data found: {bool(org_data)}, keys: {list(org_data.keys()) if org_data else []}")
+            
+            # Try primary_domain first (cleaner), then website_url
+            primary_domain = org_data.get('primary_domain', '')
+            website_url = org_data.get('website_url', '')
+            
+            if primary_domain:
+                company_domain = primary_domain.replace('www.', '').strip('/')
+                print(f"Extracted domain from primary_domain: {company_domain}")
+            elif website_url:
+                # Extract domain from URL (e.g., "http://www.transparity.com" -> "transparity.com")
+                parsed = urlparse(website_url)
+                domain = parsed.netloc or parsed.path
+                # Remove www. prefix if present
+                company_domain = domain.replace('www.', '').strip('/')
+                print(f"Extracted domain from website_url: {company_domain}")
+            
+            # Also get company name from org if not already set
+            if not company_name and org_data.get('name'):
+                company_name = org_data.get('name')
+                print(f"Extracted company name: {company_name}")
+        
+        if company_name and company_domain:
             try:
-                print(f"--- ENRICHING COMPANY PROFILE: {request.company} ---")
-                print(f"Domain: {request.company_domain}")
+                print(f"--- ENRICHING COMPANY PROFILE: {company_name} ---")
+                print(f"Domain: {company_domain}")
                 
-                # Create company profile crew with user's API keys
-                company_crew = create_company_profile_crew(
-                    company_data={
-                        'company_name': request.company,
-                        'domain': request.company_domain
-                    },
-                    api_keys=request.api_keys or {}
-                )
+                # Set API keys for company profile agent
+                COMPANY_API_KEYS.clear()
+                COMPANY_API_KEYS.update(request.api_keys or {})
                 
-                # Execute company profile enrichment
-                company_inputs = {
-                    "company_name": request.company,
-                    "domain": request.company_domain
-                }
-                
-                print(f"Company profile inputs: {company_inputs}")
-                company_result = company_crew.kickoff(inputs=company_inputs)
+                # Run company profile enrichment directly (faster than CrewAI)
+                company_profile_data = run_company_profile(company_name, company_domain)
                 
                 print(f"--- COMPANY PROFILE RESULT ---")
-                print(company_result.raw)
-                
-                # Parse company profile result
-                try:
-                    company_profile_data = json.loads(company_result.raw)
-                except json.JSONDecodeError:
-                    company_profile_data = {
-                        "raw_output": str(company_result.raw),
-                        "error": "Failed to parse company profile result as JSON"
-                    }
+                print(json.dumps(company_profile_data, indent=2, default=str))
                     
             except Exception as e:
                 print(f"Error during company profile enrichment: {e}")
@@ -433,7 +485,7 @@ async def enrich_lead(request: LeadEnrichmentRequest):
                     "error": f"Company profile enrichment failed: {str(e)}"
                 }
         else:
-            print("Skipping company profile enrichment - missing company name or domain")
+            print(f"Skipping company profile enrichment - company_name={company_name}, company_domain={company_domain}")
             company_profile_data = {
                 "error": "Missing company name or domain for company profile enrichment"
             }
@@ -549,10 +601,124 @@ async def apollo_discover(request: dict):
             "leads": []
         }
 
+# Sequence Orchestrator
+from agents.sequence_orchestrator_agent import (
+    generate_complete_sequence,
+    SequenceGenerationRequest,
+    SequenceGenerationResponse
+)
+
+# Pain Point Enrichment
+from crew.pain_point_crew import create_pain_point_crew
+from schemas import PainPointEnrichmentRequest, PainPointEnrichmentResponse
+
+@app.post("/generate-sequence", response_model=SequenceGenerationResponse)
+async def generate_sequence(request: SequenceGenerationRequest):
+    """
+    Generate a complete multi-touch email sequence using AI agents
+    Implements industry best practices: 3-5 touches, smart stop logic
+    """
+    try:
+        print(f"--- GENERATING SEQUENCE ---")
+        print(f"Objective: {request.objective}")
+        print(f"Framework: {request.framework}")
+        print(f"Touches: {request.touches}")
+        print(f"Sequence Type: {request.sequence_type}")
+        print(f"Lead: {request.lead_email}")
+        
+        # Generate complete sequence
+        sequence = await generate_complete_sequence(request)
+        
+        print(f"--- SEQUENCE GENERATED ---")
+        print(f"Total Steps: {len(sequence.steps)}")
+        print(f"Duration: {sequence.total_duration_days} days")
+        print(f"Confidence: {sequence.confidence_score}")
+        
+        return sequence
+        
+    except Exception as e:
+        print(f"Error generating sequence: {e}")
+        raise HTTPException(status_code=500, detail=f"Sequence generation failed: {str(e)}")
+
+@app.post("/enrich-pain-points", response_model=PainPointEnrichmentResponse)
+async def enrich_pain_points(request: PainPointEnrichmentRequest):
+    """
+    AI-enrich a lead with specific pain points based on their role, company, and context.
+    
+    This endpoint analyzes the lead's profile and generates 3-5 specific, actionable
+    pain points that can be used to personalize outreach emails.
+    """
+    try:
+        print(f"--- ENRICHING PAIN POINTS ---")
+        print(f"Lead: {request.first_name} {request.last_name}")
+        print(f"Title: {request.title} at {request.company}")
+        print(f"Industry: {request.industry}")
+        
+        # Build lead data dict
+        lead_data = {
+            "first_name": request.first_name,
+            "last_name": request.last_name,
+            "title": request.title,
+            "company": request.company,
+            "industry": request.industry,
+            "company_size": request.company_size,
+            "location": request.location,
+            "enriched_data": request.enriched_data
+        }
+        
+        # Build optional context
+        icp_context = None
+        if request.icp_pain_points:
+            icp_context = {"pain_points": request.icp_pain_points}
+        
+        offer_context = None
+        if request.offer_name or request.offer_value_proposition:
+            offer_context = {
+                "name": request.offer_name,
+                "value_proposition": request.offer_value_proposition
+            }
+        
+        # Create and run the crew
+        crew = create_pain_point_crew(
+            llm=llm,
+            lead_data=lead_data,
+            icp_context=icp_context,
+            offer_context=offer_context
+        )
+        
+        result = crew.kickoff()
+        
+        # Parse result
+        if hasattr(result, 'pydantic'):
+            pain_point_result = result.pydantic
+            return PainPointEnrichmentResponse(
+                pain_points=pain_point_result.pain_points,
+                confidence=pain_point_result.confidence,
+                reasoning=pain_point_result.reasoning
+            )
+        else:
+            # Try to extract from raw output
+            raw_output = str(result)
+            parsed = extract_json_from_string(raw_output)
+            if parsed:
+                return PainPointEnrichmentResponse(
+                    pain_points=parsed.get("pain_points", []),
+                    confidence=parsed.get("confidence", "medium"),
+                    reasoning=parsed.get("reasoning", "")
+                )
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse pain points from AI response")
+        
+    except Exception as e:
+        print(f"Error enriching pain points: {e}")
+        raise HTTPException(status_code=500, detail=f"Pain point enrichment failed: {str(e)}")
+
 # Register routers
 app.include_router(json_lead_router)
 app.include_router(unstructured_lead_router)
 app.include_router(apollo_discovery_router)
+app.include_router(campaign_strategy_router)
+app.include_router(test_strategy_router)
 
 @app.get("/")
 async def root():

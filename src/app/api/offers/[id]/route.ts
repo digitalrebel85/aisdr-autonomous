@@ -21,7 +21,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, value_proposition, call_to_action, hook_snippet } = body;
+    const { name, description, value_proposition, call_to_action, hook_snippet, pain_points, benefits, proof_points, sales_assets } = body;
 
     if (!name || !value_proposition || !call_to_action) {
       return NextResponse.json({ 
@@ -41,17 +41,26 @@ export async function PUT(
       return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
     }
 
+    // Build update data
+    const updateData: Record<string, any> = {
+      name,
+      description: description || '',
+      value_proposition,
+      call_to_action,
+      hook_snippet: hook_snippet || '',
+      updated_at: new Date().toISOString()
+    };
+
+    // Add optional AI strategy fields if they have values
+    if (pain_points !== undefined) updateData.pain_points = pain_points;
+    if (benefits !== undefined) updateData.benefits = benefits;
+    if (proof_points !== undefined) updateData.proof_points = proof_points;
+    if (sales_assets !== undefined) updateData.sales_assets = sales_assets;
+
     // Update the offer
     const { data: offer, error } = await supabase
       .from('offers')
-      .update({
-        name,
-        description: description || '',
-        value_proposition,
-        call_to_action,
-        hook_snippet: hook_snippet || '',
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', offerId)
       .eq('user_id', user.id)
       .select()

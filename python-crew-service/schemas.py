@@ -32,10 +32,18 @@ class EmailCopywritingRequest(BaseModel):
     title: str = ""
     company: str
     email: str
+    first_name: str = ""
+    last_name: str = ""
     
     # Core messaging
     offer: str
     hook_snippet: str = ""
+    
+    # Sequence context - CRITICAL for generating unique emails per step
+    step_number: int = 1  # Which email in the sequence (1, 2, 3, etc.)
+    total_steps: int = 3  # Total emails in sequence
+    objective: str = "meetings"  # meetings, demos, trials, sales
+    framework: str = ""  # AIDA, PAS, BAB, etc.
     
     # Enhanced lead context (JSON string containing all enriched data)
     lead_context: str = "{}"  # JSON string with all available lead data
@@ -60,3 +68,24 @@ class StrategicReflectionRequest(BaseModel):
 class StrategicReflectionResponse(BaseModel):
     summary: str
     recommendations: list[str]
+
+class PainPointEnrichmentRequest(BaseModel):
+    # Lead info
+    first_name: str = ""
+    last_name: str = ""
+    title: str = ""
+    company: str = ""
+    industry: str = ""
+    company_size: str = ""
+    location: str = ""
+    enriched_data: dict = {}
+    
+    # Optional context
+    icp_pain_points: list[str] = []  # Generic ICP pain points for inspiration
+    offer_name: str = ""
+    offer_value_proposition: str = ""
+
+class PainPointEnrichmentResponse(BaseModel):
+    pain_points: list[str]
+    confidence: str  # "high", "medium", "low"
+    reasoning: str

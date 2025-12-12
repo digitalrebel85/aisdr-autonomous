@@ -2,7 +2,7 @@
 REM Batch file to run the outreach cron job
 REM Make sure your .env.local has CRON_SECRET set
 
-cd /d "c:\Users\chris\OneDrive\Desktop\aisdrnewstyle"
+cd /d "c:\Users\chris\OneDrive\Documents\GitHub\aisdrnewstyle"
 
 REM Check if .env.local exists
 if not exist ".env.local" (
