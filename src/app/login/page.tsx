@@ -58,26 +58,26 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-3xl"></div>
+      {/* Animated Background Effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-3xl animate-float-reverse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-cyan-600/10 rounded-full blur-3xl animate-float" style={{animationDelay: '4s'}}></div>
       </div>
 
       {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"></div>
 
       <div className="w-full max-w-md p-8 space-y-8 relative z-10">
         {/* Logo & Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 animate-fade-in-up">
           <div className="flex justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl shadow-2xl shadow-violet-500/30">
-                <Bot className="w-10 h-10 text-white" />
+            <a href="/" className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-xl opacity-50 animate-glow-pulse"></div>
+              <div className="relative p-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl shadow-2xl shadow-violet-500/30 group-hover:scale-110 transition-transform duration-300">
+                <Bot className="w-10 h-10 text-white group-hover:rotate-12 transition-transform duration-300" />
               </div>
-            </div>
+            </a>
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
@@ -86,7 +86,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl animate-fade-in-scale" style={{animationDelay: '200ms'}}>
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
               <p className="text-red-400 text-sm text-center">{error}</p>
@@ -135,7 +135,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02]"
             >
               {isLoading ? (
                 <>
@@ -189,7 +189,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm">
+        <p className="text-center text-gray-500 text-sm animate-fade-in-up" style={{animationDelay: '400ms'}}>
           Don't have an account?{' '}
           <a href="/signup" className="text-violet-400 hover:text-violet-300 transition-colors">
             Sign up

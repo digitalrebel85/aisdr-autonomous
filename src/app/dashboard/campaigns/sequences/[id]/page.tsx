@@ -192,23 +192,29 @@ export default function SequenceBuilderPage() {
   const currentStepFinalized = steps.find(s => s.step_number === activeStep)?.is_finalized;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0f] p-6">
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 {sequence?.name || 'Sequence Builder'}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 Customize your {sequence?.total_touches}-touch email sequence
               </p>
             </div>
             <button
               onClick={proceedToLaunch}
               disabled={!allStepsFinalized}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold"
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-500 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
             >
               <Play className="w-5 h-5" />
               <span>Launch Campaign</span>
@@ -217,10 +223,10 @@ export default function SequenceBuilderPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Sequence Progress</h3>
-            <span className="text-sm text-gray-600">
+            <h3 className="font-semibold text-white">Sequence Progress</h3>
+            <span className="text-sm text-gray-400">
               {steps.filter(s => s.is_finalized).length} of {steps.length} completed
             </span>
           </div>
@@ -231,23 +237,23 @@ export default function SequenceBuilderPage() {
                   onClick={() => setActiveStep(step.step_number)}
                   className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold transition-all ${
                     activeStep === step.step_number
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-200'
+                      ? 'bg-violet-600 text-white ring-4 ring-violet-500/30'
                       : step.is_finalized
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white/10 text-gray-400'
                   }`}
                 >
                   {step.is_finalized ? <Check className="w-5 h-5" /> : step.step_number}
                 </button>
                 {idx < steps.length - 1 && (
                   <div className={`flex-1 h-1 mx-2 ${
-                    step.is_finalized ? 'bg-green-600' : 'bg-gray-200'
+                    step.is_finalized ? 'bg-emerald-600' : 'bg-white/10'
                   }`} />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
             {steps.map(step => (
               <span key={step.id} className="flex-1 text-center">
                 Day {step.delay_days}
@@ -260,34 +266,34 @@ export default function SequenceBuilderPage() {
           {/* Email Editor */}
           <div className="lg:col-span-2 space-y-6">
             {/* Step Info Card */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Mail className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-violet-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-xl font-bold text-white">
                       Touch {activeStep} of {sequence?.total_touches}
                     </h2>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-400">
                       {steps.find(s => s.step_number === activeStep)?.step_type || 'Email'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-gray-400">
                   <Clock className="w-4 h-4" />
                   <span>Day {steps.find(s => s.step_number === activeStep)?.delay_days || 0}</span>
                 </div>
               </div>
 
               {/* AI Generation Prompt */}
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4 mb-4">
                 <div className="flex items-start space-x-2">
-                  <Target className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <Target className="w-5 h-5 text-violet-400 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">AI Guidance</h4>
-                    <p className="text-sm text-gray-700">
+                    <h4 className="font-medium text-white mb-1">AI Guidance</h4>
+                    <p className="text-sm text-gray-300">
                       {steps.find(s => s.step_number === activeStep)?.ai_generation_prompt}
                     </p>
                   </div>
@@ -298,7 +304,7 @@ export default function SequenceBuilderPage() {
               <button
                 onClick={generateEmailWithAI}
                 disabled={isGenerating}
-                className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium"
+                className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium shadow-lg shadow-violet-500/25 transition-all"
               >
                 {isGenerating ? (
                   <>
@@ -315,7 +321,7 @@ export default function SequenceBuilderPage() {
 
               {/* Subject Line */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Subject Line
                 </label>
                 <input
@@ -323,13 +329,13 @@ export default function SequenceBuilderPage() {
                   value={subjectLine}
                   onChange={(e) => setSubjectLine(e.target.value)}
                   placeholder="Enter email subject..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
               </div>
 
               {/* Email Body */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Email Body
                 </label>
                 <textarea
@@ -337,7 +343,7 @@ export default function SequenceBuilderPage() {
                   onChange={(e) => setEmailBody(e.target.value)}
                   placeholder="Enter email content..."
                   rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono text-sm"
                 />
               </div>
 
@@ -345,7 +351,7 @@ export default function SequenceBuilderPage() {
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setPreviewMode(!previewMode)}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+                  className="px-4 py-2 text-gray-300 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 flex items-center space-x-2 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   <span>{previewMode ? 'Edit' : 'Preview'}</span>
@@ -354,7 +360,7 @@ export default function SequenceBuilderPage() {
                 <button
                   onClick={saveStep}
                   disabled={isSaving || !subjectLine || !emailBody}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg shadow-violet-500/25 transition-all"
                 >
                   {isSaving ? (
                     <>
@@ -371,7 +377,7 @@ export default function SequenceBuilderPage() {
               </div>
 
               {error && (
-                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+                <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
                   {error}
                 </div>
               )}
@@ -379,15 +385,15 @@ export default function SequenceBuilderPage() {
 
             {/* Preview Mode */}
             {previewMode && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Email Preview</h3>
-                <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                  <div className="mb-4 pb-4 border-b border-gray-200">
-                    <div className="text-sm text-gray-600 mb-1">Subject:</div>
-                    <div className="font-semibold text-gray-900">{subjectLine || '(No subject)'}</div>
+              <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <h3 className="font-semibold text-white mb-4">Email Preview</h3>
+                <div className="border border-white/10 rounded-xl p-6 bg-white/5">
+                  <div className="mb-4 pb-4 border-b border-white/10">
+                    <div className="text-sm text-gray-500 mb-1">Subject:</div>
+                    <div className="font-semibold text-white">{subjectLine || '(No subject)'}</div>
                   </div>
                   <div className="prose prose-sm max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-800">
+                    <div className="whitespace-pre-wrap text-gray-300">
                       {emailBody || '(No content)'}
                     </div>
                   </div>
@@ -399,26 +405,26 @@ export default function SequenceBuilderPage() {
           {/* Sidebar - Sequence Overview */}
           <div className="space-y-6">
             {/* Sequence Info */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Sequence Details</h3>
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="font-semibold text-white mb-4">Sequence Details</h3>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm text-gray-600">Framework</dt>
-                  <dd className="font-medium text-gray-900">{sequence?.messaging_framework}</dd>
+                  <dt className="text-sm text-gray-500">Framework</dt>
+                  <dd className="font-medium text-white">{sequence?.messaging_framework}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Objective</dt>
-                  <dd className="font-medium text-gray-900 capitalize">{sequence?.objective}</dd>
+                  <dt className="text-sm text-gray-500">Objective</dt>
+                  <dd className="font-medium text-white capitalize">{sequence?.objective}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Total Touches</dt>
-                  <dd className="font-medium text-gray-900">{sequence?.total_touches}</dd>
+                  <dt className="text-sm text-gray-500">Total Touches</dt>
+                  <dd className="font-medium text-white">{sequence?.total_touches}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Status</dt>
+                  <dt className="text-sm text-gray-500">Status</dt>
                   <dd>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      allStepsFinalized ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      allStepsFinalized ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     }`}>
                       {allStepsFinalized ? 'Ready to Launch' : 'In Progress'}
                     </span>
@@ -428,30 +434,30 @@ export default function SequenceBuilderPage() {
             </div>
 
             {/* All Steps Overview */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">All Touches</h3>
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="font-semibold text-white mb-4">All Touches</h3>
               <div className="space-y-3">
                 {steps.map((step) => (
                   <button
                     key={step.id}
                     onClick={() => setActiveStep(step.step_number)}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                    className={`w-full text-left p-3 rounded-xl border transition-all ${
                       activeStep === step.step_number
-                        ? 'border-blue-600 bg-blue-50'
+                        ? 'border-violet-500 bg-violet-500/10'
                         : step.is_finalized
-                        ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-emerald-500/30 bg-emerald-500/10'
+                        : 'border-white/10 hover:border-white/20 bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-gray-900">Touch {step.step_number}</span>
+                      <span className="font-medium text-white">Touch {step.step_number}</span>
                       {step.is_finalized && (
-                        <Check className="w-4 h-4 text-green-600" />
+                        <Check className="w-4 h-4 text-emerald-400" />
                       )}
                     </div>
-                    <div className="text-xs text-gray-600">Day {step.delay_days}</div>
+                    <div className="text-xs text-gray-500">Day {step.delay_days}</div>
                     {step.subject_line && (
-                      <div className="text-xs text-gray-700 mt-1 truncate">
+                      <div className="text-xs text-gray-400 mt-1 truncate">
                         {step.subject_line}
                       </div>
                     )}
@@ -461,26 +467,26 @@ export default function SequenceBuilderPage() {
             </div>
 
             {/* Tips */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                <Sparkles className="w-5 h-5 mr-2 text-blue-600" />
+            <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-6">
+              <h3 className="font-semibold text-white mb-2 flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-violet-400" />
                 Pro Tips
               </h3>
-              <ul className="space-y-2 text-sm text-gray-700">
+              <ul className="space-y-2 text-sm text-gray-300">
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-violet-400 mr-2">•</span>
                   Use AI to generate initial drafts, then customize
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-violet-400 mr-2">•</span>
                   Keep subject lines under 50 characters
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-violet-400 mr-2">•</span>
                   Each touch should build on the previous one
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-violet-400 mr-2">•</span>
                   Include clear CTAs in every email
                 </li>
               </ul>

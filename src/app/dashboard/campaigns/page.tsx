@@ -172,7 +172,7 @@ export default function CampaignsPage() {
               </div>
             </div>
             <button
-              onClick={() => router.push('/dashboard/campaigns/strategy')}
+              onClick={() => router.push('/dashboard/campaigns/new')}
               className="px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-500 hover:to-fuchsia-500 flex items-center space-x-2 font-semibold shadow-lg shadow-violet-500/25 transition-all"
             >
               <Sparkles className="w-5 h-5" />

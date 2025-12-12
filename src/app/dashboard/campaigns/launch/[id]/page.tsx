@@ -292,23 +292,29 @@ export default function CampaignLaunchPage() {
   const someSelected = selectedLeads.size > 0 && selectedLeads.size < filteredLeads.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0f] p-6">
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 Launch Campaign
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 {sequence?.name} - Select leads to include
               </p>
             </div>
             <button
               onClick={launchCampaign}
               disabled={isLaunching || selectedLeads.size === 0}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold"
+              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-500 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
             >
               {isLaunching ? (
                 <>
@@ -326,10 +332,10 @@ export default function CampaignLaunchPage() {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
             <div className="flex-1">
-              <p className="text-red-700">{error}</p>
+              <p className="text-red-400">{error}</p>
             </div>
           </div>
         )}
@@ -338,12 +344,12 @@ export default function CampaignLaunchPage() {
           {/* Lead Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Filter Leads</h3>
+                <h3 className="font-semibold text-white">Filter Leads</h3>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                  className="text-sm text-violet-400 hover:text-violet-300 flex items-center space-x-1"
                 >
                   <span>{showFilters ? 'Hide' : 'Show'} Filters</span>
                   {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -352,26 +358,26 @@ export default function CampaignLaunchPage() {
 
               {/* Search */}
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by name, email, or company..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
               </div>
 
               {showFilters && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Lead Status
                     </label>
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                     >
                       <option value="all">All Eligible</option>
                       <option value="new">New Leads Only</option>
@@ -381,7 +387,7 @@ export default function CampaignLaunchPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Min ICP Score
                     </label>
                     <input
@@ -390,9 +396,9 @@ export default function CampaignLaunchPage() {
                       max="100"
                       value={icpScoreMin}
                       onChange={(e) => setIcpScoreMin(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-600"
                     />
-                    <div className="text-sm text-gray-600 mt-1">{icpScoreMin}+</div>
+                    <div className="text-sm text-gray-400 mt-1">{icpScoreMin}+</div>
                   </div>
 
                   <div className="flex items-end">
@@ -402,7 +408,7 @@ export default function CampaignLaunchPage() {
                         setStatusFilter('all');
                         setIcpScoreMin(0);
                       }}
-                      className="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="w-full px-4 py-2 text-gray-300 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
                     >
                       Clear Filters
                     </button>
@@ -412,8 +418,8 @@ export default function CampaignLaunchPage() {
             </div>
 
             {/* Leads Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <input
                     type="checkbox"
@@ -422,44 +428,44 @@ export default function CampaignLaunchPage() {
                       if (input) input.indeterminate = someSelected;
                     }}
                     onChange={toggleAll}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-violet-600 border-white/20 rounded focus:ring-violet-500 bg-white/5"
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-300">
                     {selectedLeads.size} of {filteredLeads.length} selected
                   </span>
                 </div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-500">
                   {filteredLeads.length} eligible leads
                 </span>
               </div>
 
               <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0">
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="bg-white/5 sticky top-0">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Select
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Lead
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Company
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         ICP Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-white/5">
                     {filteredLeads.map((lead) => (
                       <tr
                         key={lead.id}
-                        className={`hover:bg-gray-50 cursor-pointer ${
-                          selectedLeads.has(lead.id) ? 'bg-blue-50' : ''
+                        className={`hover:bg-white/5 cursor-pointer transition-colors ${
+                          selectedLeads.has(lead.id) ? 'bg-violet-500/10' : ''
                         }`}
                         onClick={() => toggleLead(lead.id)}
                       >
@@ -468,13 +474,13 @@ export default function CampaignLaunchPage() {
                             type="checkbox"
                             checked={selectedLeads.has(lead.id)}
                             onChange={() => toggleLead(lead.id)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-violet-600 border-white/20 rounded focus:ring-violet-500 bg-white/5"
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-white">
                                 {lead.first_name} {lead.last_name}
                               </div>
                               <div className="text-sm text-gray-500">{lead.email}</div>
@@ -482,26 +488,26 @@ export default function CampaignLaunchPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{lead.company}</div>
+                          <div className="text-sm text-white">{lead.company}</div>
                           <div className="text-sm text-gray-500">{lead.title}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <TrendingUp className={`w-4 h-4 mr-1 ${
-                              lead.icp_score >= 80 ? 'text-green-600' :
-                              lead.icp_score >= 60 ? 'text-yellow-600' :
-                              'text-gray-400'
+                              lead.icp_score >= 80 ? 'text-emerald-400' :
+                              lead.icp_score >= 60 ? 'text-amber-400' :
+                              'text-gray-500'
                             }`} />
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-white">
                               {lead.icp_score || 0}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            lead.enrichment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                            lead.enrichment_status === 'enriching' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
+                            lead.enrichment_status === 'completed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                            lead.enrichment_status === 'enriching' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                            'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                           }`}>
                             {lead.enrichment_status || 'pending'}
                           </span>
@@ -513,9 +519,9 @@ export default function CampaignLaunchPage() {
 
                 {filteredLeads.length === 0 && (
                   <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No eligible leads found</p>
-                    <p className="text-sm text-gray-400 mt-1">Try adjusting your filters</p>
+                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400">No eligible leads found</p>
+                    <p className="text-sm text-gray-500 mt-1">Try adjusting your filters</p>
                   </div>
                 )}
               </div>
@@ -525,28 +531,28 @@ export default function CampaignLaunchPage() {
           {/* Sidebar - Campaign Summary */}
           <div className="space-y-6">
             {/* Campaign Info */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Campaign Summary</h3>
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="font-semibold text-white mb-4">Campaign Summary</h3>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm text-gray-600">Sequence</dt>
-                  <dd className="font-medium text-gray-900">{sequence?.name}</dd>
+                  <dt className="text-sm text-gray-500">Sequence</dt>
+                  <dd className="font-medium text-white">{sequence?.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Framework</dt>
-                  <dd className="font-medium text-gray-900">{sequence?.messaging_framework}</dd>
+                  <dt className="text-sm text-gray-500">Framework</dt>
+                  <dd className="font-medium text-white">{sequence?.messaging_framework}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Touches</dt>
-                  <dd className="font-medium text-gray-900">{sequence?.total_touches}</dd>
+                  <dt className="text-sm text-gray-500">Touches</dt>
+                  <dd className="font-medium text-white">{sequence?.total_touches}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Selected Leads</dt>
-                  <dd className="font-medium text-gray-900">{selectedLeads.size}</dd>
+                  <dt className="text-sm text-gray-500">Selected Leads</dt>
+                  <dd className="font-medium text-white">{selectedLeads.size}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-600">Total Emails</dt>
-                  <dd className="font-medium text-gray-900">
+                  <dt className="text-sm text-gray-500">Total Emails</dt>
+                  <dd className="font-medium text-white">
                     {selectedLeads.size * (sequence?.total_touches || 0)}
                   </dd>
                 </div>
@@ -554,19 +560,19 @@ export default function CampaignLaunchPage() {
             </div>
 
             {/* Sequence Timeline */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Sequence Timeline</h3>
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="font-semibold text-white mb-4">Sequence Timeline</h3>
               <div className="space-y-3">
                 {sequenceSteps.map((step, idx) => (
                   <div key={step.step_number} className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-blue-600">{step.step_number}</span>
+                    <div className="flex-shrink-0 w-8 h-8 bg-violet-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-violet-400">{step.step_number}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-white">
                         Day {step.delay_days}
                       </div>
-                      <div className="text-xs text-gray-600 truncate">
+                      <div className="text-xs text-gray-400 truncate">
                         {step.subject_line}
                       </div>
                     </div>
@@ -576,28 +582,28 @@ export default function CampaignLaunchPage() {
             </div>
 
             {/* Connected Inbox */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Sending From</h3>
+            <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="font-semibold text-white mb-4">Sending From</h3>
               {connectedInbox ? (
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-sm font-medium text-white truncate">
                       {connectedInbox.email_address}
                     </div>
-                    <div className="text-xs text-gray-500">Connected</div>
+                    <div className="text-xs text-emerald-400">Connected</div>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <XCircle className="w-5 h-5 text-red-600" />
+                  <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <XCircle className="w-5 h-5 text-red-400" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-red-900">No inbox connected</div>
-                    <button className="text-xs text-blue-600 hover:text-blue-700">
+                    <div className="text-sm font-medium text-red-400">No inbox connected</div>
+                    <button className="text-xs text-violet-400 hover:text-violet-300">
                       Connect inbox
                     </button>
                   </div>
@@ -606,26 +612,26 @@ export default function CampaignLaunchPage() {
             </div>
 
             {/* Launch Checklist */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                <CheckCircle2 className="w-5 h-5 mr-2 text-green-600" />
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
+              <h3 className="font-semibold text-white mb-3 flex items-center">
+                <CheckCircle2 className="w-5 h-5 mr-2 text-emerald-400" />
                 Pre-Launch Checklist
               </h3>
-              <ul className="space-y-2 text-sm text-gray-700">
+              <ul className="space-y-2 text-sm text-gray-300">
                 <li className="flex items-start">
-                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-400 mt-0.5" />
                   Email templates finalized
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className={`w-4 h-4 mr-2 mt-0.5 ${connectedInbox ? 'text-green-600' : 'text-gray-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 mr-2 mt-0.5 ${connectedInbox ? 'text-emerald-400' : 'text-gray-500'}`} />
                   Email inbox connected
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className={`w-4 h-4 mr-2 mt-0.5 ${selectedLeads.size > 0 ? 'text-green-600' : 'text-gray-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 mr-2 mt-0.5 ${selectedLeads.size > 0 ? 'text-emerald-400' : 'text-gray-500'}`} />
                   Leads selected
                 </li>
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">•</span>
+                  <span className="text-emerald-400 mr-2">•</span>
                   Auto-stop enabled for replies
                 </li>
               </ul>
