@@ -3,25 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import MegaMenu from '@/components/MegaMenu';
 import { 
   ArrowRight,
   Play,
   TrendingUp,
-  Users,
-  Building2,
-  Briefcase,
   Filter,
-  Star,
   Quote,
   Calendar,
   Target,
   DollarSign,
   Clock,
-  CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 
 export default function CaseStudiesPage() {
@@ -161,22 +156,54 @@ export default function CaseStudiesPage() {
   const featuredStudy = caseStudies.find(study => study.featured);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Animated Background Effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-3xl animate-float-reverse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-cyan-600/15 rounded-full blur-3xl animate-float" style={{animationDelay: '4s'}}></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"></div>
+      </div>
+
       {/* Navigation */}
-      <MegaMenu />
+      <nav className="relative z-50 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-110 transition-transform duration-300">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white group-hover:text-violet-300 transition-colors">ConnectLead</span>
+            </Link>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="/features" className="text-gray-400 hover:text-white transition-colors">Features</Link>
+              <Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
+              <Link href="/about" className="text-gray-400 hover:text-white transition-colors">About</Link>
+              <Link href="/login" className="text-gray-400 hover:text-white transition-colors">Login</Link>
+              <Link href="/signup">
+                <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
-      <section className="pt-16 pb-12">
+      <section className="relative pt-20 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
-            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+            <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 animate-fade-in-up">
+              <Sparkles className="w-4 h-4 mr-2" />
               Case Studies
             </Badge>
-            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
-              Real Results from
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Real Companies</span>
+            <h1 className="text-4xl lg:text-6xl font-bold leading-tight animate-fade-in-up" style={{animationDelay: '100ms'}}>
+              <span className="text-white">Real Results from</span>
+              <br />
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Real Companies</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto animate-fade-in-up" style={{animationDelay: '200ms'}}>
               See how companies across industries are using ConnectLead to transform their sales development and achieve remarkable growth.
             </p>
           </div>
@@ -185,13 +212,13 @@ export default function CaseStudiesPage() {
 
       {/* Featured Case Study */}
       {featuredStudy && (
-        <section className="py-20 bg-white">
+        <section className="relative py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 mb-4">
+              <Badge className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 mb-4">
                 Featured Success Story
               </Badge>
-              <h2 className="text-3xl font-bold text-gray-900">
+              <h2 className="text-3xl font-bold text-white">
                 How {featuredStudy.company} Achieved {featuredStudy.results.meetings}
               </h2>
             </div>
@@ -199,86 +226,75 @@ export default function CaseStudiesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Video/Visual */}
               <div className="relative">
-                <Card className="border-0 shadow-2xl overflow-hidden">
-                  <div className="aspect-video bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center relative">
-                    <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                <div className="bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 rounded-2xl border border-white/10 overflow-hidden">
+                  <div className="aspect-video flex items-center justify-center relative">
                     <Button 
                       size="lg" 
-                      className="bg-white text-blue-600 hover:bg-gray-100 rounded-full w-20 h-20 relative z-10"
+                      className="bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 rounded-full w-20 h-20 relative z-10 border border-white/20"
                     >
                       <Play className="h-8 w-8" />
                     </Button>
                     <div className="absolute bottom-4 left-4 text-white">
                       <div className="text-2xl font-bold">{featuredStudy.company}</div>
-                      <div className="text-sm opacity-90">{featuredStudy.companySize}</div>
+                      <div className="text-sm text-gray-400">{featuredStudy.companySize}</div>
                     </div>
                   </div>
-                </Card>
+                </div>
               </div>
 
               {/* Results */}
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">The Challenge</h3>
-                  <p className="text-gray-600 text-lg">{featuredStudy.challenge}</p>
+                  <h3 className="text-2xl font-bold text-white mb-4">The Challenge</h3>
+                  <p className="text-gray-400 text-lg">{featuredStudy.challenge}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">The Solution</h3>
-                  <p className="text-gray-600 text-lg">{featuredStudy.solution}</p>
+                  <h3 className="text-2xl font-bold text-white mb-4">The Solution</h3>
+                  <p className="text-gray-400 text-lg">{featuredStudy.solution}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">The Results</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">The Results</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <Card className="border-0 shadow-md bg-green-50">
-                      <CardContent className="p-4 text-center">
-                        <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                        <div className="font-bold text-green-600">{featuredStudy.results.meetings}</div>
-                        <div className="text-xs text-gray-600">Qualified Meetings</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 shadow-md bg-blue-50">
-                      <CardContent className="p-4 text-center">
-                        <DollarSign className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                        <div className="font-bold text-blue-600">{featuredStudy.results.revenue}</div>
-                        <div className="text-xs text-gray-600">Additional Revenue</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 shadow-md bg-purple-50">
-                      <CardContent className="p-4 text-center">
-                        <Target className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                        <div className="font-bold text-purple-600">{featuredStudy.results.cost}</div>
-                        <div className="text-xs text-gray-600">Cost Reduction</div>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-0 shadow-md bg-orange-50">
-                      <CardContent className="p-4 text-center">
-                        <Clock className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-                        <div className="font-bold text-orange-600">{featuredStudy.results.time}</div>
-                        <div className="text-xs text-gray-600">Implementation</div>
-                      </CardContent>
-                    </Card>
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
+                      <TrendingUp className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
+                      <div className="font-bold text-emerald-400">{featuredStudy.results.meetings}</div>
+                      <div className="text-xs text-gray-400">Qualified Meetings</div>
+                    </div>
+                    <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 text-center">
+                      <DollarSign className="h-6 w-6 text-violet-400 mx-auto mb-2" />
+                      <div className="font-bold text-violet-400">{featuredStudy.results.revenue}</div>
+                      <div className="text-xs text-gray-400">Additional Revenue</div>
+                    </div>
+                    <div className="bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-xl p-4 text-center">
+                      <Target className="h-6 w-6 text-fuchsia-400 mx-auto mb-2" />
+                      <div className="font-bold text-fuchsia-400">{featuredStudy.results.cost}</div>
+                      <div className="text-xs text-gray-400">Cost Reduction</div>
+                    </div>
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 text-center">
+                      <Clock className="h-6 w-6 text-cyan-400 mx-auto mb-2" />
+                      <div className="font-bold text-cyan-400">{featuredStudy.results.time}</div>
+                      <div className="text-xs text-gray-400">Implementation</div>
+                    </div>
                   </div>
                 </div>
 
-                <Card className="border-0 shadow-md bg-gray-50">
-                  <CardContent className="p-6">
-                    <Quote className="h-8 w-8 text-blue-600 mb-4" />
-                    <blockquote className="text-lg text-gray-700 italic mb-4">
-                      "{featuredStudy.testimonial.quote}"
-                    </blockquote>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {featuredStudy.testimonial.avatar}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{featuredStudy.testimonial.author}</div>
-                        <div className="text-sm text-gray-600">{featuredStudy.testimonial.title}</div>
-                      </div>
+                <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6">
+                  <Quote className="h-8 w-8 text-violet-400 mb-4" />
+                  <blockquote className="text-lg text-gray-300 italic mb-4">
+                    "{featuredStudy.testimonial.quote}"
+                  </blockquote>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {featuredStudy.testimonial.avatar}
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <div className="font-semibold text-white">{featuredStudy.testimonial.author}</div>
+                      <div className="text-sm text-gray-400">{featuredStudy.testimonial.title}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -286,15 +302,18 @@ export default function CaseStudiesPage() {
       )}
 
       {/* Filters */}
-      <section className="py-12 bg-gray-50">
+      <section className="relative py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4">
             {filters.map((filter) => (
               <Button
                 key={filter.id}
-                variant={selectedFilter === filter.id ? "default" : "outline"}
+                variant="outline"
                 onClick={() => setSelectedFilter(filter.id)}
-                className={selectedFilter === filter.id ? "bg-blue-600 hover:bg-blue-700" : ""}
+                className={selectedFilter === filter.id 
+                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0" 
+                  : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                }
               >
                 <Filter className="mr-2 h-4 w-4" />
                 {filter.label}
@@ -305,204 +324,196 @@ export default function CaseStudiesPage() {
       </section>
 
       {/* Case Studies Grid */}
-      <section className="py-20 bg-gray-50">
+      <section className="relative py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {filteredCaseStudies.map((study) => (
-              <Card key={study.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                <CardContent className="p-8">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                        {study.logo}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">{study.company}</h3>
-                        <p className="text-sm text-gray-600">{study.companySize}</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="capitalize">
-                      {study.industry}
-                    </Badge>
-                  </div>
-
-                  {/* Key Metrics */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    {study.metrics.slice(0, 2).map((metric, index) => (
-                      <div key={index} className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{metric.improvement}</div>
-                        <div className="text-sm text-gray-600">{metric.label}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Challenge & Solution */}
-                  <div className="space-y-4 mb-6">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Challenge</h4>
-                      <p className="text-sm text-gray-600">{study.challenge}</p>
+              <div key={study.id} className="bg-white/[0.02] rounded-2xl border border-white/10 p-8 hover:border-violet-500/30 transition-all duration-300 hover-lift">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center text-white font-bold">
+                      {study.logo}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Solution</h4>
-                      <p className="text-sm text-gray-600">{study.solution}</p>
+                      <h3 className="text-xl font-bold text-white">{study.company}</h3>
+                      <p className="text-sm text-gray-400">{study.companySize}</p>
                     </div>
                   </div>
+                  <Badge className="bg-white/5 text-gray-400 border-white/10 capitalize">
+                    {study.industry}
+                  </Badge>
+                </div>
 
-                  {/* Testimonial */}
-                  <Card className="border border-gray-200 bg-gray-50 mb-6">
-                    <CardContent className="p-4">
-                      <blockquote className="text-sm text-gray-700 italic mb-3">
-                        "{study.testimonial.quote}"
-                      </blockquote>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                          {study.testimonial.avatar}
-                        </div>
-                        <div>
-                          <div className="text-xs font-semibold text-gray-900">{study.testimonial.author}</div>
-                          <div className="text-xs text-gray-600">{study.testimonial.title}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {study.metrics.slice(0, 2).map((metric, index) => (
+                    <div key={index} className="text-center">
+                      <div className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">{metric.improvement}</div>
+                      <div className="text-sm text-gray-400">{metric.label}</div>
+                    </div>
+                  ))}
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex space-x-3">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Play className="mr-2 h-4 w-4" />
-                      Watch Video
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
+                {/* Challenge & Solution */}
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <h4 className="font-semibold text-white mb-2">Challenge</h4>
+                    <p className="text-sm text-gray-400">{study.challenge}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <h4 className="font-semibold text-white mb-2">Solution</h4>
+                    <p className="text-sm text-gray-400">{study.solution}</p>
+                  </div>
+                </div>
+
+                {/* Testimonial */}
+                <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 mb-6">
+                  <blockquote className="text-sm text-gray-300 italic mb-3">
+                    "{study.testimonial.quote}"
+                  </blockquote>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                      {study.testimonial.avatar}
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-white">{study.testimonial.author}</div>
+                      <div className="text-xs text-gray-400">{study.testimonial.title}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex space-x-3">
+                  <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10">
+                    <Play className="mr-2 h-4 w-4" />
+                    Watch Video
+                  </Button>
+                  <Button variant="outline" size="sm" className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-white">
+      <section className="relative py-20 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white">
               Proven Results Across Industries
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               Aggregate results from 200+ companies using ConnectLead
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <Card className="border-0 shadow-lg text-center">
-              <CardContent className="p-8">
-                <div className="text-4xl font-bold text-blue-600 mb-2">3.2x</div>
-                <div className="text-lg font-semibold text-gray-900 mb-2">Average Meeting Increase</div>
-                <div className="text-sm text-gray-600">Across all customers</div>
-              </CardContent>
-            </Card>
+            <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-8 text-center hover:border-violet-500/30 transition-all duration-300">
+              <div className="text-4xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-2">3.2x</div>
+              <div className="text-lg font-semibold text-white mb-2">Average Meeting Increase</div>
+              <div className="text-sm text-gray-400">Across all customers</div>
+            </div>
             
-            <Card className="border-0 shadow-lg text-center">
-              <CardContent className="p-8">
-                <div className="text-4xl font-bold text-green-600 mb-2">68%</div>
-                <div className="text-lg font-semibold text-gray-900 mb-2">Average Cost Reduction</div>
-                <div className="text-sm text-gray-600">vs traditional SDR teams</div>
-              </CardContent>
-            </Card>
+            <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-8 text-center hover:border-emerald-500/30 transition-all duration-300">
+              <div className="text-4xl font-bold text-emerald-400 mb-2">68%</div>
+              <div className="text-lg font-semibold text-white mb-2">Average Cost Reduction</div>
+              <div className="text-sm text-gray-400">vs traditional SDR teams</div>
+            </div>
             
-            <Card className="border-0 shadow-lg text-center">
-              <CardContent className="p-8">
-                <div className="text-4xl font-bold text-purple-600 mb-2">2.1M</div>
-                <div className="text-lg font-semibold text-gray-900 mb-2">Total Revenue Generated</div>
-                <div className="text-sm text-gray-600">In the last 12 months</div>
-              </CardContent>
-            </Card>
+            <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-8 text-center hover:border-fuchsia-500/30 transition-all duration-300">
+              <div className="text-4xl font-bold text-fuchsia-400 mb-2">$2.1M</div>
+              <div className="text-lg font-semibold text-white mb-2">Total Revenue Generated</div>
+              <div className="text-sm text-gray-400">In the last 12 months</div>
+            </div>
             
-            <Card className="border-0 shadow-lg text-center">
-              <CardContent className="p-8">
-                <div className="text-4xl font-bold text-orange-600 mb-2">96%</div>
-                <div className="text-lg font-semibold text-gray-900 mb-2">Customer Satisfaction</div>
-                <div className="text-sm text-gray-600">Would recommend to others</div>
-              </CardContent>
-            </Card>
+            <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-8 text-center hover:border-cyan-500/30 transition-all duration-300">
+              <div className="text-4xl font-bold text-cyan-400 mb-2">96%</div>
+              <div className="text-lg font-semibold text-white mb-2">Customer Satisfaction</div>
+              <div className="text-sm text-gray-400">Would recommend to others</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-8">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white">
-              Ready to Write Your Success Story?
-            </h2>
-            <p className="text-xl text-blue-100">
-              Join these successful companies and transform your sales development with ConnectLead.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 text-lg">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/demo">
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg">
-                  Book Demo
-                  <Calendar className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+      <section className="relative py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 rounded-3xl blur-xl animate-glow-pulse"></div>
+            <div className="relative bg-gradient-to-br from-white/[0.05] to-white/[0.02] rounded-3xl border border-white/10 p-12 text-center">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                Ready to Write Your Success Story?
+              </h2>
+              <p className="text-xl text-gray-400 mb-8">
+                Join these successful companies and transform your sales development with ConnectLead.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <Link href="/signup">
+                  <Button size="lg" className="group bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0 px-8 py-6 text-lg shadow-lg shadow-violet-500/25">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/demo">
+                  <Button variant="outline" size="lg" className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-8 py-6 text-lg">
+                    Book Demo
+                    <Calendar className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+              <p className="text-sm text-gray-500">
+                14-day free trial • No credit card required • Results in 30 days
+              </p>
             </div>
-            <p className="text-sm text-blue-200">
-              14-day free trial • No credit card required • Results in 30 days
-            </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="relative border-t border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                ConnectLead
-              </h3>
-              <p className="text-gray-400">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold text-white">ConnectLead</span>
+              </div>
+              <p className="text-gray-500">
                 AI-powered sales development that books more qualified demos automatically.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/demo" className="hover:text-white transition-colors">Demo</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-500">
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
                 <li><Link href="/case-studies" className="hover:text-white transition-colors">Case Studies</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/roi-calculator" className="hover:text-white transition-colors">ROI Calculator</Link></li>
-                <li><Link href="/compare/apollo" className="hover:text-white transition-colors">vs Apollo</Link></li>
-                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link href="/webinars" className="hover:text-white transition-colors">Webinars</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
-                <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
+              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-500">
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+          <div className="border-t border-white/5 mt-8 pt-8 text-center text-gray-500">
             <p>&copy; 2025 ConnectLead. All rights reserved.</p>
           </div>
         </div>

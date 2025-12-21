@@ -25,8 +25,10 @@ import {
   Play,
   Settings,
   CheckCircle,
-  XCircle
+  XCircle,
+  Lightbulb
 } from 'lucide-react';
+import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 
 // Funding stage options for Apollo API
@@ -814,6 +816,15 @@ export default function ICPPage() {
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-white/5">
                   <div className="flex items-center space-x-2">
+                    <Link href={`/icp/${profile.id}/angles`}>
+                      <Button 
+                        size="sm" 
+                        className="bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30 hover:bg-fuchsia-500/30"
+                      >
+                        <Lightbulb className="w-4 h-4 mr-1" />
+                        Angles
+                      </Button>
+                    </Link>
                     <Button 
                       size="sm" 
                       className="bg-violet-500/20 text-violet-400 border-violet-500/30 hover:bg-violet-500/30"

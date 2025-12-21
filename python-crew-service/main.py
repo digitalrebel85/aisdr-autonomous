@@ -64,7 +64,7 @@ from tools.supabase_tools import get_lead_by_email
 
 # Pydantic model for lead enrichment
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 class LeadEnrichmentRequest(BaseModel):
     email: str
@@ -77,6 +77,47 @@ class LeadEnrichmentRequest(BaseModel):
     last_name: Optional[str] = None
     linkedin_url: Optional[str] = None
     api_keys: Optional[Dict[str, str]] = None
+
+class ICPProfile(BaseModel):
+    name: str
+    description: Optional[str] = None
+    industries: Optional[List[str]] = []
+    company_sizes: Optional[List[str]] = []
+    job_titles: Optional[List[str]] = []
+    seniority_levels: Optional[List[str]] = []
+    departments: Optional[List[str]] = []
+    technologies: Optional[List[str]] = []
+    pain_points: Optional[List[str]] = []
+    keywords: Optional[List[str]] = []
+    locations: Optional[List[str]] = []
+
+class OfferContext(BaseModel):
+    name: Optional[str] = None
+    product_service_name: Optional[str] = None
+    value_proposition: Optional[str] = None
+    company_description: Optional[str] = None
+    pain_points: Optional[List[str]] = []
+    benefits: Optional[List[str]] = []
+    proof_points: Optional[List[str]] = []
+    call_to_action: Optional[str] = None
+
+class GenerateAnglesRequest(BaseModel):
+    icp_profile: ICPProfile
+    offer: Optional[OfferContext] = None
+    number_of_angles: Optional[int] = 3
+    existing_angles: Optional[List[str]] = []
+
+class GeneratedAngle(BaseModel):
+    name: str
+    description: str
+    value_proposition: str
+    pain_points: List[str]
+    hooks: List[str]
+    proof_points: List[str]
+    tone: str
+
+class GenerateAnglesResponse(BaseModel):
+    angles: List[GeneratedAngle]
 
 class CompanyProfileRequest(BaseModel):
     company_name: str
@@ -766,6 +807,87 @@ async def enrich_pain_points(request: PainPointEnrichmentRequest):
     except Exception as e:
         print(f"Error enriching pain points: {e}")
         raise HTTPException(status_code=500, detail=f"Pain point enrichment failed: {str(e)}")
+
+# Import the angle generation agent
+from agents.angle_generation_agent import generate_angles as crew_generate_angles, AngleGenerationOutput
+
+# --- Generate Messaging Angles Endpoint ---
+@app.post("/generate-angles", response_model=GenerateAnglesResponse)
+async def generate_angles_endpoint(request: GenerateAnglesRequest):
+    """
+    Generate AI-powered messaging angles for an ICP profile using CrewAI agent.
+    
+    This endpoint uses a specialized B2B Sales Messaging Strategist agent that
+    analyzes the ICP and generates psychologically-differentiated angles.
+    """
+    try:
+        print(f"--- GENERATING ANGLES FOR ICP: {request.icp_profile.name} ---")
+        print(f"Industries: {request.icp_profile.industries}")
+        print(f"Job Titles: {request.icp_profile.job_titles}")
+        print(f"Number requested: {request.number_of_angles}")
+        
+        # Convert Pydantic model to dict for the agent
+        icp_data = {
+            'name': request.icp_profile.name,
+            'description': request.icp_profile.description,
+            'industries': request.icp_profile.industries or [],
+            'company_sizes': request.icp_profile.company_sizes or [],
+            'job_titles': request.icp_profile.job_titles or [],
+            'seniority_levels': request.icp_profile.seniority_levels or [],
+            'departments': request.icp_profile.departments or [],
+            'technologies': request.icp_profile.technologies or [],
+            'pain_points': request.icp_profile.pain_points or [],
+            'keywords': request.icp_profile.keywords or [],
+            'locations': request.icp_profile.locations or []
+        }
+        
+        # Convert offer to dict if provided
+        offer_data = None
+        if request.offer:
+            offer_data = {
+                'name': request.offer.name,
+                'product_service_name': request.offer.product_service_name,
+                'value_proposition': request.offer.value_proposition,
+                'company_description': request.offer.company_description,
+                'pain_points': request.offer.pain_points or [],
+                'benefits': request.offer.benefits or [],
+                'proof_points': request.offer.proof_points or [],
+                'call_to_action': request.offer.call_to_action
+            }
+            print(f"Offer context: {offer_data.get('product_service_name')} - {offer_data.get('value_proposition', '')[:100]}")
+        
+        # Use the CrewAI agent to generate angles
+        result: AngleGenerationOutput = crew_generate_angles(
+            llm=llm,
+            icp_data=icp_data,
+            offer_data=offer_data,
+            num_angles=request.number_of_angles or 3,
+            existing_angles=request.existing_angles or []
+        )
+        
+        print(f"Strategy Notes: {result.strategy_notes}")
+        
+        # Convert to response format
+        angles = []
+        for angle in result.angles:
+            angles.append(GeneratedAngle(
+                name=angle.name,
+                description=angle.description,
+                value_proposition=angle.value_proposition,
+                pain_points=angle.pain_points[:3] if angle.pain_points else [],
+                hooks=angle.hooks[:3] if angle.hooks else [],
+                proof_points=angle.proof_points[:3] if angle.proof_points else [],
+                tone=angle.tone if angle.tone in ['professional', 'casual', 'urgent', 'consultative', 'challenger'] else 'professional'
+            ))
+        
+        print(f"Successfully generated {len(angles)} angles using CrewAI agent")
+        return GenerateAnglesResponse(angles=angles)
+        
+    except Exception as e:
+        print(f"Error generating angles: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Angle generation failed: {str(e)}")
 
 # Register routers
 app.include_router(json_lead_router)

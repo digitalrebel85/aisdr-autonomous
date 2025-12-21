@@ -31,7 +31,7 @@ export async function planEnforcementMiddleware(request: NextRequest) {
   }
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
@@ -111,19 +111,30 @@ export async function checkFeatureAccess(userId: string, feature: string): Promi
     if (!subscription) return false;
     
     // Define feature access by plan
-    const featureAccess = {
-      'startup': ['basic_analytics', 'email_campaigns', 'lead_import'],
-      'professional': ['basic_analytics', 'email_campaigns', 'lead_import', 'advanced_analytics', 'ab_testing', 'integrations'],
-      'enterprise': ['basic_analytics', 'email_campaigns', 'lead_import', 'advanced_analytics', 'ab_testing', 'integrations', 'custom_integrations', 'dedicated_support']
+    const featureAccess: Record<string, string[]> = {
+      'research': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
+      'starter': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync'],
+      'pro': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'advanced_analytics', 'ab_testing', 'calendar_booking', 'reply_routing'],
+      'scale': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'advanced_analytics', 'ab_testing', 'calendar_booking', 'reply_routing', 'ai_reply_generation', 'api_access', 'white_label', 'audit_logs', 'custom_ai_rules']
     };
     
-    const planFeatures = featureAccess[subscription.plan_slug as keyof typeof featureAccess] || [];
+    const planFeatures = featureAccess[subscription.plan_slug] || [];
     return planFeatures.includes(feature);
     
   } catch (error) {
     console.error('Feature access check failed:', error);
     return false;
   }
+}
+
+// Check if user can send emails (Research plan cannot)
+export async function canSendEmails(userId: string): Promise<boolean> {
+  return checkFeatureAccess(userId, 'email_sending');
+}
+
+// Check if user can connect inbox (Research plan cannot)
+export async function canConnectInbox(userId: string): Promise<boolean> {
+  return checkFeatureAccess(userId, 'inbox_connection');
 }
 
 // Helper function to get usage percentage for UI

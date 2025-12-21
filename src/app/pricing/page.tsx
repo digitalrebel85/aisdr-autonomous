@@ -1,20 +1,18 @@
+'use client'
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import MegaMenu from '@/components/MegaMenu';
 import { 
   Check, 
   ArrowRight,
   Calculator,
   HelpCircle,
-  Users,
-  Mail,
-  Calendar,
-  BarChart3,
-  Shield,
-  Headphones
+  Bot,
+  Sparkles,
+  Zap,
+  Crown
 } from 'lucide-react';
 
 export default function PricingPage() {
@@ -22,67 +20,95 @@ export default function PricingPage() {
 
   const pricingPlans = [
     {
-      name: "Starter",
-      description: "Perfect for small teams getting started",
+      name: "Research",
+      tagline: "Research & sequences, no sending",
+      description: "AI-powered lead research and email copywriting",
       monthlyPrice: 97,
       annualPrice: 87,
+      priceRange: null,
+      currency: "£",
       popular: false,
+      icon: "research",
       features: [
-        "Up to 1,000 prospects/month",
-        "5,000 emails/month",
-        "Basic AI personalization",
-        "Email sequences",
-        "CRM integration (HubSpot, Salesforce)",
-        "Basic analytics",
-        "Email support"
+        "Up to 1,000 leads/month",
+        "1 ICP",
+        "2 messaging angles",
+        "AI lead research & enrichment",
+        "AI-written email sequences",
+        "Export sequences to your tools",
+        "Basic analytics"
       ],
       limitations: [
-        "Single inbox connection",
-        "Standard reply classification",
-        "Basic templates only"
+        "No email sending",
+        "No mailbox connections",
+        "No reply tracking"
       ]
+    },
+    {
+      name: "Starter",
+      tagline: "For founders & solo operators",
+      description: "Full AI outbound with sending",
+      monthlyPrice: 149,
+      annualPrice: 134,
+      priceRange: null,
+      currency: "£",
+      popular: false,
+      icon: "starter",
+      features: [
+        "Up to 1,000 prospects/month",
+        "1 ICP",
+        "2 messaging angles",
+        "AI-written emails + follow-ups",
+        "Email sequences with sending",
+        "Single inbox connection",
+        "Reply classification (basic)",
+        "CRM sync",
+        "Guardrails enforced"
+      ],
+      limitations: []
     },
     {
       name: "Pro",
-      description: "Most popular for growing sales teams",
-      monthlyPrice: 297,
-      annualPrice: 267,
+      tagline: "For lean sales teams",
+      description: "Buyer-aware outbound with real control",
+      monthlyPrice: 499,
+      annualPrice: 449,
+      priceRange: null,
+      currency: "£",
       popular: true,
+      icon: "pro",
       features: [
         "Up to 5,000 prospects/month",
-        "25,000 emails/month",
-        "Advanced AI personalization",
-        "Multi-channel sequences",
-        "All CRM integrations",
-        "Advanced analytics & reporting",
-        "Calendar booking integration",
-        "Reply classification & routing",
-        "A/B testing",
+        "3 ICPs",
+        "5 angles per ICP",
+        "Buyer-aware sequences",
+        "Reply routing + calendar booking",
+        "A/B testing (angles, not spam)",
+        "Up to 3 inboxes",
+        "Advanced analytics",
         "Priority support"
       ],
-      limitations: [
-        "Up to 3 inbox connections",
-        "Standard integrations"
-      ]
+      limitations: []
     },
     {
       name: "Scale",
-      description: "For high-volume sales organizations",
-      monthlyPrice: 597,
-      annualPrice: 537,
+      tagline: "For serious outbound operators & agencies",
+      description: "Precision at scale, not chaos",
+      monthlyPrice: 899,
+      annualPrice: 809,
+      priceRange: "899–1,299",
+      currency: "£",
       popular: false,
+      icon: "scale",
       features: [
-        "Unlimited prospects",
-        "100,000+ emails/month",
-        "Custom AI training",
-        "Advanced sequences & workflows",
-        "All integrations + custom API",
-        "Custom analytics dashboards",
-        "Advanced calendar features",
+        "Up to 10,000 prospects/month",
+        "Unlimited ICPs & angles",
+        "Custom AI rules",
         "AI reply generation",
-        "Custom integrations",
-        "Dedicated success manager",
-        "White-label options"
+        "Audit logs + safety controls",
+        "API access",
+        "White-label",
+        "Dedicated success manager"
       ],
       limitations: []
     }
@@ -90,104 +116,147 @@ export default function PricingPage() {
 
   const addOns = [
     {
-      name: "Extra Email Volume",
-      price: "From $0.01/email",
-      description: "Additional emails beyond your plan limit"
+      name: "Additional Prospects",
+      price: "From £0.05/prospect",
+      description: "Extra prospects beyond your plan limit"
     },
     {
       name: "Additional Inboxes",
-      price: "$47/month each",
+      price: "£49/month each",
       description: "Connect more email accounts for better deliverability"
     },
     {
-      name: "Custom Integrations",
-      price: "From $497/month",
-      description: "Custom API integrations and webhooks"
+      name: "Extra ICPs",
+      price: "£99/month each",
+      description: "Additional ideal customer profiles for Pro plan"
     },
     {
-      name: "Dedicated IP",
-      price: "$197/month",
-      description: "Dedicated sending IP for maximum deliverability"
+      name: "Custom Onboarding",
+      price: "£499 one-time",
+      description: "White-glove setup and strategy session"
     }
   ];
 
   const faqs = [
     {
-      question: "Can I migrate from Apollo to ConnectLead?",
-      answer: "Yes! Our team provides free migration assistance. We can help you import your existing contacts and sequences, and our AI will enhance them with better personalization."
+      question: "What's the Research plan for?",
+      answer: "The Research plan is perfect if you already have your own email sending tools but want AI-powered lead research and email copywriting. We'll research your leads, enrich them with data, and write personalized email sequences - you just export and send through your existing tools."
     },
     {
-      question: "How does ConnectLead's database compare to Apollo's?",
-      answer: "While Apollo has a larger static database, ConnectLead focuses on real-time visitor intelligence and intent data. This means fresher, more actionable prospects who are actively showing interest."
+      question: "What's the difference between Research and Starter?",
+      answer: "Research gives you AI lead research and email writing, but you send emails yourself using your own tools. Starter includes everything in Research PLUS actual email sending through connected mailboxes, reply tracking, and CRM sync."
     },
     {
-      question: "Is ConnectLead easier to use than Apollo?",
-      answer: "Yes. ConnectLead is designed for simplicity - our AI handles the complexity. Most users are sending personalized campaigns within 30 minutes, compared to days or weeks with Apollo."
+      question: "What's the difference between Pro and Scale?",
+      answer: "Pro is designed for lean sales teams who want buyer-aware outbound with real control. Scale is for serious outbound operators and agencies who need precision at scale with unlimited ICPs, custom AI rules, and white-label options."
     },
     {
-      question: "What about pricing differences?",
-      answer: "ConnectLead offers transparent pricing starting at $97/month. Apollo's pricing can be complex with multiple add-ons. Most customers find ConnectLead delivers better ROI with lower total cost."
+      question: "What are ICPs and angles?",
+      answer: "ICPs (Ideal Customer Profiles) define who you're targeting. Angles are the different value propositions and messaging approaches you use to reach them. Pro includes 3 ICPs with 5 angles each, while Scale offers unlimited."
+    },
+    {
+      question: "How does A/B testing work?",
+      answer: "We test different angles and messaging approaches to find what resonates with your prospects. This is strategic A/B testing focused on value propositions, not spam tactics like subject line tricks."
+    },
+    {
+      question: "What's included in buyer-aware sequences?",
+      answer: "Our AI understands buyer signals and adapts sequences accordingly. It knows when to push, when to nurture, and when to step back - creating genuinely relevant outreach, not generic blasts."
     },
     {
       question: "Can I cancel anytime?",
       answer: "Absolutely. Cancel anytime with one click. No contracts, no cancellation fees. Your account remains active until the end of your billing period."
     },
     {
-      question: "Can I change plans anytime?",
-      answer: "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing differences."
+      question: "Can I upgrade from Research to Starter?",
+      answer: "Yes! You can upgrade at any time. When you upgrade from Research to Starter (or any higher plan), you'll get email sending capabilities immediately. We'll prorate any billing differences."
     },
     {
-      question: "What happens if I exceed my email limit?",
-      answer: "We'll notify you when you're approaching your limit. You can either upgrade your plan or purchase additional email volume at $0.01 per email."
+      question: "What happens if I exceed my lead limit?",
+      answer: "We'll notify you when you're approaching your limit. You can either upgrade your plan or purchase additional leads at £0.05 each."
     },
     {
       question: "Do you offer refunds?",
-      answer: "Yes, we offer a 30-day money-back guarantee. If you're not satisfied, we'll refund your payment in full."
+      answer: "Yes, we offer a 14-day money-back guarantee. If you're not seeing value, we'll refund your payment in full."
     },
     {
-      question: "Is there a setup fee?",
-      answer: "No setup fees, ever. The price you see is the price you pay. We believe in transparent, honest pricing."
+      question: "What's included in white-label?",
+      answer: "Scale plan includes white-label options so agencies can offer ConnectLead's capabilities under their own brand to clients."
     },
     {
-      question: "Do you offer enterprise pricing?",
-      answer: "Yes! For teams with 50+ users or custom requirements, contact our sales team for enterprise pricing and features."
+      question: "Do you offer custom enterprise pricing?",
+      answer: "Yes! For teams with specific requirements beyond Scale, contact our sales team for custom pricing and features."
     }
   ];
 
   const roiInputs = [
-    { label: "Monthly prospects", value: 1000 },
-    { label: "Email reply rate", value: "12%" },
-    { label: "Meeting booking rate", value: "25%" },
+    { label: "Monthly prospects", value: "5,000" },
+    { label: "Email reply rate", value: "8%" },
+    { label: "Meeting booking rate", value: "20%" },
     { label: "Deal close rate", value: "15%" },
-    { label: "Average deal value", value: "$5,000" }
+    { label: "Average deal value", value: "£10,000" }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Animated Background Effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-3xl animate-float-reverse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-cyan-600/15 rounded-full blur-3xl animate-float" style={{animationDelay: '4s'}}></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"></div>
+      </div>
+
       {/* Navigation */}
-      <MegaMenu />
+      <nav className="relative z-50 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-110 transition-transform duration-300">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white group-hover:text-violet-300 transition-colors">ConnectLead</span>
+            </Link>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="/features" className="text-gray-400 hover:text-white transition-colors">Features</Link>
+              <Link href="/pricing" className="text-white font-medium">Pricing</Link>
+              <Link href="/about" className="text-gray-400 hover:text-white transition-colors">About</Link>
+              <Link href="/login" className="text-gray-400 hover:text-white transition-colors">Login</Link>
+              <Link href="/signup">
+                <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
-      <section className="pt-16 pb-12">
+      <section className="relative pt-20 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
-            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
-              Simple, Transparent
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Pricing</span>
+            <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 animate-fade-in-up">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Simple Pricing
+            </Badge>
+            <h1 className="text-4xl lg:text-6xl font-bold leading-tight animate-fade-in-up" style={{animationDelay: '100ms'}}>
+              <span className="text-white">Simple, Transparent</span>
+              <br />
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Pricing</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto animate-fade-in-up" style={{animationDelay: '200ms'}}>
               No hidden fees, no surprises. Choose the plan that fits your team size and scale as you grow.
             </p>
             
             {/* Monthly/Annual Toggle */}
-            <div className="flex items-center justify-center space-x-4">
-              <span className={`text-sm ${!isAnnual ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+            <div className="flex items-center justify-center space-x-4 animate-fade-in-up" style={{animationDelay: '300ms'}}>
+              <span className={`text-sm ${!isAnnual ? 'text-white font-medium' : 'text-gray-500'}`}>
                 Monthly
               </span>
               <button
                 onClick={() => setIsAnnual(!isAnnual)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isAnnual ? 'bg-blue-600' : 'bg-gray-200'
+                  isAnnual ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-white/10'
                 }`}
               >
                 <span
@@ -196,11 +265,11 @@ export default function PricingPage() {
                   }`}
                 />
               </button>
-              <span className={`text-sm ${isAnnual ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              <span className={`text-sm ${isAnnual ? 'text-white font-medium' : 'text-gray-500'}`}>
                 Annual
               </span>
               {isAnnual && (
-                <Badge className="bg-green-100 text-green-800 border-green-200">
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
                   Save 10%
                 </Badge>
               )}
@@ -210,53 +279,62 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Plans */}
-      <section className="py-12">
+      <section className="relative py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`border-0 shadow-lg relative ${plan.popular ? 'ring-2 ring-blue-500 scale-105' : ''}`}>
+              <div 
+                key={index} 
+                className={`relative bg-white/[0.02] rounded-2xl border p-8 transition-all duration-300 hover-lift ${
+                  plan.popular 
+                    ? 'border-violet-500/50 scale-105 shadow-xl shadow-violet-500/10' 
+                    : 'border-white/10 hover:border-white/20'
+                }`}
+              >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-blue-600 text-white">Most Popular</Badge>
+                    <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Most Popular
+                    </Badge>
                   </div>
                 )}
-                <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                  <CardDescription className="text-gray-600 mt-2">
-                    {plan.description}
-                  </CardDescription>
+                <div className="text-center pb-8">
+                  <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+                  <p className="text-sm text-violet-400 mt-1">{plan.tagline}</p>
+                  <p className="text-gray-400 mt-2">{plan.description}</p>
                   <div className="mt-6">
-                    <div className="text-5xl font-bold text-gray-900">
-                      ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
+                    <div className="text-5xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                      {plan.priceRange ? `${plan.currency}${plan.priceRange}` : `${plan.currency}${isAnnual ? plan.annualPrice : plan.monthlyPrice}`}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      per month{isAnnual ? ', billed annually' : ''}
+                      per month{isAnnual && !plan.priceRange ? ', billed annually' : ''}
                     </div>
-                    {isAnnual && plan.monthlyPrice > plan.annualPrice && (
-                      <div className="text-sm text-green-600 mt-1">
-                        Save ${(plan.monthlyPrice - plan.annualPrice) * 12}/year
+                    {isAnnual && !plan.priceRange && plan.monthlyPrice > plan.annualPrice && (
+                      <div className="text-sm text-emerald-400 mt-1">
+                        Save {plan.currency}{(plan.monthlyPrice - plan.annualPrice) * 12}/year
                       </div>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
+                </div>
+                <div className="space-y-6">
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900">What's included:</h4>
+                    <h4 className="font-semibold text-white">What you're buying:</h4>
                     {plan.features.map((feature, idx) => (
                       <div key={idx} className="flex items-start space-x-3">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-600">{feature}</span>
+                        <Check className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-300">{feature}</span>
                       </div>
                     ))}
                   </div>
                   
                   {plan.limitations.length > 0 && (
-                    <div className="space-y-3 pt-4 border-t">
-                      <h4 className="font-semibold text-gray-700">Limitations:</h4>
+                    <div className="space-y-3 pt-4 border-t border-white/10">
+                      <h4 className="font-semibold text-gray-400">Limitations:</h4>
                       {plan.limitations.map((limitation, idx) => (
                         <div key={idx} className="flex items-start space-x-3">
-                          <div className="h-5 w-5 flex-shrink-0 mt-0.5">
-                            <div className="h-1 w-3 bg-gray-400 rounded"></div>
+                          <div className="h-5 w-5 flex-shrink-0 mt-0.5 flex items-center">
+                            <div className="h-0.5 w-3 bg-gray-600 rounded"></div>
                           </div>
                           <span className="text-sm text-gray-500">{limitation}</span>
                         </div>
@@ -267,88 +345,92 @@ export default function PricingPage() {
                   <div className="pt-6">
                     <Link href="/signup">
                       <Button 
-                        className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'}`}
+                        className={`w-full group ${
+                          plan.popular 
+                            ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25' 
+                            : 'bg-white/10 hover:bg-white/20 border border-white/10'
+                        }`}
                         size="lg"
                       >
                         Start {plan.name} Plan
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Add-ons */}
-      <section className="py-20 bg-white">
+      <section className="relative py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Add-ons & Usage</h2>
-            <p className="text-xl text-gray-600">Scale your usage with transparent add-on pricing</p>
+            <h2 className="text-3xl font-bold text-white">Add-ons & Usage</h2>
+            <p className="text-xl text-gray-400">Scale your usage with transparent add-on pricing</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {addOns.map((addon, index) => (
-              <Card key={index} className="border-0 shadow-md">
-                <CardContent className="p-6 text-center">
-                  <h3 className="font-semibold text-gray-900 mb-2">{addon.name}</h3>
-                  <div className="text-lg font-bold text-blue-600 mb-2">{addon.price}</div>
-                  <p className="text-sm text-gray-600">{addon.description}</p>
-                </CardContent>
-              </Card>
+              <div key={index} className="bg-white/[0.02] rounded-xl border border-white/10 p-6 text-center hover:border-violet-500/30 transition-all duration-300 hover-lift">
+                <h3 className="font-semibold text-white mb-2">{addon.name}</h3>
+                <div className="text-lg font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-2">{addon.price}</div>
+                <p className="text-sm text-gray-400">{addon.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ROI Calculator Teaser */}
-      <section className="py-20 bg-gray-50">
+      <section className="relative py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
             <div className="space-y-4">
-              <Calculator className="h-12 w-12 text-blue-600 mx-auto" />
-              <h2 className="text-3xl font-bold text-gray-900">Calculate Your ROI</h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-2xl border border-cyan-500/30 flex items-center justify-center">
+                <Calculator className="h-8 w-8 text-cyan-400" />
+              </div>
+              <h2 className="text-3xl font-bold text-white">Calculate Your ROI</h2>
+              <p className="text-xl text-gray-400 max-w-3xl mx-auto">
                 See how much revenue ConnectLead can generate for your business
               </p>
             </div>
             
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Your inputs:</h3>
+            <div className="bg-white/[0.02] rounded-2xl border border-white/10 p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="space-y-4 text-left">
+                  <h3 className="font-semibold text-white">Your inputs:</h3>
                   {roiInputs.map((input, index) => (
                     <div key={index} className="flex justify-between">
-                      <span className="text-gray-600">{input.label}:</span>
-                      <span className="font-medium">{input.value}</span>
+                      <span className="text-gray-400">{input.label}:</span>
+                      <span className="font-medium text-white">{input.value}</span>
                     </div>
                   ))}
                 </div>
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Projected results:</h3>
-                  <div className="space-y-2">
+                <div className="space-y-4 text-left">
+                  <h3 className="font-semibold text-white">Projected results:</h3>
+                  <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Monthly meetings:</span>
-                      <span className="font-bold text-blue-600">30</span>
+                      <span className="text-gray-400">Monthly meetings:</span>
+                      <span className="font-bold text-violet-400">80</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Monthly revenue:</span>
-                      <span className="font-bold text-green-600">$22,500</span>
+                      <span className="text-gray-400">Monthly revenue:</span>
+                      <span className="font-bold text-emerald-400">£120,000</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Payback period:</span>
-                      <span className="font-bold text-purple-600">4 days</span>
+                      <span className="text-gray-400">ROI:</span>
+                      <span className="font-bold text-fuchsia-400">240x</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <Link href="/roi-calculator">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Link href="/demo">
+                <Button size="lg" className="group bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25">
                   Try Full ROI Calculator
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </div>
@@ -357,21 +439,21 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 bg-white">
+      <section className="relative py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Frequently Asked Questions</h2>
-            <p className="text-xl text-gray-600">Everything you need to know about our pricing</p>
+            <h2 className="text-3xl font-bold text-white">Frequently Asked Questions</h2>
+            <p className="text-xl text-gray-400">Everything you need to know about our pricing</p>
           </div>
           
-          <div className="space-y-8">
+          <div className="space-y-6">
             {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-gray-200 pb-6">
+              <div key={index} className="bg-white/[0.02] rounded-xl border border-white/10 p-6 hover:border-violet-500/30 transition-all duration-300">
                 <div className="flex items-start space-x-3">
-                  <HelpCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-1" />
+                  <HelpCircle className="h-5 w-5 text-violet-400 flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{faq.question}</h3>
-                    <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                    <h3 className="font-semibold text-white mb-2">{faq.question}</h3>
+                    <p className="text-gray-400 leading-relaxed">{faq.answer}</p>
                   </div>
                 </div>
               </div>
@@ -381,69 +463,75 @@ export default function PricingPage() {
       </section>
 
       {/* Enterprise CTA */}
-      <section className="py-20 bg-gradient-to-r from-gray-800 to-blue-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-white">Need Something Custom?</h2>
-            <p className="text-xl text-gray-200">
-              For enterprise teams with custom requirements, we offer tailored solutions.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact">
-                <Button size="lg" className="bg-white text-gray-800 hover:bg-gray-100">
-                  Contact Sales
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/enterprise">
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-gray-800">
-                  View Enterprise
-                </Button>
-              </Link>
+      <section className="relative py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 rounded-3xl blur-xl"></div>
+            <div className="relative bg-gradient-to-br from-white/[0.05] to-white/[0.02] rounded-3xl border border-white/10 p-12 text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Need Something Custom?</h2>
+              <p className="text-xl text-gray-400 mb-8">
+                For enterprise teams with custom requirements, we offer tailored solutions.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/contact">
+                  <Button size="lg" className="group bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25">
+                    Contact Sales
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/demo">
+                  <Button variant="outline" size="lg" className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+                    Book a Demo
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="relative border-t border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                ConnectLead
-              </h1>
-              <p className="text-gray-400">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold text-white">ConnectLead</span>
+              </div>
+              <p className="text-gray-500">
                 AI-powered sales development that books more qualified demos automatically.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 <li><Link href="/demo" className="hover:text-white transition-colors">Demo</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Solutions</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/saas" className="hover:text-white transition-colors">SaaS Companies</Link></li>
-                <li><Link href="/agencies" className="hover:text-white transition-colors">Agencies</Link></li>
-                <li><Link href="/enterprise" className="hover:text-white transition-colors">Enterprise</Link></li>
+              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-500">
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="/case-studies" className="hover:text-white transition-colors">Case Studies</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
-                <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
+              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-500">
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 AISDR. All rights reserved.</p>
+          <div className="border-t border-white/5 mt-8 pt-8 text-center text-gray-500">
+            <p>&copy; 2025 ConnectLead. All rights reserved.</p>
           </div>
         </div>
       </footer>
