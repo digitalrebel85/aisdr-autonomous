@@ -29,7 +29,57 @@ STRICT RULES:
 - NEVER use these terms: {excluded_terms}
 """
 
+# Email 3 Breakup Framework (Final sign-off email)
+EMAIL3_BREAKUP_FRAMEWORK = """
+=== EMAIL 3 BREAKUP FRAMEWORK (Final Email ONLY) ===
+You are writing Email #3 in a 3-email cold outbound sequence in 2025.
+This is the final sign-off email.
+
+PURPOSE:
+- Close the loop politely
+- Create a low-pressure decision moment
+- Invite a reply without chasing or selling
+- Get a response by offering the prospect control, not urgency
+
+MANDATORY RULES:
+- Do NOT pitch the offer again
+- Do NOT restate value or pain
+- Do NOT introduce new information
+- Do NOT sound frustrated or passive-aggressive
+- Do NOT ask multiple open-ended questions
+- Do NOT mention sequences, follow-ups, or reminders
+- Do NOT use hype, emojis, or sales language
+
+STRUCTURE (must follow exactly):
+1. Acknowledgement
+   - Briefly note lack of response without blame
+   - Neutral, calm tone
+
+2. Assumption of non-priority
+   - Politely assume this isn't a focus right now
+   - Make it safe to disengage
+
+3. Binary choice
+   - Offer exactly TWO clear options
+   - One option continues the conversation
+   - One option closes it
+
+4. Permission-based close
+   - Reassure them either option is fine
+
+WRITING STYLE:
+- Short, Human, Senior
+- Confident but not pushy
+- Maximum 90 words
+
+BINARY CHOICE EXAMPLES (choose ONE pattern):
+- "Should I share a quick example, or leave this here?"
+- "Is it worth a short chat, or should I close the loop?"
+- "Want me to send one example, or leave this for now?"
+"""
+
 # Elite sequence psychology - each step has a specific purpose
+# Note: "framework": "RPIC" or "BREAKUP" flags are used to inject the appropriate framework dynamically
 SEQUENCE_PSYCHOLOGY = {
     "meetings": {
         1: {
@@ -37,7 +87,7 @@ SEQUENCE_PSYCHOLOGY = {
             "angle": "Start with a real pressure for their role/company size. State an industry pattern (not inside knowledge). Show how the product simplifies a workflow. Reference how similar teams use it.",
             "cta_style": "Soft, permission-based. 'Worth a look?' or 'Open to seeing how?' - never pushy",
             "tone": "Human operator, conversational, no hype",
-            "framework": RPIC_FRAMEWORK
+            "framework": "RPIC"
         },
         2: {
             "purpose": "Soft Proof + Micro-Value Drop",
@@ -46,16 +96,20 @@ SEQUENCE_PSYCHOLOGY = {
             "tone": "Helpful, value-first"
         },
         3: {
-            "purpose": "Direct Ask + Value Incentive",
-            "angle": "Clear meeting request, but offer something valuable upfront. 'I'll send you X before we meet.'",
-            "cta_style": "Direct but generous. Include calendar link offer.",
-            "tone": "Confident, giving"
+            "purpose": "Breakup - Final Sign-off",
+            "angle": "Close the loop politely. Binary choice: continue or close. No pitch, no value restatement.",
+            "cta_style": "Binary: 'Should I share a quick example, or leave this here?'",
+            "tone": "Respectful, no pressure, human",
+            "framework": "BREAKUP",
+            "max_words": 90
         },
         4: {
             "purpose": "Breakup with Fork in the Road",
             "angle": "Permission to close file OR offer ultra-short version. Give them two easy reply options.",
             "cta_style": "Fork: 'Reply close or send it' - makes replying easy.",
-            "tone": "Respectful, no pressure"
+            "tone": "Respectful, no pressure",
+            "framework": "BREAKUP",
+            "max_words": 90
         }
     },
     "demos": {
@@ -64,7 +118,7 @@ SEQUENCE_PSYCHOLOGY = {
             "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how a quick demo simplifies their workflow. Reference how similar teams use it.",
             "cta_style": "Soft, permission-based. 'Worth a quick look?' or 'Can I show you in 60 seconds?'",
             "tone": "Human operator, conversational, no hype",
-            "framework": RPIC_FRAMEWORK
+            "framework": "RPIC"
         },
         2: {
             "purpose": "Social Proof Story + Micro-Demo",
@@ -73,10 +127,12 @@ SEQUENCE_PSYCHOLOGY = {
             "tone": "Story-driven, proof-focused"
         },
         3: {
-            "purpose": "FOMO Demo - Personalization, Not Pressure",
-            "angle": "Offer to show it on THEIR data/situation. Make it specific to them.",
-            "cta_style": "'Want to see this on YOUR data?' Reply 'show me'.",
-            "tone": "Personalized, exclusive"
+            "purpose": "Breakup - Final Sign-off",
+            "angle": "Close the loop politely. Binary choice: continue or close. No pitch, no value restatement.",
+            "cta_style": "Binary: 'Is it worth a short chat, or should I close the loop?'",
+            "tone": "Respectful, no pressure, human",
+            "framework": "BREAKUP",
+            "max_words": 90
         }
     },
     "trials": {
@@ -85,7 +141,7 @@ SEQUENCE_PSYCHOLOGY = {
             "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how a trial simplifies their workflow with zero risk. Reference how similar teams use it.",
             "cta_style": "Soft, permission-based. 'Worth trying?' or 'Want me to set up a sandbox?'",
             "tone": "Human operator, conversational, no hype",
-            "framework": RPIC_FRAMEWORK
+            "framework": "RPIC"
         },
         2: {
             "purpose": "Quickstart + 1-Minute Success Path",
@@ -94,10 +150,12 @@ SEQUENCE_PSYCHOLOGY = {
             "tone": "Action-oriented, quick"
         },
         3: {
-            "purpose": "Trial Expiring + Soft CTA with Micro-Commitment",
-            "angle": "Offer a 15-second video or ultra-quick demo. Lowest friction possible.",
-            "cta_style": "Reply 'send it' for video + trial link.",
-            "tone": "Last chance, but gentle"
+            "purpose": "Breakup - Final Sign-off",
+            "angle": "Close the loop politely. Binary choice: continue or close. No pitch, no value restatement.",
+            "cta_style": "Binary: 'Want me to send one example, or leave this for now?'",
+            "tone": "Respectful, no pressure, human",
+            "framework": "BREAKUP",
+            "max_words": 90
         }
     },
     "sales": {
@@ -106,7 +164,7 @@ SEQUENCE_PSYCHOLOGY = {
             "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how the solution simplifies their workflow. Reference how similar teams use it.",
             "cta_style": "Soft, permission-based. 'Worth exploring?' or 'Curious if this resonates?'",
             "tone": "Human operator, conversational, no hype",
-            "framework": RPIC_FRAMEWORK
+            "framework": "RPIC"
         },
         2: {
             "purpose": "Solution + Differentiator",
@@ -127,10 +185,12 @@ SEQUENCE_PSYCHOLOGY = {
             "tone": "Urgent but not pushy"
         },
         5: {
-            "purpose": "Breakup Fork",
-            "angle": "Easy opt-out + curiosity hook. Two simple reply options.",
-            "cta_style": "Reply 'close' or 'short version'.",
-            "tone": "Respectful, final"
+            "purpose": "Breakup - Final Sign-off",
+            "angle": "Close the loop politely. Binary choice: continue or close. No pitch, no value restatement.",
+            "cta_style": "Binary: 'Should I share a quick example, or leave this here?'",
+            "tone": "Respectful, no pressure, human",
+            "framework": "BREAKUP",
+            "max_words": 90
         }
     }
 }
@@ -258,19 +318,23 @@ class EmailCopywritingTask():
         # Use first_name if available, otherwise extract from name
         display_name = first_name if first_name else name.split()[0] if name else "there"
         
-        # Build R.P.I.C framework with actual enriched data (for email 1)
-        rpic_framework = ""
-        if step_number == 1:
-            rpic_framework = RPIC_FRAMEWORK_TEMPLATE.format(
+        # Determine which framework to use based on step_psychology
+        framework_type = step_psychology.get('framework', '')
+        step_framework = ""
+        max_words = step_psychology.get('max_words', 120)  # Default 120, breakup uses 90
+        
+        if framework_type == "RPIC":
+            # Build R.P.I.C framework with actual enriched data (for email 1)
+            step_framework = RPIC_FRAMEWORK_TEMPLATE.format(
                 pain_points=rpic_pain_points or "general role pressures",
                 benefits=rpic_benefits or "workflow simplification",
                 proof_points=rpic_proof_points or "similar companies have seen results",
                 cta=rpic_cta,
                 excluded_terms=rpic_excluded_terms or "none specified"
             )
-        
-        # Get step-specific framework if available (e.g., R.P.I.C for email 1)
-        step_framework = rpic_framework if step_number == 1 else step_psychology.get('framework', '')
+        elif framework_type == "BREAKUP":
+            # Use Email 3 Breakup framework for final sign-off emails
+            step_framework = EMAIL3_BREAKUP_FRAMEWORK
         
         self.task = Task(
             description=f"""
@@ -297,9 +361,9 @@ class EmailCopywritingTask():
             === CRITICAL RULES ===
             1. This email MUST be DIFFERENT from other emails in the sequence
             2. Follow the PURPOSE and ANGLE above - don't just write a generic cold email
-            3. Keep it SHORT - Maximum 120 words for body (STRICT LIMIT)
+            3. Keep it SHORT - Maximum {max_words} words for body (STRICT LIMIT)
             4. Use soft, permission-based CTAs - NOT "book a call" or "schedule a meeting"
-            5. If this is a breakup email (last in sequence), offer a fork: "Reply X or Y"
+            5. If this is a breakup email (last in sequence), offer a BINARY choice: "Reply X or Y"
             6. Sound human - write like a human operator, NOT an AI
             7. NEVER mention internal data, lead scores, or tracking
             8. Subject line should be short (under 6 words) and curiosity-driven
@@ -310,17 +374,17 @@ class EmailCopywritingTask():
             - Use proper paragraph breaks (blank lines) between distinct thoughts
             - Keep paragraphs SHORT (1-2 lines max)
             - Add a blank line before the sign-off
-            - Structure: Greeting → Role Reality → Pattern Insight → Intervention → Use Case → Soft CTA → Sign-off
-            - Example:
+            {"- For BREAKUP emails: Acknowledgement → Assumption of non-priority → Binary choice → Permission close" if framework_type == "BREAKUP" else "- Structure: Greeting → Role Reality → Pattern Insight → Intervention → Use Case → Soft CTA → Sign-off"}
+            - Example for {"BREAKUP" if framework_type == "BREAKUP" else "R.P.I.C"}:
               Hi [Name],
               
-              [Role Reality - 1-2 lines about their pressure]
+              {"[Brief acknowledgement - no blame]" if framework_type == "BREAKUP" else "[Role Reality - 1-2 lines about their pressure]"}
               
-              [Pattern Insight - industry-level observation]
+              {"[Assume non-priority - make it safe to disengage]" if framework_type == "BREAKUP" else "[Pattern Insight - industry-level observation]"}
               
-              [Intervention + Use Case - how similar teams use it]
+              {"[Binary choice - exactly TWO options]" if framework_type == "BREAKUP" else "[Intervention + Use Case - how similar teams use it]"}
               
-              [Soft CTA]
+              {"[Permission close - either option is fine]" if framework_type == "BREAKUP" else "[Soft CTA]"}
               
               Best,
               [Your name]
