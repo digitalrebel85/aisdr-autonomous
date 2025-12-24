@@ -2,14 +2,42 @@ from crewai import Task
 from schemas import EmailCopywritingResult
 import json
 
+# R.P.I.C Framework for Email 1 (2025 cold email best practices)
+RPIC_FRAMEWORK_TEMPLATE = """
+=== R.P.I.C FRAMEWORK (Email 1 ONLY) ===
+You are an outbound SDR writing cold emails in 2025.
+
+Structure your email using R.P.I.C:
+1. Role Reality: Describe a REAL pressure for this role at this company size
+   USE THESE PAIN POINTS: {pain_points}
+   
+2. Pattern Insight: State an industry-level pattern (NEVER claim inside knowledge)
+   
+3. Intervention: Explain how the product replaces or simplifies an existing workflow
+   USE THESE BENEFITS: {benefits}
+   
+4. Credible Use Case: Describe how similar teams use it
+   USE THESE PROOF POINTS: {proof_points}
+
+STRICT RULES:
+- No hype, no emojis, no buzzwords
+- No feature lists
+- Short paragraphs (1-2 lines each)
+- End with a soft, permission-based CTA: {cta}
+- Write like a human operator, NOT an AI
+- Maximum 120 words total
+- NEVER use these terms: {excluded_terms}
+"""
+
 # Elite sequence psychology - each step has a specific purpose
 SEQUENCE_PSYCHOLOGY = {
     "meetings": {
         1: {
-            "purpose": "Pattern Interrupt + Pain + Unique Insight",
-            "angle": "Challenge conventional thinking. Most people think X, but data shows Y.",
-            "cta_style": "Curiosity-driven question, no hard ask. 'Want me to send the breakdown?'",
-            "tone": "Intriguing, thought-provoking"
+            "purpose": "R.P.I.C Framework - Role Reality + Pattern Insight + Intervention + Credible Use Case",
+            "angle": "Start with a real pressure for their role/company size. State an industry pattern (not inside knowledge). Show how the product simplifies a workflow. Reference how similar teams use it.",
+            "cta_style": "Soft, permission-based. 'Worth a look?' or 'Open to seeing how?' - never pushy",
+            "tone": "Human operator, conversational, no hype",
+            "framework": RPIC_FRAMEWORK
         },
         2: {
             "purpose": "Soft Proof + Micro-Value Drop",
@@ -32,10 +60,11 @@ SEQUENCE_PSYCHOLOGY = {
     },
     "demos": {
         1: {
-            "purpose": "Visual Hook + Problem Framing",
-            "angle": "Offer to show something quick (12 seconds, 1 minute). Make it tangible.",
-            "cta_style": "'Can I show you in 12 seconds?' or 'Want me to send the clip?'",
-            "tone": "Curious, visual"
+            "purpose": "R.P.I.C Framework - Role Reality + Pattern Insight + Intervention + Credible Use Case",
+            "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how a quick demo simplifies their workflow. Reference how similar teams use it.",
+            "cta_style": "Soft, permission-based. 'Worth a quick look?' or 'Can I show you in 60 seconds?'",
+            "tone": "Human operator, conversational, no hype",
+            "framework": RPIC_FRAMEWORK
         },
         2: {
             "purpose": "Social Proof Story + Micro-Demo",
@@ -52,10 +81,11 @@ SEQUENCE_PSYCHOLOGY = {
     },
     "trials": {
         1: {
-            "purpose": "Risk Reversal + Desired Outcome",
-            "angle": "Emphasize zero risk - runs in parallel, no migration, no commitment.",
-            "cta_style": "'Want me to set up a sandbox?' Low friction ask.",
-            "tone": "Safe, easy"
+            "purpose": "R.P.I.C Framework - Role Reality + Pattern Insight + Intervention + Credible Use Case",
+            "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how a trial simplifies their workflow with zero risk. Reference how similar teams use it.",
+            "cta_style": "Soft, permission-based. 'Worth trying?' or 'Want me to set up a sandbox?'",
+            "tone": "Human operator, conversational, no hype",
+            "framework": RPIC_FRAMEWORK
         },
         2: {
             "purpose": "Quickstart + 1-Minute Success Path",
@@ -72,10 +102,11 @@ SEQUENCE_PSYCHOLOGY = {
     },
     "sales": {
         1: {
-            "purpose": "Insight Reframe",
-            "angle": "Challenge conventional thinking. 'Everyone thinks X, but data shows Y.'",
-            "cta_style": "Curiosity question. 'Curious if you've seen this at [company]?'",
-            "tone": "Thought leader, challenger"
+            "purpose": "R.P.I.C Framework - Role Reality + Pattern Insight + Intervention + Credible Use Case",
+            "angle": "Start with a real pressure for their role/company size. State an industry pattern. Show how the solution simplifies their workflow. Reference how similar teams use it.",
+            "cta_style": "Soft, permission-based. 'Worth exploring?' or 'Curious if this resonates?'",
+            "tone": "Human operator, conversational, no hype",
+            "framework": RPIC_FRAMEWORK
         },
         2: {
             "purpose": "Solution + Differentiator",
@@ -126,10 +157,51 @@ class EmailCopywritingTask():
         
         # Parse lead context if provided
         context_info = ""
+        # Variables for R.P.I.C framework
+        rpic_pain_points = pain_points  # Default to passed pain_points
+        rpic_benefits = ""
+        rpic_proof_points = ""
+        rpic_cta = "Worth a quick look?"
+        rpic_excluded_terms = ""
+        
         if lead_context:
             try:
                 lead_data = json.loads(lead_context) if isinstance(lead_context, str) else lead_context
                 context_parts = []
+                
+                # === EXTRACT R.P.I.C DATA FROM OFFER ENRICHMENT ===
+                
+                # Pain points for Role Reality (combine offer + lead pain points)
+                offer_pain_points = lead_data.get('offer_pain_points', [])
+                lead_pain_points = lead_data.get('lead_pain_points', [])
+                all_pain_points = []
+                if isinstance(offer_pain_points, list):
+                    all_pain_points.extend(offer_pain_points)
+                if isinstance(lead_pain_points, list):
+                    all_pain_points.extend(lead_pain_points)
+                if all_pain_points:
+                    rpic_pain_points = ', '.join(all_pain_points[:5])  # Top 5 pain points
+                
+                # Proof points for Credible Use Case
+                proof_points_list = lead_data.get('proof_points', [])
+                if isinstance(proof_points_list, list) and proof_points_list:
+                    rpic_proof_points = ', '.join(proof_points_list[:3])  # Top 3 proof points
+                
+                # Benefits for Intervention
+                benefits_list = lead_data.get('benefits', [])
+                if isinstance(benefits_list, list) and benefits_list:
+                    rpic_benefits = ', '.join(benefits_list[:3])  # Top 3 benefits
+                
+                # CTA from offer
+                if lead_data.get('offer_call_to_action'):
+                    rpic_cta = lead_data['offer_call_to_action']
+                
+                # Excluded terms
+                excluded_terms_list = lead_data.get('excluded_terms', [])
+                if isinstance(excluded_terms_list, list) and excluded_terms_list:
+                    rpic_excluded_terms = ', '.join(excluded_terms_list)
+                
+                # === LEAD INTELLIGENCE FOR PERSONALIZATION ===
                 
                 if lead_data.get('industry'):
                     context_parts.append(f"Industry: {lead_data['industry']}")
@@ -139,8 +211,6 @@ class EmailCopywritingTask():
                     context_parts.append(f"Location: {lead_data['location']}")
                 if lead_data.get('company_domain'):
                     context_parts.append(f"Company Website: {lead_data['company_domain']}")
-                if lead_data.get('pain_points') and isinstance(lead_data['pain_points'], list):
-                    context_parts.append(f"Pain Points: {', '.join(lead_data['pain_points'])}")
                 
                 # Parse website analysis data for deeper personalization
                 website_analysis = lead_data.get('website_analysis', {})
@@ -188,14 +258,29 @@ class EmailCopywritingTask():
         # Use first_name if available, otherwise extract from name
         display_name = first_name if first_name else name.split()[0] if name else "there"
         
+        # Build R.P.I.C framework with actual enriched data (for email 1)
+        rpic_framework = ""
+        if step_number == 1:
+            rpic_framework = RPIC_FRAMEWORK_TEMPLATE.format(
+                pain_points=rpic_pain_points or "general role pressures",
+                benefits=rpic_benefits or "workflow simplification",
+                proof_points=rpic_proof_points or "similar companies have seen results",
+                cta=rpic_cta,
+                excluded_terms=rpic_excluded_terms or "none specified"
+            )
+        
+        # Get step-specific framework if available (e.g., R.P.I.C for email 1)
+        step_framework = rpic_framework if step_number == 1 else step_psychology.get('framework', '')
+        
         self.task = Task(
             description=f"""
             Write email #{step_number} of {total_steps} in a {objective} sequence for {display_name}, the {title} at {company}.
 
+            {step_framework}
+
             === SEQUENCE CONTEXT ===
             Objective: {objective}
             This is email {step_number} of {total_steps}
-            Framework: {framework if framework else 'Conversational'}
             
             === THIS EMAIL'S PURPOSE ===
             Purpose: {step_psychology['purpose']}
@@ -209,35 +294,33 @@ class EmailCopywritingTask():
             Offer: {offer}
             Hook (optional): {hook_snippet}{context_info}
             
-            === PATTERN INTERRUPT (use if appropriate) ===
-            {pattern_interrupt if pattern_interrupt else '(No pattern interrupt for this email)'}
-            
             === CRITICAL RULES ===
             1. This email MUST be DIFFERENT from other emails in the sequence
             2. Follow the PURPOSE and ANGLE above - don't just write a generic cold email
-            3. Keep it SHORT - under 100 words for body
-            4. Use conversational CTAs, NOT "book a call" or "schedule a meeting"
+            3. Keep it SHORT - Maximum 120 words for body (STRICT LIMIT)
+            4. Use soft, permission-based CTAs - NOT "book a call" or "schedule a meeting"
             5. If this is a breakup email (last in sequence), offer a fork: "Reply X or Y"
-            6. Sound human - use contractions, be casual but professional
+            6. Sound human - write like a human operator, NOT an AI
             7. NEVER mention internal data, lead scores, or tracking
             8. Subject line should be short (under 6 words) and curiosity-driven
-            9. If RECENT NEWS is provided, USE IT! Reference their news/awards/announcements as an opening hook
-               Example: "Saw you just got named Microsoft Frontier Partner for AI - congrats!"
-               This shows you've done your research and makes the email feel personal
+            9. NO hype, NO emojis, NO buzzwords, NO feature lists
+            10. Short paragraphs only (1-2 lines each)
             
             === FORMATTING RULES ===
             - Use proper paragraph breaks (blank lines) between distinct thoughts
-            - Keep paragraphs short (2-3 sentences max)
+            - Keep paragraphs SHORT (1-2 lines max)
             - Add a blank line before the sign-off
-            - Structure: Greeting → Opening → Main point → CTA → Sign-off
+            - Structure: Greeting → Role Reality → Pattern Insight → Intervention → Use Case → Soft CTA → Sign-off
             - Example:
               Hi [Name],
               
-              First paragraph here.
+              [Role Reality - 1-2 lines about their pressure]
               
-              Second paragraph here.
+              [Pattern Insight - industry-level observation]
               
-              CTA here.
+              [Intervention + Use Case - how similar teams use it]
+              
+              [Soft CTA]
               
               Best,
               [Your name]

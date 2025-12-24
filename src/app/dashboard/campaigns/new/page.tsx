@@ -951,28 +951,34 @@ Best,
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-4" />
-          <p className="text-slate-400">Loading your data...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-violet-400 mx-auto mb-4" />
+          <p className="text-gray-400">Loading your data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-[#0a0a0f]">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full blur-3xl"></div>
+      </div>
+
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+      <div className="relative bg-white/[0.02] backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-5xl mx-auto px-6 py-6">
           <h1 className="text-2xl font-bold text-white">Create Campaign</h1>
-          <p className="text-slate-400">Set up your AI-powered outreach in minutes</p>
+          <p className="text-gray-400">Set up your AI-powered outreach in minutes</p>
         </div>
       </div>
 
       {/* Progress Steps */}
-      <div className="bg-slate-800 border-b border-slate-700">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+      <div className="relative bg-white/[0.02] backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-5xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
@@ -983,19 +989,19 @@ Best,
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div className={`
-                      w-10 h-10 rounded-full flex items-center justify-center
-                      ${isCompleted ? 'bg-green-500 text-white' : 
-                        isActive ? 'bg-blue-500 text-white' : 
-                        'bg-slate-700 text-slate-400'}
+                      w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                      ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25' : 
+                        isActive ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/25' : 
+                        'bg-white/10 text-gray-500 border border-white/10'}
                     `}>
                       {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                     </div>
-                    <span className={`mt-2 text-sm font-medium ${isActive ? 'text-blue-400' : 'text-slate-400'}`}>
+                    <span className={`mt-2 text-sm font-medium ${isActive ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-500'}`}>
                       {step.name}
                     </span>
                   </div>
                   {index < STEPS.length - 1 && (
-                    <div className={`w-24 h-0.5 mx-2 ${currentStep > step.id ? 'bg-green-500' : 'bg-slate-700'}`} />
+                    <div className={`w-24 h-0.5 mx-2 transition-all duration-300 ${currentStep > step.id ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-white/10'}`} />
                   )}
                 </div>
               );
@@ -1097,15 +1103,15 @@ Best,
       </div>
 
       {/* Navigation Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0f]/90 backdrop-blur-xl border-t border-white/10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all
               ${currentStep === 1 
-                ? 'text-slate-600 cursor-not-allowed' 
-                : 'text-slate-300 hover:bg-slate-700'}`}
+                ? 'text-gray-600 cursor-not-allowed' 
+                : 'text-gray-300 hover:bg-white/10 border border-white/10 hover:border-white/20'}`}
           >
             <ChevronLeft className="w-5 h-5" />
             Back
@@ -1115,10 +1121,10 @@ Best,
             <button
               onClick={nextStep}
               disabled={!canProceed()}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all
                 ${canProceed()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25'
+                  : 'bg-white/10 text-gray-500 cursor-not-allowed border border-white/10'}`}
             >
               {currentStep === 5 ? 'Confirm & Continue' : 'Continue'}
               <ChevronRight className="w-5 h-5" />
@@ -1129,10 +1135,10 @@ Best,
               <button
                 onClick={createCampaignWithoutInbox}
                 disabled={!canProceed() || isCreating || isLaunching}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all
                   ${canProceed() && !isCreating && !isLaunching
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25'
+                    : 'bg-white/10 text-gray-500 cursor-not-allowed border border-white/10'}`}
               >
                 {isCreating ? (
                   <>
@@ -1151,10 +1157,10 @@ Best,
               <button
                 onClick={launchCampaign}
                 disabled={!canProceed() || isLaunching || isCreating}
-                className={`flex items-center gap-2 px-8 py-3 rounded-lg font-medium
+                className={`flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all
                   ${canProceed() && !isLaunching && !isCreating
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                    ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-500 hover:to-green-500 shadow-lg shadow-emerald-500/25'
+                    : 'bg-white/10 text-gray-500 cursor-not-allowed border border-white/10'}`}
               >
                 {isLaunching ? (
                   <>
@@ -1254,20 +1260,20 @@ function StepTarget({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white mb-2">Create New ICP</h2>
-            <p className="text-slate-400">Define your ideal customer profile</p>
+            <p className="text-gray-400">Define your ideal customer profile</p>
           </div>
           <button
             onClick={() => setShowCreateForm(false)}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-5">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               ICP Name *
             </label>
             <input
@@ -1275,13 +1281,13 @@ function StepTarget({
               value={newICP.name}
               onChange={(e) => setNewICP({ ...newICP, name: e.target.value })}
               placeholder="e.g., Enterprise SaaS CTOs"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -1289,13 +1295,13 @@ function StepTarget({
               onChange={(e) => setNewICP({ ...newICP, description: e.target.value })}
               placeholder="Describe your ideal customer..."
               rows={3}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Industries */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Industries
             </label>
             <input
@@ -1303,13 +1309,13 @@ function StepTarget({
               value={newICP.industries}
               onChange={(e) => setNewICP({ ...newICP, industries: e.target.value })}
               placeholder="e.g., Software, FinTech, Healthcare (comma separated)"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Job Titles */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Target Job Titles
             </label>
             <input
@@ -1317,13 +1323,13 @@ function StepTarget({
               value={newICP.job_titles}
               onChange={(e) => setNewICP({ ...newICP, job_titles: e.target.value })}
               placeholder="e.g., CTO, VP Engineering, Head of Product (comma separated)"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Company Sizes */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Company Sizes
             </label>
             <input
@@ -1331,13 +1337,13 @@ function StepTarget({
               value={newICP.company_sizes}
               onChange={(e) => setNewICP({ ...newICP, company_sizes: e.target.value })}
               placeholder="e.g., 50-200, 200-500, 500+ (comma separated)"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Locations */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Locations
             </label>
             <input
@@ -1345,25 +1351,25 @@ function StepTarget({
               value={newICP.locations}
               onChange={(e) => setNewICP({ ...newICP, locations: e.target.value })}
               placeholder="e.g., United States, United Kingdom, Canada (comma separated)"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Pain Points - for AI Strategy */}
-          <div className="border-t border-slate-700 pt-5 mt-2">
-            <p className="text-sm text-slate-400 mb-4">
+          <div className="border-t border-white/10 pt-5 mt-2">
+            <p className="text-sm text-gray-400 mb-4">
               <Sparkles className="w-4 h-4 inline mr-1 text-yellow-400" />
               This helps AI generate better campaign strategies
             </p>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Pain Points <span className="text-slate-500">(what problems do they face?)</span>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Pain Points <span className="text-gray-500">(what problems do they face?)</span>
             </label>
             <textarea
               value={newICP.pain_points}
               onChange={(e) => setNewICP({ ...newICP, pain_points: e.target.value })}
               placeholder="e.g., Slow sales cycles, High customer churn, Manual processes, Lack of visibility (comma separated)"
               rows={3}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
@@ -1378,7 +1384,7 @@ function StepTarget({
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowCreateForm(false)}
-              className="flex-1 px-4 py-3 text-slate-300 hover:bg-slate-700 rounded-lg font-medium"
+              className="flex-1 px-4 py-3 text-gray-300 hover:bg-white/10 rounded-lg font-medium"
             >
               Cancel
             </button>
@@ -1387,8 +1393,8 @@ function StepTarget({
               disabled={!newICP.name.trim() || isCreating}
               className={`flex-1 px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2
                 ${newICP.name.trim() && !isCreating
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500'
+                  : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
             >
               {isCreating ? (
                 <>
@@ -1412,18 +1418,18 @@ function StepTarget({
     <div className="space-y-8 pb-24">
       <div>
         <h2 className="text-xl font-semibold text-white mb-2">Who are you targeting?</h2>
-        <p className="text-slate-400">Select your Ideal Customer Profile or create a new one</p>
+        <p className="text-gray-400">Select your Ideal Customer Profile or create a new one</p>
       </div>
 
       {/* Objective Input */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+      <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+        <label className="block text-sm font-medium text-gray-300 mb-2">
           Campaign Objective
         </label>
         <select
           value={customObjective}
           onChange={(e) => onObjectiveChange(e.target.value)}
-          className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-3 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
         >
           <option value="">Select an objective...</option>
           <option value="meetings">Book Meetings</option>
@@ -1441,20 +1447,20 @@ function StepTarget({
             onClick={() => onSelectICP(icp)}
             className={`p-6 rounded-xl border-2 cursor-pointer transition-all
               ${selectedICP?.id === icp.id 
-                ? 'border-blue-500 bg-blue-900/30' 
-                : 'border-slate-700 hover:border-slate-600 bg-slate-800'}`}
+                ? 'border-violet-500 bg-violet-900/30' 
+                : 'border-white/10 hover:border-white/10 bg-white/[0.03]'}`}
           >
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-white">{icp.name}</h3>
-                <p className="text-sm text-slate-400 mt-1">{icp.description}</p>
+                <p className="text-sm text-gray-400 mt-1">{icp.description}</p>
               </div>
               {selectedICP?.id === icp.id && (
-                <Check className="w-5 h-5 text-blue-400" />
+                <Check className="w-5 h-5 text-violet-400" />
               )}
             </div>
             {icp.industry && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
                 <Building2 className="w-4 h-4" />
                 {icp.industry}
               </div>
@@ -1465,11 +1471,11 @@ function StepTarget({
         {/* Create New ICP */}
         <div
           onClick={() => setShowCreateForm(true)}
-          className="p-6 rounded-xl border-2 border-dashed border-slate-600 cursor-pointer hover:border-blue-500 hover:bg-blue-900/20 transition-all flex flex-col items-center justify-center text-center"
+          className="p-6 rounded-xl border-2 border-dashed border-white/10 cursor-pointer hover:border-violet-500 hover:bg-violet-900/20 transition-all flex flex-col items-center justify-center text-center"
         >
-          <Plus className="w-8 h-8 text-slate-500 mb-2" />
-          <span className="font-medium text-slate-300">Create New ICP</span>
-          <span className="text-sm text-slate-500">Define a new target audience</span>
+          <Plus className="w-8 h-8 text-gray-500 mb-2" />
+          <span className="font-medium text-gray-300">Create New ICP</span>
+          <span className="text-sm text-gray-500">Define a new target audience</span>
         </div>
       </div>
     </div>
@@ -1546,20 +1552,20 @@ function StepOffer({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-white mb-2">Create New Offer</h2>
-            <p className="text-slate-400">Define your value proposition and call-to-action</p>
+            <p className="text-gray-400">Define your value proposition and call-to-action</p>
           </div>
           <button
             onClick={() => setShowCreateForm(false)}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-5">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Offer Name *
             </label>
             <input
@@ -1567,13 +1573,13 @@ function StepOffer({
               value={newOffer.name}
               onChange={(e) => setNewOffer({ ...newOffer, name: e.target.value })}
               placeholder="e.g., Free Strategy Session"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Value Proposition */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Value Proposition *
             </label>
             <textarea
@@ -1581,13 +1587,13 @@ function StepOffer({
               onChange={(e) => setNewOffer({ ...newOffer, value_proposition: e.target.value })}
               placeholder="What value does this offer provide? e.g., Get a personalized roadmap to increase your sales by 30%"
               rows={3}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Call to Action */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Call to Action *
             </label>
             <input
@@ -1595,84 +1601,84 @@ function StepOffer({
               value={newOffer.call_to_action}
               onChange={(e) => setNewOffer({ ...newOffer, call_to_action: e.target.value })}
               placeholder="e.g., Book a 15-minute call, Schedule a demo, Get your free report"
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* Description (optional) */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Description <span className="text-slate-500">(optional)</span>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Description <span className="text-gray-500">(optional)</span>
             </label>
             <textarea
               value={newOffer.description}
               onChange={(e) => setNewOffer({ ...newOffer, description: e.target.value })}
               placeholder="Additional details about this offer..."
               rows={2}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
 
           {/* AI Strategy Fields - Collapsible */}
-          <div className="border-t border-slate-700 pt-5 mt-2">
-            <p className="text-sm text-slate-400 mb-4">
+          <div className="border-t border-white/10 pt-5 mt-2">
+            <p className="text-sm text-gray-400 mb-4">
               <Sparkles className="w-4 h-4 inline mr-1 text-yellow-400" />
               These fields help AI generate better campaign strategies
             </p>
 
             {/* Pain Points */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Pain Points <span className="text-slate-500">(problems you solve)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Pain Points <span className="text-gray-500">(problems you solve)</span>
               </label>
               <textarea
                 value={newOffer.pain_points}
                 onChange={(e) => setNewOffer({ ...newOffer, pain_points: e.target.value })}
                 placeholder="e.g., Manual prospecting takes too much time, Low response rates, Difficulty scaling sales (comma separated)"
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
             {/* Proof Points */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Proof Points <span className="text-slate-500">(social proof)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Proof Points <span className="text-gray-500">(social proof)</span>
               </label>
               <textarea
                 value={newOffer.proof_points}
                 onChange={(e) => setNewOffer({ ...newOffer, proof_points: e.target.value })}
                 placeholder="e.g., 3x increase in leads, 90% reduction in manual tasks, ROI in 30 days (comma separated)"
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
             {/* Benefits */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Key Benefits <span className="text-slate-500">(what they get)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Key Benefits <span className="text-gray-500">(what they get)</span>
               </label>
               <textarea
                 value={newOffer.benefits}
                 onChange={(e) => setNewOffer({ ...newOffer, benefits: e.target.value })}
                 placeholder="e.g., Save 10 hours/week, Reduce costs by 40%, Scale without hiring (comma separated)"
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
             {/* Sales Assets / Lead Magnets */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Lead Magnets <span className="text-slate-500">(value offers)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Lead Magnets <span className="text-gray-500">(value offers)</span>
               </label>
               <textarea
                 value={newOffer.sales_assets}
                 onChange={(e) => setNewOffer({ ...newOffer, sales_assets: e.target.value })}
                 placeholder="e.g., Free ROI Calculator, Industry Report, Strategy Session (comma separated)"
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
           </div>
@@ -1688,7 +1694,7 @@ function StepOffer({
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowCreateForm(false)}
-              className="flex-1 px-4 py-3 text-slate-300 hover:bg-slate-700 rounded-lg font-medium"
+              className="flex-1 px-4 py-3 text-gray-300 hover:bg-white/10 rounded-lg font-medium"
             >
               Cancel
             </button>
@@ -1697,8 +1703,8 @@ function StepOffer({
               disabled={!newOffer.name.trim() || !newOffer.value_proposition.trim() || !newOffer.call_to_action.trim() || isCreating}
               className={`flex-1 px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2
                 ${newOffer.name.trim() && newOffer.value_proposition.trim() && newOffer.call_to_action.trim() && !isCreating
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500'
+                  : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
             >
               {isCreating ? (
                 <>
@@ -1722,7 +1728,7 @@ function StepOffer({
     <div className="space-y-8 pb-24">
       <div>
         <h2 className="text-xl font-semibold text-white mb-2">What are you offering?</h2>
-        <p className="text-slate-400">Choose the offer or value proposition for this campaign</p>
+        <p className="text-gray-400">Choose the offer or value proposition for this campaign</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1732,21 +1738,21 @@ function StepOffer({
             onClick={() => onSelectOffer(offer)}
             className={`p-6 rounded-xl border-2 cursor-pointer transition-all
               ${selectedOffer?.id === offer.id 
-                ? 'border-blue-500 bg-blue-900/30' 
-                : 'border-slate-700 hover:border-slate-600 bg-slate-800'}`}
+                ? 'border-violet-500 bg-violet-900/30' 
+                : 'border-white/10 hover:border-white/10 bg-white/[0.03]'}`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="font-semibold text-white">{offer.name}</h3>
-                <p className="text-sm text-slate-400 mt-1">{offer.value_proposition}</p>
+                <p className="text-sm text-gray-400 mt-1">{offer.value_proposition}</p>
               </div>
               {selectedOffer?.id === offer.id && (
-                <Check className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                <Check className="w-5 h-5 text-violet-400 flex-shrink-0" />
               )}
             </div>
-            <div className="mt-4 p-3 bg-slate-900 rounded-lg">
-              <span className="text-xs font-medium text-slate-500 uppercase">CTA</span>
-              <p className="text-sm text-slate-300 mt-1">{offer.call_to_action}</p>
+            <div className="mt-4 p-3 bg-[#0a0a0f] rounded-lg">
+              <span className="text-xs font-medium text-gray-500 uppercase">CTA</span>
+              <p className="text-sm text-gray-300 mt-1">{offer.call_to_action}</p>
             </div>
           </div>
         ))}
@@ -1754,11 +1760,11 @@ function StepOffer({
         {/* Create New Offer */}
         <div
           onClick={() => setShowCreateForm(true)}
-          className="p-6 rounded-xl border-2 border-dashed border-slate-600 cursor-pointer hover:border-blue-500 hover:bg-blue-900/20 transition-all flex flex-col items-center justify-center text-center"
+          className="p-6 rounded-xl border-2 border-dashed border-white/10 cursor-pointer hover:border-violet-500 hover:bg-violet-900/20 transition-all flex flex-col items-center justify-center text-center"
         >
-          <Plus className="w-8 h-8 text-slate-500 mb-2" />
-          <span className="font-medium text-slate-300">Create New Offer</span>
-          <span className="text-sm text-slate-500">Define a new value proposition</span>
+          <Plus className="w-8 h-8 text-gray-500 mb-2" />
+          <span className="font-medium text-gray-300">Create New Offer</span>
+          <span className="text-sm text-gray-500">Define a new value proposition</span>
         </div>
       </div>
     </div>
@@ -1778,14 +1784,14 @@ function StepStrategy({
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="relative">
-          <Brain className="w-16 h-16 text-blue-400" />
+          <Brain className="w-16 h-16 text-violet-400" />
           <Sparkles className="w-6 h-6 text-yellow-400 absolute -top-1 -right-1 animate-pulse" />
         </div>
         <h2 className="text-xl font-semibold text-white mt-6 mb-2">AI is crafting your strategy...</h2>
-        <p className="text-slate-400">Analyzing your ICP and offer to build the perfect approach</p>
+        <p className="text-gray-400">Analyzing your ICP and offer to build the perfect approach</p>
         <div className="mt-6 flex items-center gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
-          <span className="text-sm text-slate-500">This usually takes 5-10 seconds</span>
+          <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+          <span className="text-sm text-gray-500">This usually takes 5-10 seconds</span>
         </div>
       </div>
     );
@@ -1794,10 +1800,10 @@ function StepStrategy({
   if (!aiStrategy) {
     return (
       <div className="text-center py-20">
-        <p className="text-slate-400">Unable to generate strategy. Please try again.</p>
+        <p className="text-gray-400">Unable to generate strategy. Please try again.</p>
         <button
           onClick={onRegenerate}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-4 px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500"
         >
           Retry
         </button>
@@ -1810,11 +1816,11 @@ function StepStrategy({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white mb-2">Your AI-Powered Strategy</h2>
-          <p className="text-slate-400">Here's what our AI recommends based on your inputs</p>
+          <p className="text-gray-400">Here's what our AI recommends based on your inputs</p>
         </div>
         <button
           onClick={onRegenerate}
-          className="flex items-center gap-2 px-4 py-2 text-blue-400 hover:bg-slate-800 rounded-lg"
+          className="flex items-center gap-2 px-4 py-2 text-violet-400 hover:bg-white/[0.03] rounded-lg"
         >
           <Sparkles className="w-4 h-4" />
           Regenerate
@@ -1823,35 +1829,35 @@ function StepStrategy({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Framework Card */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-purple-900/50 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-purple-400" />
             </div>
             <div>
               <h3 className="font-semibold text-white">Messaging Framework</h3>
-              <p className="text-sm text-slate-400">{aiStrategy.framework.name}</p>
+              <p className="text-sm text-gray-400">{aiStrategy.framework.name}</p>
             </div>
           </div>
-          <p className="text-slate-400 text-sm">{aiStrategy.framework.description}</p>
-          <div className="mt-4 p-3 bg-slate-900 rounded-lg">
-            <span className="text-xs font-medium text-slate-500 uppercase">Why this works</span>
-            <p className="text-sm text-slate-300 mt-1">{aiStrategy.framework.reasoning}</p>
+          <p className="text-gray-400 text-sm">{aiStrategy.framework.description}</p>
+          <div className="mt-4 p-3 bg-[#0a0a0f] rounded-lg">
+            <span className="text-xs font-medium text-gray-500 uppercase">Why this works</span>
+            <p className="text-sm text-gray-300 mt-1">{aiStrategy.framework.reasoning}</p>
           </div>
         </div>
 
         {/* Sequence Card */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center">
-              <Mail className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 bg-violet-900/50 rounded-lg flex items-center justify-center">
+              <Mail className="w-5 h-5 text-violet-400" />
             </div>
             <div>
               <h3 className="font-semibold text-white">Email Sequence</h3>
-              <p className="text-sm text-slate-400">{aiStrategy.sequence.total_touches} touches, {aiStrategy.sequence.cadence}</p>
+              <p className="text-sm text-gray-400">{aiStrategy.sequence.total_touches} touches, {aiStrategy.sequence.cadence}</p>
             </div>
           </div>
-          <p className="text-slate-400 text-sm">{aiStrategy.sequence.reasoning}</p>
+          <p className="text-gray-400 text-sm">{aiStrategy.sequence.reasoning}</p>
         </div>
       </div>
 
@@ -1860,14 +1866,14 @@ function StepStrategy({
         <div className="space-y-4">
           {/* Pain Points */}
           {(aiStrategy.insights.painPoints?.length ?? 0) > 0 && (
-            <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+            <div className="bg-white/[0.03] rounded-xl p-5 border border-white/10">
               <h4 className="font-medium text-white mb-3 flex items-center gap-2">
                 <Target className="w-4 h-4 text-red-400" />
                 Pain Points to Address
               </h4>
               <ul className="space-y-2">
                 {aiStrategy.insights.painPoints?.map((point: string, i: number) => (
-                  <li key={i} className="text-sm text-slate-300 flex items-start gap-2">
+                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
                     <span className="text-red-400 mt-1">•</span>
                     {point}
                   </li>
@@ -1878,14 +1884,14 @@ function StepStrategy({
 
           {/* Value Propositions */}
           {(aiStrategy.insights.valuePropositions?.length ?? 0) > 0 && (
-            <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+            <div className="bg-white/[0.03] rounded-xl p-5 border border-white/10">
               <h4 className="font-medium text-white mb-3 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-yellow-400" />
                 Value Propositions
               </h4>
               <ul className="space-y-2">
                 {aiStrategy.insights.valuePropositions?.map((prop: string, i: number) => (
-                  <li key={i} className="text-sm text-slate-300 flex items-start gap-2">
+                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
                     {prop}
                   </li>
@@ -1896,14 +1902,14 @@ function StepStrategy({
 
           {/* Proof Points */}
           {(aiStrategy.insights.proofPoints?.length ?? 0) > 0 && (
-            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-5 border border-blue-800/50">
+            <div className="bg-gradient-to-r from-violet-900/30 to-fuchsia-900/30 rounded-xl p-5 border border-violet-800/50">
               <h4 className="font-medium text-white mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-400" />
+                <Sparkles className="w-4 h-4 text-violet-400" />
                 Proof Points
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {aiStrategy.insights.proofPoints?.map((point: string, i: number) => (
-                  <div key={i} className="text-sm text-slate-300 bg-slate-800/50 rounded-lg px-3 py-2">
+                  <div key={i} className="text-sm text-gray-300 bg-white/[0.03]/50 rounded-lg px-3 py-2">
                     {point}
                   </div>
                 ))}
@@ -1913,14 +1919,14 @@ function StepStrategy({
 
           {/* Best Practices */}
           {(aiStrategy.insights.bestPractices?.length ?? 0) > 0 && (
-            <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+            <div className="bg-white/[0.03] rounded-xl p-5 border border-white/10">
               <h4 className="font-medium text-white mb-3 flex items-center gap-2">
                 <Brain className="w-4 h-4 text-purple-400" />
                 Best Practices
               </h4>
               <ul className="space-y-2">
                 {aiStrategy.insights.bestPractices?.map((practice: string, i: number) => (
-                  <li key={i} className="text-sm text-slate-300 flex items-start gap-2">
+                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
                     <span className="text-purple-400 mt-1">→</span>
                     {practice}
                   </li>
@@ -1938,7 +1944,7 @@ function StepStrategy({
               </h4>
               <ul className="space-y-2">
                 {aiStrategy.insights.messagingHooks?.map((hook: string, i: number) => (
-                  <li key={i} className="text-sm text-slate-300 italic bg-slate-800/50 rounded-lg px-3 py-2">
+                  <li key={i} className="text-sm text-gray-300 italic bg-white/[0.03]/50 rounded-lg px-3 py-2">
                     "{hook}"
                   </li>
                 ))}
@@ -2126,14 +2132,14 @@ function StepLeads({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white mb-2">Select Your Leads</h2>
-          <p className="text-slate-400">
+          <p className="text-gray-400">
             {selectedLeads.length} of {leads.length} leads selected
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2"
+            className="px-4 py-2 text-sm bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-lg flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Leads
@@ -2142,13 +2148,13 @@ function StepLeads({
             <>
               <button
                 onClick={onSelectAll}
-                className="px-4 py-2 text-sm text-blue-400 hover:bg-slate-800 rounded-lg"
+                className="px-4 py-2 text-sm text-violet-400 hover:bg-white/[0.03] rounded-lg"
               >
                 Select All
               </button>
               <button
                 onClick={onDeselectAll}
-                className="px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 rounded-lg"
+                className="px-4 py-2 text-sm text-gray-400 hover:bg-white/[0.03] rounded-lg"
               >
                 Deselect All
               </button>
@@ -2158,45 +2164,45 @@ function StepLeads({
       </div>
 
       {leads.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800 rounded-xl border border-slate-700">
-          <Users className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+        <div className="text-center py-12 bg-white/[0.03] rounded-xl border border-white/10">
+          <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <h3 className="font-medium text-white mb-2">No leads found</h3>
-          <p className="text-slate-400 mb-4">Import or add leads to get started</p>
+          <p className="text-gray-400 mb-4">Import or add leads to get started</p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
+            className="px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500 inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Leads
           </button>
         </div>
       ) : (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-slate-900 border-b border-slate-700">
+            <thead className="bg-[#0a0a0f] border-b border-white/10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Select</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Company</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Title</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">ICP Score</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Select</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Company</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Title</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">ICP Score</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-white/10">
               {sortedLeads.map((lead) => {
                 const isSelected = selectedLeads.some(l => l.id === lead.id);
                 return (
                   <tr
                     key={lead.id}
                     onClick={() => onToggleLead(lead)}
-                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-900/30' : 'hover:bg-slate-700/50'}`}
+                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-violet-900/30' : 'hover:bg-white/10/50'}`}
                   >
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded"
+                        className="w-4 h-4 text-violet-600 bg-white/10 border-white/10 rounded"
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -2204,21 +2210,21 @@ function StepLeads({
                         {lead.first_name} {lead.last_name}
                       </span>
                       <br />
-                      <span className="text-sm text-slate-400">{lead.email}</span>
+                      <span className="text-sm text-gray-400">{lead.email}</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{lead.company}</td>
-                    <td className="px-4 py-3 text-slate-300">{lead.title}</td>
+                    <td className="px-4 py-3 text-gray-300">{lead.company}</td>
+                    <td className="px-4 py-3 text-gray-300">{lead.title}</td>
                     <td className="px-4 py-3">
                       {lead.icp_score !== undefined ? (
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium
                           ${lead.icp_score >= 80 ? 'bg-green-900/50 text-green-400' :
                             lead.icp_score >= 60 ? 'bg-yellow-900/50 text-yellow-400' :
-                            'bg-slate-700 text-slate-400'}`}
+                            'bg-white/10 text-gray-400'}`}
                         >
                           {lead.icp_score}%
                         </span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-gray-500">—</span>
                       )}
                     </td>
                   </tr>
@@ -2232,30 +2238,30 @@ function StepLeads({
       {/* Add Leads Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-slate-700">
+          <div className="bg-[#0a0a0f] rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-white/10">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-700">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div>
                 <h2 className="text-lg font-bold text-white">Add Leads</h2>
-                <p className="text-sm text-slate-400">Add leads manually or import from CSV</p>
+                <p className="text-sm text-gray-400">Add leads manually or import from CSV</p>
               </div>
-              <button onClick={resetModal} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+              <button onClick={resetModal} className="p-2 text-gray-400 hover:text-white hover:bg-white/[0.03] rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-700">
+            <div className="flex border-b border-white/10">
               <button
                 onClick={() => { setModalTab('form'); setCsvStep(1); }}
-                className={`flex-1 px-4 py-3 text-sm font-medium ${modalTab === 'form' ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-800/50' : 'text-slate-400 hover:text-white'}`}
+                className={`flex-1 px-4 py-3 text-sm font-medium ${modalTab === 'form' ? 'text-violet-400 border-b-2 border-violet-400 bg-white/[0.03]/50' : 'text-gray-400 hover:text-white'}`}
               >
                 <Plus className="w-4 h-4 inline mr-2" />
                 Add Manually
               </button>
               <button
                 onClick={() => setModalTab('csv')}
-                className={`flex-1 px-4 py-3 text-sm font-medium ${modalTab === 'csv' ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-800/50' : 'text-slate-400 hover:text-white'}`}
+                className={`flex-1 px-4 py-3 text-sm font-medium ${modalTab === 'csv' ? 'text-violet-400 border-b-2 border-violet-400 bg-white/[0.03]/50' : 'text-gray-400 hover:text-white'}`}
               >
                 <Upload className="w-4 h-4 inline mr-2" />
                 Import CSV
@@ -2269,55 +2275,55 @@ function StepLeads({
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">First Name *</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">First Name *</label>
                       <input
                         type="text"
                         value={newLead.first_name}
                         onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
                         placeholder="John"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">Last Name *</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Last Name *</label>
                       <input
                         type="text"
                         value={newLead.last_name}
                         onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
                         placeholder="Smith"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Email *</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
                     <input
                       type="email"
                       value={newLead.email}
                       onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
                       placeholder="john@company.com"
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">Company *</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Company *</label>
                       <input
                         type="text"
                         value={newLead.company}
                         onChange={(e) => setNewLead({ ...newLead, company: e.target.value })}
                         placeholder="Acme Inc"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">Job Title</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Job Title</label>
                       <input
                         type="text"
                         value={newLead.title}
                         onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
                         placeholder="VP of Sales"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
                   </div>
@@ -2332,7 +2338,7 @@ function StepLeads({
                   <button
                     onClick={handleAddLead}
                     disabled={isAddingLead}
-                    className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isAddingLead ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     {isAddingLead ? 'Adding...' : 'Add Lead'}
@@ -2345,11 +2351,11 @@ function StepLeads({
                 <div>
                   {csvStep === 1 && (
                     <div className="text-center py-8">
-                      <FileSpreadsheet className="w-12 h-12 mx-auto text-slate-500 mb-4" />
+                      <FileSpreadsheet className="w-12 h-12 mx-auto text-gray-500 mb-4" />
                       <h3 className="font-medium text-white mb-2">Upload CSV File</h3>
-                      <p className="text-sm text-slate-400 mb-4">Required: First Name, Last Name, Email, Company</p>
+                      <p className="text-sm text-gray-400 mb-4">Required: First Name, Last Name, Email, Company</p>
                       <input type="file" accept=".csv" onChange={handleCSVFileSelect} className="hidden" id="csv-file" />
-                      <label htmlFor="csv-file" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                      <label htmlFor="csv-file" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500 cursor-pointer">
                         <Upload className="w-4 h-4 mr-2" />
                         Select File
                       </label>
@@ -2358,19 +2364,19 @@ function StepLeads({
 
                   {csvStep === 2 && (
                     <div className="space-y-4">
-                      <div className="bg-slate-800 p-3 rounded-lg text-sm text-slate-300">
+                      <div className="bg-white/[0.03] p-3 rounded-lg text-sm text-gray-300">
                         <strong>{csvData.length}</strong> leads found in <strong>{csvFile?.name}</strong>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {['first_name', 'last_name', 'email', 'company', 'title'].map(field => (
                           <div key={field}>
-                            <label className="block text-xs font-medium text-slate-400 mb-1">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
                               {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} {['first_name', 'last_name', 'email', 'company'].includes(field) && '*'}
                             </label>
                             <select
                               value={csvMapping[field] || ''}
                               onChange={(e) => setCsvMapping({ ...csvMapping, [field]: e.target.value })}
-                              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm"
+                              className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-white text-sm"
                             >
                               <option value="">-- Select --</option>
                               {csvHeaders.map(h => <option key={h} value={h}>{h}</option>)}
@@ -2381,7 +2387,7 @@ function StepLeads({
                       <button
                         onClick={handleCSVUpload}
                         disabled={!csvMapping.email || !csvMapping.first_name || !csvMapping.last_name || !csvMapping.company || isUploadingCSV}
-                        className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {isUploadingCSV ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                         {isUploadingCSV ? 'Importing...' : `Import ${csvData.length} Leads`}
@@ -2393,11 +2399,11 @@ function StepLeads({
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-12 h-12 mx-auto text-green-500 mb-4" />
                       <h3 className="font-medium text-white mb-2">Import Complete!</h3>
-                      <p className="text-slate-400">
+                      <p className="text-gray-400">
                         <strong>{csvResult.success}</strong> leads imported
                         {csvResult.failed > 0 && <span className="text-red-400"> ({csvResult.failed} failed)</span>}
                       </p>
-                      <button onClick={resetModal} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <button onClick={resetModal} className="mt-4 px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500">
                         Done
                       </button>
                     </div>
@@ -2445,40 +2451,40 @@ function StepPreview({
     <div className="space-y-6 pb-24">
       <div>
         <h2 className="text-xl font-semibold text-white mb-2">Preview Email Sequences</h2>
-        <p className="text-slate-400">
+        <p className="text-gray-400">
           Review and edit the AI-generated emails for each lead before launching
         </p>
       </div>
 
       {isGenerating && leadSequences.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 bg-slate-800 rounded-xl border border-slate-700">
-          <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-          <p className="text-slate-300 font-medium">Generating personalized email sequences...</p>
-          <p className="text-slate-500 text-sm mt-1">This may take a moment</p>
+        <div className="flex flex-col items-center justify-center py-16 bg-white/[0.03] rounded-xl border border-white/10">
+          <Loader2 className="w-10 h-10 text-violet-500 animate-spin mb-4" />
+          <p className="text-gray-300 font-medium">Generating personalized email sequences...</p>
+          <p className="text-gray-500 text-sm mt-1">This may take a moment</p>
         </div>
       )}
 
       {leadSequences.length > 0 && (
         <div className="space-y-4">
           {leadSequences.map((seq, leadIdx) => (
-            <div key={seq.lead.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <div key={seq.lead.id} className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
               {/* Lead Header */}
               <button
                 onClick={() => setExpandedLead(expandedLead === leadIdx ? null : leadIdx)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/10/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                  <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center text-white font-medium">
                     {seq.lead.first_name?.[0]}{seq.lead.last_name?.[0]}
                   </div>
                   <div className="text-left">
                     <p className="font-medium text-white">{seq.lead.first_name} {seq.lead.last_name}</p>
-                    <p className="text-sm text-slate-400">{seq.lead.title} at {seq.lead.company}</p>
+                    <p className="text-sm text-gray-400">{seq.lead.title} at {seq.lead.company}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {seq.isGenerating ? (
-                    <span className="flex items-center gap-2 text-blue-400 text-sm">
+                    <span className="flex items-center gap-2 text-violet-400 text-sm">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating...
                     </span>
@@ -2490,22 +2496,22 @@ function StepPreview({
                       {seq.emails.length} emails ready
                     </span>
                   )}
-                  <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${expandedLead === leadIdx ? 'rotate-90' : ''}`} />
+                  <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${expandedLead === leadIdx ? 'rotate-90' : ''}`} />
                 </div>
               </button>
 
               {/* Expanded Email Sequence */}
               {expandedLead === leadIdx && !seq.isGenerating && (
-                <div className="border-t border-slate-700 p-5 space-y-4">
+                <div className="border-t border-white/10 p-5 space-y-4">
                   {seq.emails.map((email, emailIdx) => (
-                    <div key={emailIdx} className="bg-slate-900 rounded-lg p-4 border border-slate-600">
+                    <div key={emailIdx} className="bg-[#0a0a0f] rounded-lg p-4 border border-white/10">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-medium text-blue-400 bg-blue-900/30 px-2 py-1 rounded">
+                        <span className="text-xs font-medium text-violet-400 bg-violet-900/30 px-2 py-1 rounded">
                           Email {email.step}
                         </span>
                         <button
                           onClick={() => startEditing(leadIdx, emailIdx, email.subject, email.body)}
-                          className="text-xs text-slate-400 hover:text-white"
+                          className="text-xs text-gray-400 hover:text-white"
                         >
                           Edit
                         </button>
@@ -2514,33 +2520,33 @@ function StepPreview({
                       {editingEmail?.leadIdx === leadIdx && editingEmail?.emailIdx === emailIdx ? (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Subject</label>
+                            <label className="block text-xs text-gray-400 mb-1">Subject</label>
                             <input
                               type="text"
                               value={editSubject}
                               onChange={(e) => setEditSubject(e.target.value)}
-                              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded text-white text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Body</label>
+                            <label className="block text-xs text-gray-400 mb-1">Body</label>
                             <textarea
                               value={editBody}
                               onChange={(e) => setEditBody(e.target.value)}
                               rows={6}
-                              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm resize-none"
+                              className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded text-white text-sm resize-none"
                             />
                           </div>
                           <div className="flex gap-2">
                             <button
                               onClick={saveEdit}
-                              className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                              className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm rounded hover:from-violet-500 hover:to-fuchsia-500"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingEmail(null)}
-                              className="px-3 py-1.5 text-slate-400 text-sm hover:text-white"
+                              className="px-3 py-1.5 text-gray-400 text-sm hover:text-white"
                             >
                               Cancel
                             </button>
@@ -2551,7 +2557,7 @@ function StepPreview({
                           <p className="text-sm font-medium text-white mb-2">
                             Subject: {email.subject}
                           </p>
-                          <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                          <p className="text-sm text-gray-300 whitespace-pre-wrap">
                             {email.body}
                           </p>
                         </>
@@ -2585,12 +2591,12 @@ function StepLaunch({
     <div className="space-y-8 pb-24">
       <div>
         <h2 className="text-xl font-semibold text-white mb-2">Review & Launch</h2>
-        <p className="text-slate-400">Give your campaign a name and review the details</p>
+        <p className="text-gray-400">Give your campaign a name and review the details</p>
       </div>
 
       {/* Campaign Name */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+      <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+        <label className="block text-sm font-medium text-gray-300 mb-2">
           Campaign Name *
         </label>
         <input
@@ -2598,26 +2604,26 @@ function StepLaunch({
           value={campaignName}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="e.g., Q1 Enterprise Outreach, Product Launch Campaign"
-          className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
         />
       </div>
 
       {/* Summary */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-6">
+      <div className="bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-6">
         <h3 className="font-semibold text-white">Campaign Summary</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <span className="text-sm text-slate-500">Target ICP</span>
+              <span className="text-sm text-gray-500">Target ICP</span>
               <p className="font-medium text-white">{state.selectedICP?.name}</p>
             </div>
             <div>
-              <span className="text-sm text-slate-500">Offer</span>
+              <span className="text-sm text-gray-500">Offer</span>
               <p className="font-medium text-white">{state.selectedOffer?.name}</p>
             </div>
             <div>
-              <span className="text-sm text-slate-500">Objective</span>
+              <span className="text-sm text-gray-500">Objective</span>
               <p className="font-medium text-white">
                 {state.customObjective === 'meetings' ? 'Book Meetings' :
                  state.customObjective === 'demos' ? 'Schedule Demos' :
@@ -2629,21 +2635,21 @@ function StepLaunch({
           
           <div className="space-y-4">
             <div>
-              <span className="text-sm text-slate-500">Framework</span>
+              <span className="text-sm text-gray-500">Framework</span>
               <p className="font-medium text-white">{state.aiStrategy?.framework.name}</p>
             </div>
             <div>
-              <span className="text-sm text-slate-500">Sequence</span>
+              <span className="text-sm text-gray-500">Sequence</span>
               <p className="font-medium text-white">
                 {state.aiStrategy?.sequence.total_touches} emails, {state.aiStrategy?.sequence.cadence}
               </p>
             </div>
             <div>
-              <span className="text-sm text-slate-500">Leads</span>
+              <span className="text-sm text-gray-500">Leads</span>
               <p className="font-medium text-white">{state.selectedLeads.length} contacts selected</p>
             </div>
             <div>
-              <span className="text-sm text-slate-500">Total Emails</span>
+              <span className="text-sm text-gray-500">Total Emails</span>
               <p className="font-medium text-white">
                 {state.leadSequences.reduce((sum, seq) => sum + seq.emails.length, 0)} emails queued
               </p>
@@ -2660,7 +2666,7 @@ function StepLaunch({
           </div>
           <div>
             <h3 className="font-semibold text-white">Ready to Launch</h3>
-            <p className="text-slate-400 mt-1">
+            <p className="text-gray-400 mt-1">
               Your personalized email sequences have been generated and reviewed. 
               Click Launch to start sending. Emails will be sent automatically according to the schedule.
               You can pause or adjust the campaign at any time.
