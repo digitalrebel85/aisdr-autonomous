@@ -73,6 +73,7 @@ interface ICPProfile {
   currently_hiring_for: string[];
   
   // Location Filters
+  locations: string[];
   contact_locations: string[];
   exclude_contact_locations: string[];
   company_hq_locations: string[];
@@ -111,29 +112,69 @@ interface ICPProfile {
   };
 }
 
+// Industry options aligned with LinkedIn/Apollo standards
 const INDUSTRY_OPTIONS = [
-  'Software', 'SaaS', 'Technology', 'Cloud Computing', 'Cybersecurity',
-  'Financial Services', 'Banking', 'Insurance', 'Healthcare', 'Biotech',
-  'Manufacturing', 'Automotive', 'Retail', 'E-commerce', 'Real Estate',
-  'Education', 'Media', 'Marketing', 'Consulting', 'Professional Services'
+  // Technology
+  'Computer Software', 'Information Technology & Services', 'Internet', 'Computer & Network Security',
+  'Computer Hardware', 'Semiconductors', 'Telecommunications', 'Wireless',
+  // SaaS/Cloud
+  'SaaS', 'Cloud Computing', 'Data Infrastructure', 'Artificial Intelligence',
+  // Financial
+  'Financial Services', 'Banking', 'Investment Banking', 'Venture Capital & Private Equity',
+  'Insurance', 'Accounting', 'Capital Markets',
+  // Healthcare
+  'Hospital & Health Care', 'Medical Devices', 'Pharmaceuticals', 'Biotechnology', 'Health, Wellness & Fitness',
+  // Professional Services
+  'Management Consulting', 'Marketing & Advertising', 'Public Relations', 'Staffing & Recruiting',
+  'Legal Services', 'Human Resources', 'Business Consulting',
+  // Manufacturing & Industrial
+  'Manufacturing', 'Automotive', 'Aerospace & Defense', 'Industrial Automation', 'Machinery',
+  // Consumer
+  'Retail', 'E-commerce', 'Consumer Goods', 'Food & Beverages', 'Hospitality',
+  // Other
+  'Real Estate', 'Construction', 'Education', 'Higher Education', 'Non-Profit', 'Government',
+  'Media & Entertainment', 'Sports', 'Transportation & Logistics', 'Energy', 'Oil & Gas', 'Utilities'
 ];
 
+// Company size buckets - matches enrichment output from Apollo/PDL
 const COMPANY_SIZE_OPTIONS = [
-  '1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'
+  '1-10',        // Micro/Startup
+  '11-50',       // Small
+  '51-200',      // Small-Medium
+  '201-500',     // Medium
+  '501-1000',    // Medium-Large
+  '1001-5000',   // Large
+  '5001-10000',  // Enterprise
+  '10001+'       // Large Enterprise
 ];
 
+// Seniority levels aligned with LinkedIn/Apollo
 const SENIORITY_OPTIONS = [
-  'C-Level', 'VP', 'Director', 'Head', 'Manager', 'Senior', 'Lead', 'Specialist'
+  'Owner', 'Founder', 'C-Suite', 'Partner',
+  'VP', 'Director', 'Head',
+  'Manager', 'Senior', 'Lead',
+  'Entry', 'Intern'
 ];
 
+// Department options aligned with LinkedIn
 const DEPARTMENT_OPTIONS = [
-  'Sales', 'Marketing', 'Engineering', 'Product', 'Operations', 'Finance',
-  'HR', 'Customer Success', 'Business Development', 'IT', 'Legal'
+  'Sales', 'Business Development', 'Revenue Operations',
+  'Marketing', 'Growth', 'Demand Generation',
+  'Engineering', 'Product', 'Design', 'Research & Development',
+  'Operations', 'Customer Success', 'Support',
+  'Finance', 'Accounting',
+  'Human Resources', 'People Operations', 'Talent Acquisition',
+  'IT', 'Information Security',
+  'Legal', 'Compliance',
+  'Executive', 'General Management'
 ];
 
+// Funding stages aligned with Crunchbase/PitchBook
 const FUNDING_TYPE_OPTIONS = [
-  'pre-seed', 'seed', 'series-a', 'series-b', 'series-c', 'series-d', 
-  'growth', 'ipo', 'public', 'private-equity', 'bootstrapped'
+  'Pre-Seed', 'Seed', 'Series A', 'Series B', 'Series C', 'Series D', 'Series E+',
+  'Growth Equity', 'Late Stage', 'IPO', 'Public',
+  'Private Equity', 'Debt Financing', 'Grant',
+  'Bootstrapped', 'Self-Funded'
 ];
 
 const INTENT_SIGNAL_OPTIONS = [
@@ -142,10 +183,27 @@ const INTENT_SIGNAL_OPTIONS = [
   'security', 'automation', 'integration', 'migration', 'optimization'
 ];
 
-const LOCATION_OPTIONS = [
-  'United States', 'Canada', 'United Kingdom', 'Germany', 'France', 'Australia',
-  'New York', 'California', 'Texas', 'London', 'Toronto', 'Berlin', 'Paris',
-  'Remote', 'San Francisco', 'New York City', 'Los Angeles', 'Chicago', 'Boston'
+// Countries list - ISO standard, commonly used in B2B data providers
+const COUNTRY_OPTIONS = [
+  // North America
+  'United States', 'Canada', 'Mexico',
+  // Europe - Western
+  'United Kingdom', 'Germany', 'France', 'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Ireland',
+  // Europe - Northern
+  'Sweden', 'Norway', 'Denmark', 'Finland', 'Iceland',
+  // Europe - Southern
+  'Spain', 'Italy', 'Portugal', 'Greece',
+  // Europe - Eastern
+  'Poland', 'Czech Republic', 'Romania', 'Hungary', 'Ukraine',
+  // Asia Pacific
+  'Australia', 'New Zealand', 'Japan', 'South Korea', 'Singapore', 'Hong Kong', 'Taiwan',
+  'China', 'India', 'Indonesia', 'Malaysia', 'Philippines', 'Thailand', 'Vietnam',
+  // Middle East
+  'United Arab Emirates', 'Israel', 'Saudi Arabia', 'Qatar', 'Kuwait',
+  // South America
+  'Brazil', 'Argentina', 'Chile', 'Colombia', 'Peru',
+  // Africa
+  'South Africa', 'Nigeria', 'Egypt', 'Kenya', 'Morocco'
 ];
 
 const TECHNOLOGY_OPTIONS = [
@@ -186,6 +244,7 @@ export default function ICPPage() {
     currently_hiring_for: [] as string[],
     
     // Location Filters
+    locations: [] as string[],
     contact_locations: [] as string[],
     exclude_contact_locations: [] as string[],
     company_hq_locations: [] as string[],
@@ -265,19 +324,39 @@ export default function ICPPage() {
     setFormData({
       name: '',
       description: '',
-      industries: [],
-      company_sizes: [],
-      locations: [],
+      campaign_name: '',
       job_titles: [],
+      exclude_job_titles: [],
       seniority_levels: [],
       departments: [],
+      lead_names: [],
+      industries: [],
+      industry_keywords: [],
+      exclude_industry_keywords: [],
+      company_sizes: [],
+      company_domain_names: [],
+      company_domain_exact_match: false,
+      exclude_company_domains: [],
+      exclude_domains_exact_match: false,
       technologies: [],
-      funding_stages: [],
-      keywords: [],
+      currently_hiring_for: [],
+      locations: [],
+      contact_locations: [],
+      exclude_contact_locations: [],
+      company_hq_locations: [],
       employee_count_min: '',
       employee_count_max: '',
       revenue_min: '',
-      revenue_max: ''
+      revenue_max: '',
+      yearly_headcount_growth_min: '',
+      yearly_headcount_growth_max: '',
+      funding_stages: [],
+      funding_types: [],
+      funding_amount_min: '',
+      funding_amount_max: '',
+      intent_signals: [],
+      verified_emails_only: false,
+      keywords: []
     });
     setShowCreateForm(false);
     setEditingProfile(null);
@@ -285,21 +364,41 @@ export default function ICPPage() {
 
   const handleEdit = (profile: ICPProfile) => {
     setFormData({
-      name: profile.name,
-      description: profile.description,
-      industries: profile.industries,
-      company_sizes: profile.company_sizes,
-      locations: profile.locations,
-      job_titles: profile.job_titles,
-      seniority_levels: profile.seniority_levels,
-      departments: profile.departments,
-      technologies: profile.technologies,
-      funding_stages: profile.funding_stages,
-      keywords: profile.keywords,
+      name: profile.name || '',
+      description: profile.description || '',
+      campaign_name: profile.campaign_name || '',
+      job_titles: profile.job_titles || [],
+      exclude_job_titles: profile.exclude_job_titles || [],
+      seniority_levels: profile.seniority_levels || [],
+      departments: profile.departments || [],
+      lead_names: profile.lead_names || [],
+      industries: profile.industries || [],
+      industry_keywords: profile.industry_keywords || [],
+      exclude_industry_keywords: profile.exclude_industry_keywords || [],
+      company_sizes: profile.company_sizes || [],
+      company_domain_names: profile.company_domain_names || [],
+      company_domain_exact_match: profile.company_domain_exact_match || false,
+      exclude_company_domains: profile.exclude_company_domains || [],
+      exclude_domains_exact_match: profile.exclude_domains_exact_match || false,
+      technologies: profile.technologies || [],
+      currently_hiring_for: profile.currently_hiring_for || [],
+      locations: profile.locations || [],
+      contact_locations: profile.contact_locations || [],
+      exclude_contact_locations: profile.exclude_contact_locations || [],
+      company_hq_locations: profile.company_hq_locations || [],
       employee_count_min: profile.employee_count_min?.toString() || '',
       employee_count_max: profile.employee_count_max?.toString() || '',
       revenue_min: profile.revenue_min?.toString() || '',
-      revenue_max: profile.revenue_max?.toString() || ''
+      revenue_max: profile.revenue_max?.toString() || '',
+      yearly_headcount_growth_min: profile.yearly_headcount_growth_min?.toString() || '',
+      yearly_headcount_growth_max: profile.yearly_headcount_growth_max?.toString() || '',
+      funding_stages: [],
+      funding_types: profile.funding_types || [],
+      funding_amount_min: profile.funding_amount_min?.toString() || '',
+      funding_amount_max: profile.funding_amount_max?.toString() || '',
+      intent_signals: profile.intent_signals || [],
+      verified_emails_only: profile.verified_emails_only || false,
+      keywords: profile.keywords || []
     });
     setEditingProfile(profile);
     setShowCreateForm(true);
@@ -344,19 +443,26 @@ export default function ICPPage() {
   };
 
   const addToArray = (field: keyof typeof formData, value: string) => {
-    if (value && !formData[field].includes(value)) {
+    const currentValue = formData[field];
+    if (value && Array.isArray(currentValue) && !currentValue.includes(value)) {
       setFormData(prev => ({
         ...prev,
-        [field]: [...prev[field] as string[], value]
+        [field]: [...(prev[field] as string[]), value]
       }));
     }
   };
 
   const removeFromArray = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: (prev[field] as string[]).filter(item => item !== value)
-    }));
+    setFormData(prev => {
+      const currentValue = prev[field];
+      if (Array.isArray(currentValue)) {
+        return {
+          ...prev,
+          [field]: currentValue.filter(item => item !== value)
+        };
+      }
+      return prev;
+    });
   };
 
   if (loading) {
@@ -473,48 +579,27 @@ export default function ICPPage() {
                         </div>
                       </div>
 
-                      {/* Company Sizes */}
+                      {/* Company Size (Employee Count Range) */}
                       <div>
-                        <Label className="text-gray-300">Company Sizes</Label>
-                        <Select onValueChange={(value) => addToArray('company_sizes', value)}>
-                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                            <SelectValue placeholder="Add company size" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#1a1a24] border-white/10">
-                            {COMPANY_SIZE_OPTIONS.map(size => (
-                              <SelectItem key={size} value={size} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">{size} employees</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {formData.company_sizes.map(size => (
-                            <Badge key={size} className="cursor-pointer bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30"
-                                   onClick={() => removeFromArray('company_sizes', size)}>
-                              {size} ×
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Employee Count Range */}
-                      <div>
-                        <Label className="text-gray-300">Employee Count Range</Label>
-                        <div className="flex space-x-2">
+                        <Label className="text-gray-300">Company Size (Employee Count)</Label>
+                        <div className="flex items-center space-x-2 mt-2">
                           <Input
                             type="number"
-                            placeholder="Min"
+                            placeholder="Min employees"
                             value={formData.employee_count_min}
                             onChange={(e) => setFormData(prev => ({ ...prev, employee_count_min: e.target.value }))}
                             className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
+                          <span className="text-gray-500">to</span>
                           <Input
                             type="number"
-                            placeholder="Max"
+                            placeholder="Max employees"
                             value={formData.employee_count_max}
                             onChange={(e) => setFormData(prev => ({ ...prev, employee_count_max: e.target.value }))}
                             className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">e.g., 50 to 500 for mid-market companies</p>
                       </div>
 
                       {/* Revenue Range */}
@@ -535,6 +620,31 @@ export default function ICPPage() {
                             onChange={(e) => setFormData(prev => ({ ...prev, revenue_max: e.target.value }))}
                             className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                           />
+                        </div>
+                      </div>
+
+                      {/* Target Countries */}
+                      <div>
+                        <Label className="text-gray-300">Target Countries</Label>
+                        <Select onValueChange={(value) => addToArray('locations', value)}>
+                          <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                            <SelectValue placeholder="Select countries" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#1a1a24] border-white/10 max-h-[300px]">
+                            {COUNTRY_OPTIONS.map(country => (
+                              <SelectItem key={country} value={country} className="text-gray-300 focus:bg-violet-500/20 focus:text-white">
+                                {country}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {(formData.locations || []).map(location => (
+                            <Badge key={location} className="cursor-pointer bg-teal-500/20 text-teal-300 border-teal-500/30 hover:bg-teal-500/30"
+                                   onClick={() => removeFromArray('locations', location)}>
+                              {location} ×
+                            </Badge>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -687,29 +797,6 @@ export default function ICPPage() {
                         </div>
                       </div>
 
-                      {/* Locations */}
-                      <div>
-                        <Label className="text-gray-300">Locations</Label>
-                        <Input
-                          placeholder="Add location and press Enter"
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addToArray('locations', e.currentTarget.value);
-                              e.currentTarget.value = '';
-                            }
-                          }}
-                        />
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {formData.locations.map(location => (
-                            <Badge key={location} className="cursor-pointer bg-teal-500/20 text-teal-300 border-teal-500/30 hover:bg-teal-500/30"
-                                   onClick={() => removeFromArray('locations', location)}>
-                              {location} ×
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>

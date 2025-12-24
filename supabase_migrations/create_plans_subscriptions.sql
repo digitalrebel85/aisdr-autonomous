@@ -77,17 +77,48 @@ CREATE POLICY "Users can view own usage" ON public.usage_tracking
 
 -- Insert the pricing plans
 -- Clear existing plans first
-DELETE FROM public.plans WHERE slug IN ('research', 'starter', 'pro', 'scale', 'enterprise');
+DELETE FROM public.plans WHERE slug IN ('free_trial', 'research', 'starter', 'pro', 'scale', 'enterprise', 'live_outreach', 'growth');
 
--- Research tier - £97/month - Research & sequences only, no sending
+-- Free Trial - 100 leads, research & sequences only, no sending, 14 days
 INSERT INTO public.plans (name, slug, description, price_monthly, price_yearly, features, limits, sort_order) VALUES
+(
+    'Free Trial',
+    'free_trial',
+    'Try AISDR with 100 leads - no credit card required',
+    0.00,
+    0.00,
+    '["100 leads total", "1 ICP", "1 messaging angle", "AI lead research & enrichment", "AI-written email sequences", "Export sequences", "14-day access"]'::jsonb,
+    '{
+        "prospects_per_month": 100,
+        "prospects_total": 100,
+        "emails_per_month": 0,
+        "connected_inboxes": 0,
+        "team_members": 1,
+        "campaigns": 1,
+        "icps": 1,
+        "angles_per_icp": 1,
+        "can_send_emails": false,
+        "can_connect_inbox": false,
+        "can_track_replies": false,
+        "has_crm_sync": false,
+        "has_calendar_booking": false,
+        "has_warmup": false,
+        "has_ai_response_agent": false,
+        "has_ab_testing": false,
+        "has_ai_learning": false,
+        "is_trial": true,
+        "trial_days": 14
+    }'::jsonb,
+    0
+),
+-- Research tier - €97/month - Research & sequences only, no sending
 (
     'Research',
     'research',
     'AI-powered lead research and email copywriting - no sending',
     97.00,
     87.00,
-    '["Up to 1,000 leads/month", "1 ICP", "2 messaging angles", "AI lead research & enrichment", "AI-written email sequences", "Export sequences to your tools", "Basic analytics"]'::jsonb,
+    '["Up to 1,000 leads/month", "1 ICP", "2 messaging angles", "AI lead research & enrichment", "AI-written email sequences", "Export sequences to your tools"]'::jsonb,
     '{
         "prospects_per_month": 1000,
         "emails_per_month": 0,
@@ -100,48 +131,28 @@ INSERT INTO public.plans (name, slug, description, price_monthly, price_yearly, 
         "can_connect_inbox": false,
         "can_track_replies": false,
         "has_crm_sync": false,
-        "has_calendar_booking": false
+        "has_calendar_booking": false,
+        "has_warmup": false,
+        "has_ai_response_agent": false,
+        "has_ab_testing": false,
+        "has_ai_learning": false
     }'::jsonb,
     1
 ),
--- Starter tier - £149/month - Full outbound with sending
+-- Live Outreach tier - €297/month - Full sending with AI
 (
-    'Starter',
-    'starter',
-    'Full AI outbound with email sending',
-    149.00,
-    134.00,
-    '["Up to 1,000 prospects/month", "1 ICP", "2 messaging angles", "AI-written emails + follow-ups", "Email sequences with sending", "Single inbox connection", "Reply classification (basic)", "CRM sync", "Guardrails enforced"]'::jsonb,
+    'Live Outreach',
+    'live_outreach',
+    'Full AI outbound with sending and response handling',
+    297.00,
+    267.00,
+    '["Everything in Research", "Warmup included (up to 10 inboxes)", "Sending enabled", "6,000 emails/month", "10 inboxes × 20/day", "AI-written sequences activated", "AI response agent", "Basic optimisation (copy + angle)"]'::jsonb,
     '{
-        "prospects_per_month": 1000,
-        "emails_per_month": 5000,
-        "connected_inboxes": 1,
-        "team_members": 1,
+        "prospects_per_month": 3000,
+        "emails_per_month": 6000,
+        "connected_inboxes": 10,
+        "team_members": 3,
         "campaigns": 10,
-        "icps": 1,
-        "angles_per_icp": 2,
-        "can_send_emails": true,
-        "can_connect_inbox": true,
-        "can_track_replies": true,
-        "has_crm_sync": true,
-        "has_calendar_booking": false
-    }'::jsonb,
-    2
-),
--- Pro tier - £499/month - For lean sales teams
-(
-    'Pro',
-    'pro',
-    'Buyer-aware outbound with real control',
-    499.00,
-    449.00,
-    '["Up to 5,000 prospects/month", "3 ICPs", "5 angles per ICP", "Buyer-aware sequences", "Reply routing + calendar booking", "A/B testing (angles, not spam)", "Up to 3 inboxes", "Advanced analytics", "Priority support"]'::jsonb,
-    '{
-        "prospects_per_month": 5000,
-        "emails_per_month": 25000,
-        "connected_inboxes": 3,
-        "team_members": 5,
-        "campaigns": -1,
         "icps": 3,
         "angles_per_icp": 5,
         "can_send_emails": true,
@@ -149,24 +160,27 @@ INSERT INTO public.plans (name, slug, description, price_monthly, price_yearly, 
         "can_track_replies": true,
         "has_crm_sync": true,
         "has_calendar_booking": true,
-        "has_ab_testing": true,
-        "has_advanced_analytics": true
+        "has_warmup": true,
+        "has_ai_response_agent": true,
+        "has_ab_testing": false,
+        "has_ai_learning": false,
+        "emails_per_inbox_per_day": 20
     }'::jsonb,
-    3
+    2
 ),
--- Scale tier - £899/month - For serious operators & agencies
+-- Growth tier - €497/month - For teams and agencies
 (
-    'Scale',
-    'scale',
-    'Precision at scale, not chaos',
-    899.00,
-    809.00,
-    '["Up to 10,000 prospects/month", "Unlimited ICPs & angles", "Custom AI rules", "AI reply generation", "Audit logs + safety controls", "API access", "White-label", "Dedicated success manager"]'::jsonb,
+    'Growth',
+    'growth',
+    'Scale your outreach with AI learning and optimisation',
+    497.00,
+    447.00,
+    '["Everything in Live Outreach", "20 inboxes", "12,000 emails/month", "Multiple campaigns live", "Automated A/B testing", "Ongoing optimisation", "AI Learning Agent"]'::jsonb,
     '{
-        "prospects_per_month": 10000,
-        "emails_per_month": -1,
-        "connected_inboxes": -1,
-        "team_members": -1,
+        "prospects_per_month": 6000,
+        "emails_per_month": 12000,
+        "connected_inboxes": 20,
+        "team_members": 10,
         "campaigns": -1,
         "icps": -1,
         "angles_per_icp": -1,
@@ -175,14 +189,14 @@ INSERT INTO public.plans (name, slug, description, price_monthly, price_yearly, 
         "can_track_replies": true,
         "has_crm_sync": true,
         "has_calendar_booking": true,
+        "has_warmup": true,
+        "has_ai_response_agent": true,
         "has_ab_testing": true,
+        "has_ai_learning": true,
         "has_advanced_analytics": true,
-        "has_ai_reply_generation": true,
-        "has_api_access": true,
-        "has_white_label": true,
-        "has_audit_logs": true
+        "emails_per_inbox_per_day": 20
     }'::jsonb,
-    4
+    3
 );
 
 -- Function to get user subscription with plan details

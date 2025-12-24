@@ -21,8 +21,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Plus,
-  ExternalLink
+  ExternalLink,
+  Lock,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Settings Section Component
 const SettingsSection = ({ title, description, icon, children }: {
@@ -92,6 +96,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [inboxes, setInboxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { canConnectInbox, isResearchOrTrial, subscription, loading: subLoading } = useSubscription();
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({
     apollo: '',
     pdl: '',
@@ -279,47 +284,72 @@ export default function SettingsPage() {
               })}
               
               <div className="pt-4 border-t border-white/5">
-                <Link href="/api/nylas/auth/redirect">
-                  <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Connect New Email
-                  </Button>
-                </Link>
+                {isResearchOrTrial() ? (
+                  <div className="flex items-center justify-between p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-violet-500/20 rounded-lg">
+                        <Lock className="w-4 h-4 text-violet-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">Connect Your Mailbox</p>
+                        <p className="text-xs text-gray-400">Upgrade to Live Outreach to connect email accounts and start sending</p>
+                      </div>
+                    </div>
+                    <Link href="/pricing">
+                      <Button size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Upgrade
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <Link href="/api/nylas/auth/redirect">
+                    <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Connect New Email
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               {/* AI Configuration */}
               <div className="pt-4 border-t border-white/5">
                 <h4 className="text-sm font-medium text-gray-400 mb-3">AI Configuration</h4>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-1.5 bg-fuchsia-500/20 rounded-lg">
-                        <Zap className="w-4 h-4 text-fuchsia-400" />
+                  {isResearchOrTrial() ? (
+                    <div className="flex items-center justify-between p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-violet-500/20 rounded-lg">
+                          <Lock className="w-4 h-4 text-violet-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">AI Auto-Response</p>
+                          <p className="text-xs text-gray-400">Upgrade to Live Outreach to enable AI-powered automatic responses to leads</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">Auto-Response</p>
-                        <p className="text-xs text-gray-500">AI responds to lead inquiries</p>
-                      </div>
+                      <Link href="/pricing">
+                        <Button size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Upgrade
+                        </Button>
+                      </Link>
                     </div>
-                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                      Coming Soon
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-1.5 bg-emerald-500/20 rounded-lg">
-                        <Bot className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-1.5 bg-fuchsia-500/20 rounded-lg">
+                          <Zap className="w-4 h-4 text-fuchsia-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">Auto-Response</p>
+                          <p className="text-xs text-gray-500">AI responds to lead inquiries</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">Response Training</p>
-                        <p className="text-xs text-gray-500">Train AI with custom tone</p>
-                      </div>
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                        Enabled
+                      </Badge>
                     </div>
-                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                      Coming Soon
-                    </Badge>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

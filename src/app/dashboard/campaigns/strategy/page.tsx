@@ -12,8 +12,12 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Download,
+  Lock,
+  Rocket
 } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface ICPProfile {
   id: number;
@@ -120,6 +124,9 @@ export default function CampaignStrategyWizard() {
   // Loading & Error
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string>('');
+  
+  // Subscription check
+  const { isResearchOrTrial } = useSubscription();
 
   useEffect(() => {
     fetchICPProfiles();
@@ -1039,23 +1046,52 @@ export default function CampaignStrategyWizard() {
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button
-              onClick={handleCreateCampaign}
-              disabled={isCreating}
-              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
-            >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
-                  <span>Creating...</span>
-                </>
+            <div className="flex items-center space-x-3">
+              {/* Download Campaign Button - Available to all plans */}
+              <button
+                onClick={async () => {
+                  // Create campaign and download
+                  await handleCreateCampaign();
+                  // After campaign is created, the user will be redirected
+                  // They can download from the campaign detail page
+                }}
+                disabled={isCreating}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-cyan-500/25 transition-all"
+              >
+                <Download className="w-5 h-5" />
+                <span>Create & Download</span>
+              </button>
+              
+              {/* Create Campaign Button - Upgrade prompt for Research/Trial */}
+              {isResearchOrTrial() ? (
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="px-8 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl flex items-center space-x-2 font-semibold shadow-lg shadow-violet-500/25 transition-all"
+                >
+                  <Lock className="w-5 h-5" />
+                  <span>Upgrade to Launch</span>
+                  <Sparkles className="w-4 h-4" />
+                </button>
               ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  <span>Create Campaign</span>
-                </>
+                <button
+                  onClick={handleCreateCampaign}
+                  disabled={isCreating}
+                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
+                >
+                  {isCreating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="w-5 h-5" />
+                      <span>Create & Launch</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           )}
         </div>
       </div>

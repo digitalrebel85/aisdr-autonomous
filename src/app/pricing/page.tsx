@@ -26,7 +26,7 @@ export default function PricingPage() {
       monthlyPrice: 97,
       annualPrice: 87,
       priceRange: null,
-      currency: "£",
+      currency: "$",
       popular: false,
       icon: "research",
       features: [
@@ -35,80 +35,55 @@ export default function PricingPage() {
         "2 messaging angles",
         "AI lead research & enrichment",
         "AI-written email sequences",
-        "Export sequences to your tools",
-        "Basic analytics"
+        "Export sequences to your tools"
       ],
       limitations: [
         "No email sending",
         "No mailbox connections",
-        "No reply tracking"
+        "No analytics"
       ]
     },
     {
-      name: "Starter",
-      tagline: "For founders & solo operators",
-      description: "Full AI outbound with sending",
-      monthlyPrice: 149,
-      annualPrice: 134,
+      name: "Live Outreach",
+      tagline: "Full AI outbound with sending",
+      description: "Everything you need to run live campaigns",
+      monthlyPrice: 297,
+      annualPrice: 267,
       priceRange: null,
-      currency: "£",
-      popular: false,
-      icon: "starter",
-      features: [
-        "Up to 1,000 prospects/month",
-        "1 ICP",
-        "2 messaging angles",
-        "AI-written emails + follow-ups",
-        "Email sequences with sending",
-        "Single inbox connection",
-        "Reply classification (basic)",
-        "CRM sync",
-        "Guardrails enforced"
-      ],
-      limitations: []
-    },
-    {
-      name: "Pro",
-      tagline: "For lean sales teams",
-      description: "Buyer-aware outbound with real control",
-      monthlyPrice: 499,
-      annualPrice: 449,
-      priceRange: null,
-      currency: "£",
+      currency: "$",
       popular: true,
-      icon: "pro",
+      icon: "outreach",
       features: [
-        "Up to 5,000 prospects/month",
-        "3 ICPs",
-        "5 angles per ICP",
-        "Buyer-aware sequences",
-        "Reply routing + calendar booking",
-        "A/B testing (angles, not spam)",
-        "Up to 3 inboxes",
-        "Advanced analytics",
-        "Priority support"
+        "Everything in Research, plus:",
+        "Warmup included (up to 10 inboxes)",
+        "Sending enabled",
+        "6,000 emails/month",
+        "10 inboxes × 20 emails/day",
+        "AI-written sequences activated",
+        "AI response agent",
+        "Basic optimisation (copy + angle)",
+        "Analytics dashboard"
       ],
       limitations: []
     },
     {
-      name: "Scale",
-      tagline: "For serious outbound operators & agencies",
-      description: "Precision at scale, not chaos",
-      monthlyPrice: 899,
-      annualPrice: 809,
-      priceRange: "899–1,299",
-      currency: "£",
+      name: "Growth",
+      tagline: "For teams & agencies",
+      description: "Scale with AI learning and optimisation",
+      monthlyPrice: 497,
+      annualPrice: 447,
+      priceRange: null,
+      currency: "$",
       popular: false,
-      icon: "scale",
+      icon: "growth",
       features: [
-        "Up to 10,000 prospects/month",
-        "Unlimited ICPs & angles",
-        "Custom AI rules",
-        "AI reply generation",
-        "Audit logs + safety controls",
-        "API access",
-        "White-label",
-        "Dedicated success manager"
+        "Everything in Live Outreach, plus:",
+        "20 inboxes",
+        "12,000 emails/month",
+        "Multiple campaigns live",
+        "Automated A/B testing",
+        "Ongoing optimisation",
+        "AI Learning Agent"
       ],
       limitations: []
     }
@@ -117,22 +92,22 @@ export default function PricingPage() {
   const addOns = [
     {
       name: "Additional Prospects",
-      price: "From £0.05/prospect",
+      price: "From $0.05/prospect",
       description: "Extra prospects beyond your plan limit"
     },
     {
       name: "Additional Inboxes",
-      price: "£49/month each",
+      price: "$49/month each",
       description: "Connect more email accounts for better deliverability"
     },
     {
       name: "Extra ICPs",
-      price: "£99/month each",
+      price: "$99/month each",
       description: "Additional ideal customer profiles for Pro plan"
     },
     {
       name: "Custom Onboarding",
-      price: "£499 one-time",
+      price: "$499 one-time",
       description: "White-glove setup and strategy session"
     }
   ];
@@ -143,48 +118,40 @@ export default function PricingPage() {
       answer: "The Research plan is perfect if you already have your own email sending tools but want AI-powered lead research and email copywriting. We'll research your leads, enrich them with data, and write personalized email sequences - you just export and send through your existing tools."
     },
     {
-      question: "What's the difference between Research and Starter?",
-      answer: "Research gives you AI lead research and email writing, but you send emails yourself using your own tools. Starter includes everything in Research PLUS actual email sending through connected mailboxes, reply tracking, and CRM sync."
+      question: "What's the difference between Research and Live Outreach?",
+      answer: "Research gives you AI lead research and email writing, but you send emails yourself using your own tools. Live Outreach includes everything in Research PLUS actual email sending through up to 10 connected mailboxes, warmup, AI response agent, and reply tracking."
     },
     {
-      question: "What's the difference between Pro and Scale?",
-      answer: "Pro is designed for lean sales teams who want buyer-aware outbound with real control. Scale is for serious outbound operators and agencies who need precision at scale with unlimited ICPs, custom AI rules, and white-label options."
+      question: "What's the difference between Live Outreach and Growth?",
+      answer: "Live Outreach gives you 10 inboxes and 6,000 emails/month with basic optimisation. Growth doubles that to 20 inboxes and 12,000 emails/month, plus adds automated A/B testing and the AI Learning Agent that continuously optimises your campaigns."
     },
     {
-      question: "What are ICPs and angles?",
-      answer: "ICPs (Ideal Customer Profiles) define who you're targeting. Angles are the different value propositions and messaging approaches you use to reach them. Pro includes 3 ICPs with 5 angles each, while Scale offers unlimited."
+      question: "What is the AI Response Agent?",
+      answer: "The AI Response Agent automatically handles replies to your outreach. It classifies responses, drafts appropriate follow-ups, and routes hot leads to your calendar - so you only spend time on prospects who are ready to talk."
     },
     {
-      question: "How does A/B testing work?",
-      answer: "We test different angles and messaging approaches to find what resonates with your prospects. This is strategic A/B testing focused on value propositions, not spam tactics like subject line tricks."
+      question: "What is the AI Learning Agent?",
+      answer: "Available on Growth, the AI Learning Agent continuously analyses your campaign performance and automatically optimises your messaging angles, subject lines, and send times to improve results over time."
     },
     {
-      question: "What's included in buyer-aware sequences?",
-      answer: "Our AI understands buyer signals and adapts sequences accordingly. It knows when to push, when to nurture, and when to step back - creating genuinely relevant outreach, not generic blasts."
+      question: "How does inbox warmup work?",
+      answer: "We gradually increase sending volume on new inboxes to build sender reputation. This is included on Live Outreach and Growth plans for all connected inboxes, helping ensure your emails land in the inbox, not spam."
     },
     {
       question: "Can I cancel anytime?",
       answer: "Absolutely. Cancel anytime with one click. No contracts, no cancellation fees. Your account remains active until the end of your billing period."
     },
     {
-      question: "Can I upgrade from Research to Starter?",
-      answer: "Yes! You can upgrade at any time. When you upgrade from Research to Starter (or any higher plan), you'll get email sending capabilities immediately. We'll prorate any billing differences."
+      question: "Can I upgrade from Research to Live Outreach?",
+      answer: "Yes! You can upgrade at any time. When you upgrade, you'll get email sending capabilities immediately. We'll prorate any billing differences."
     },
     {
-      question: "What happens if I exceed my lead limit?",
-      answer: "We'll notify you when you're approaching your limit. You can either upgrade your plan or purchase additional leads at £0.05 each."
+      question: "What happens if I exceed my email limit?",
+      answer: "We'll notify you when you're approaching your limit. You can either upgrade your plan or purchase additional capacity. We never cut off your campaigns mid-month."
     },
     {
       question: "Do you offer refunds?",
       answer: "Yes, we offer a 14-day money-back guarantee. If you're not seeing value, we'll refund your payment in full."
-    },
-    {
-      question: "What's included in white-label?",
-      answer: "Scale plan includes white-label options so agencies can offer ConnectLead's capabilities under their own brand to clients."
-    },
-    {
-      question: "Do you offer custom enterprise pricing?",
-      answer: "Yes! For teams with specific requirements beyond Scale, contact our sales team for custom pricing and features."
     }
   ];
 
@@ -193,7 +160,7 @@ export default function PricingPage() {
     { label: "Email reply rate", value: "8%" },
     { label: "Meeting booking rate", value: "20%" },
     { label: "Deal close rate", value: "15%" },
-    { label: "Average deal value", value: "£10,000" }
+    { label: "Average deal value", value: "$10,000" }
   ];
 
   return (
@@ -231,8 +198,34 @@ export default function PricingPage() {
         </div>
       </nav>
 
+      {/* Free Trial Banner */}
+      <section className="relative pt-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/signup?plan=free_trial">
+            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600/20 via-cyan-600/20 to-emerald-600/20 rounded-2xl border border-emerald-500/30 p-6 hover:border-emerald-400/50 transition-all duration-300 group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-500/20 rounded-xl">
+                    <Sparkles className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div className="text-center md:text-left">
+                    <h3 className="text-lg font-semibold text-white">Start with 100 Free Leads</h3>
+                    <p className="text-sm text-gray-400">Try our AI research & email writing - no credit card required</p>
+                  </div>
+                </div>
+                <Button className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white border-0 whitespace-nowrap group-hover:scale-105 transition-transform">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* Hero Section */}
-      <section className="relative pt-20 pb-12">
+      <section className="relative pt-12 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
             <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 animate-fade-in-up">
@@ -281,7 +274,7 @@ export default function PricingPage() {
       {/* Pricing Plans */}
       <section className="relative py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
               <div 
                 key={index} 
@@ -305,10 +298,10 @@ export default function PricingPage() {
                   <p className="text-gray-400 mt-2">{plan.description}</p>
                   <div className="mt-6">
                     <div className="text-5xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                      {plan.priceRange ? `${plan.currency}${plan.priceRange}` : `${plan.currency}${isAnnual ? plan.annualPrice : plan.monthlyPrice}`}
+                      {plan.monthlyPrice === 0 ? 'Free' : plan.priceRange ? `${plan.currency}${plan.priceRange}` : `${plan.currency}${isAnnual ? plan.annualPrice : plan.monthlyPrice}`}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      per month{isAnnual && !plan.priceRange ? ', billed annually' : ''}
+                      {plan.monthlyPrice === 0 ? 'No credit card required' : `per month${isAnnual && !plan.priceRange ? ', billed annually' : ''}`}
                     </div>
                     {isAnnual && !plan.priceRange && plan.monthlyPrice > plan.annualPrice && (
                       <div className="text-sm text-emerald-400 mt-1">
@@ -348,11 +341,13 @@ export default function PricingPage() {
                         className={`w-full group ${
                           plan.popular 
                             ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/25' 
+                            : plan.monthlyPrice === 0
+                            ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 shadow-lg shadow-emerald-500/25'
                             : 'bg-white/10 hover:bg-white/20 border border-white/10'
                         }`}
                         size="lg"
                       >
-                        Start {plan.name} Plan
+                        {plan.monthlyPrice === 0 ? 'Start Free Trial' : `Start ${plan.name} Plan`}
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>

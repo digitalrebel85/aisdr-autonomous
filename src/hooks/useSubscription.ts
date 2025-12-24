@@ -1,23 +1,36 @@
 import { useEffect, useState } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
+import { createClient } from '@/utils/supabase/client';
 import { planManager, UserSubscription, UsageCheck } from '@/lib/plans';
 
+// Feature access by plan
+const PLAN_FEATURES: Record<string, string[]> = {
+  'free_trial': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
+  'research': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
+  'live_outreach': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'calendar_booking', 'warmup', 'ai_response_agent', 'basic_analytics'],
+  'growth': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'calendar_booking', 'warmup', 'ai_response_agent', 'basic_analytics', 'ab_testing', 'ai_learning', 'advanced_analytics', 'multiple_campaigns']
+};
+
 export function useSubscription() {
-  const user = useUser();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      setSubscription(null);
-      setLoading(false);
-      return;
-    }
-
     const fetchSubscription = async () => {
+      const supabase = createClient();
+      
       try {
         setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setSubscription(null);
+          setLoading(false);
+          return;
+        }
+        
+        setUserId(user.id);
         const sub = await planManager.getUserSubscription(user.id);
         setSubscription(sub);
         setError(null);
@@ -30,24 +43,41 @@ export function useSubscription() {
     };
 
     fetchSubscription();
-  }, [user]);
+  }, []);
 
   const hasFeature = (feature: string): boolean => {
     if (!subscription) return false;
-    // You can implement feature checking logic here
-    return true;
+    const planFeatures = PLAN_FEATURES[subscription.plan_slug] || [];
+    return planFeatures.includes(feature);
+  };
+  
+  const canConnectInbox = (): boolean => {
+    return hasFeature('inbox_connection');
+  };
+  
+  const canSendEmails = (): boolean => {
+    return hasFeature('email_sending');
+  };
+  
+  const canViewAnalytics = (): boolean => {
+    return hasFeature('basic_analytics');
+  };
+  
+  const isResearchOrTrial = (): boolean => {
+    if (!subscription) return true; // No subscription = treat as restricted
+    return subscription.plan_slug === 'research' || subscription.plan_slug === 'free_trial';
   };
 
-  const isWithinLimit = (metric: keyof typeof subscription.limits): boolean => {
+  const isWithinLimit = (metric: string): boolean => {
     if (!subscription) return false;
-    const limit = subscription.limits[metric];
+    const limit = (subscription.limits as unknown as Record<string, number>)[metric];
     return limit === -1; // -1 means unlimited
   };
 
   const isTrialing = (): boolean => {
     if (!subscription) return false;
     return subscription.status === 'trialing' && 
-           subscription.trial_end && 
+           !!subscription.trial_end && 
            new Date(subscription.trial_end) > new Date();
   };
 
@@ -69,30 +99,47 @@ export function useSubscription() {
     subscription,
     loading,
     error,
+    userId,
     hasFeature,
+    canConnectInbox,
+    canSendEmails,
+    canViewAnalytics,
+    isResearchOrTrial,
     isWithinLimit,
     isTrialing,
     isActive,
     daysUntilTrialEnd,
-    refresh: () => {
-      if (user) {
-        planManager.getUserSubscription(user.id).then(setSubscription);
+    refresh: async () => {
+      if (userId) {
+        const sub = await planManager.getUserSubscription(userId);
+        setSubscription(sub);
       }
     }
   };
 }
 
 export function useUsageCheck(metric: string) {
-  const user = useUser();
   const [usage, setUsage] = useState<UsageCheck | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
 
   const checkUsage = async (incrementBy: number = 0): Promise<boolean> => {
-    if (!user) return false;
+    if (!currentUserId) return false;
 
     setLoading(true);
     try {
-      const result = await planManager.checkUsageLimit(user.id, metric, incrementBy);
+      const result = await planManager.checkUsageLimit(currentUserId, metric, incrementBy);
       setUsage(result);
       return result.allowed;
     } catch (error) {
@@ -104,15 +151,15 @@ export function useUsageCheck(metric: string) {
   };
 
   const getCurrentUsage = async (): Promise<number> => {
-    if (!user) return 0;
-    return await planManager.getUsage(user.id, metric);
+    if (!currentUserId) return 0;
+    return await planManager.getUsage(currentUserId, metric);
   };
 
   useEffect(() => {
-    if (user) {
+    if (currentUserId) {
       checkUsage(0); // Check current usage without incrementing
     }
-  }, [user, metric]);
+  }, [currentUserId, metric]);
 
   return {
     usage,

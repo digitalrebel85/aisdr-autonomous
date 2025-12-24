@@ -688,7 +688,119 @@ Best,
   }, [currentStep]);
 
   // ============================================================================
-  // CAMPAIGN LAUNCH
+  // CAMPAIGN CREATION (WITHOUT INBOX - FOR RESEARCH/TRIAL USERS)
+  // ============================================================================
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [creationProgress, setCreationProgress] = useState('');
+
+  const createCampaignWithoutInbox = async () => {
+    if (state.selectedLeads.length === 0) {
+      alert('Please select at least one lead');
+      return;
+    }
+
+    if (!state.selectedOffer?.id) {
+      alert('Please select an offer before creating the campaign.');
+      return;
+    }
+
+    setIsCreating(true);
+    setCreationProgress('Creating campaign...');
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      setCreationProgress(`Saving ${state.leadSequences.length} email sequences...`);
+
+      // Create the campaign
+      const campaignData = {
+        user_id: user.id,
+        name: state.campaignName || `Campaign - ${new Date().toLocaleDateString()}`,
+        offer_id: state.selectedOffer.id,
+        status: 'paused', // Paused until they connect inbox
+        total_leads: state.selectedLeads.length,
+        delay_minutes: 5,
+        created_at: new Date().toISOString()
+      };
+
+      const { data: campaign, error: campaignError } = await supabase
+        .from('outreach_campaigns')
+        .insert(campaignData)
+        .select()
+        .single();
+
+      if (campaignError) throw campaignError;
+
+      // Save generated emails to campaign_generated_emails table
+      const generatedEmails: any[] = [];
+      
+      state.leadSequences.forEach((seq) => {
+        seq.emails.forEach((email, emailIndex) => {
+          generatedEmails.push({
+            campaign_id: campaign.id,
+            user_id: user.id,
+            lead_id: seq.lead.id,
+            step_number: emailIndex + 1,
+            subject: email.subject,
+            body: email.body,
+            framework_used: state.aiStrategy?.framework?.name || 'AIDA',
+            ai_model: 'crewai',
+            lead_snapshot: {
+              first_name: seq.lead.first_name,
+              last_name: seq.lead.last_name,
+              email: seq.lead.email,
+              company: seq.lead.company,
+              title: seq.lead.title
+            },
+            status: 'generated'
+          });
+        });
+      });
+
+      // Insert generated emails in batches
+      if (generatedEmails.length > 0) {
+        const batchSize = 50;
+        for (let i = 0; i < generatedEmails.length; i += batchSize) {
+          const batch = generatedEmails.slice(i, i + batchSize);
+          const { error: insertError } = await supabase
+            .from('campaign_generated_emails')
+            .insert(batch);
+
+          if (insertError) {
+            console.error('Error inserting generated emails:', insertError);
+            // Continue anyway - campaign is created
+          }
+        }
+      }
+
+      // Update leads status
+      await supabase
+        .from('leads')
+        .update({ lead_status: 'in_sequence' })
+        .in('id', state.selectedLeads.map(l => l.id));
+
+      setCreationProgress(`Campaign created with ${generatedEmails.length} emails!`);
+      
+      // Short delay to show success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Navigate to campaign detail page
+      router.push(`/dashboard/campaigns/${campaign.id}`);
+
+    } catch (error: any) {
+      console.error('Error creating campaign:', error);
+      const errorMessage = error?.message || error?.details || 'Unknown error';
+      alert(`Failed to create campaign: ${errorMessage}`);
+    } finally {
+      setIsCreating(false);
+      setCreationProgress('');
+    }
+  };
+
+  // ============================================================================
+  // CAMPAIGN LAUNCH (WITH INBOX)
   // ============================================================================
 
   const launchCampaign = async () => {
@@ -1012,26 +1124,51 @@ Best,
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
-            <button
-              onClick={launchCampaign}
-              disabled={!canProceed() || isLaunching}
-              className={`flex items-center gap-2 px-8 py-3 rounded-lg font-medium
-                ${canProceed() && !isLaunching
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
-            >
-              {isLaunching ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Launching...
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-5 h-5" />
-                  Launch Campaign
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Create Campaign Button - Always available */}
+              <button
+                onClick={createCampaignWithoutInbox}
+                disabled={!canProceed() || isCreating || isLaunching}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium
+                  ${canProceed() && !isCreating && !isLaunching
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {creationProgress || 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    Create Campaign
+                  </>
+                )}
+              </button>
+
+              {/* Launch Campaign Button - Requires inbox */}
+              <button
+                onClick={launchCampaign}
+                disabled={!canProceed() || isLaunching || isCreating}
+                className={`flex items-center gap-2 px-8 py-3 rounded-lg font-medium
+                  ${canProceed() && !isLaunching && !isCreating
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+              >
+                {isLaunching ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Launching...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-5 h-5" />
+                    Launch Campaign
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

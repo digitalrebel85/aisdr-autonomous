@@ -6,8 +6,9 @@ load_dotenv()
 
 APOLLO_API_KEY = os.getenv('APOLLO_API_KEY')
 
-def get_company_size_bucket(count: int | None | None) -> str | None:
-    """Parses an employee count number into a human-readable size bucket."""
+def get_company_size_bucket(count: int | None) -> str | None:
+    """Parses an employee count number into a human-readable size bucket.
+    Aligned with ICP scoring options."""
     if count is None:
         return None
     if count <= 10: return '1-10'

@@ -19,8 +19,13 @@ import {
   MessageSquare, 
   Bot,
   Mail,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface EmailThread {
   id: string;
@@ -63,6 +68,7 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const { isResearchOrTrial, loading: subLoading } = useSubscription();
   const [inboxStats, setInboxStats] = useState<InboxStats>({
     totalConversations: 0,
     autoReplied: 0,
@@ -371,6 +377,61 @@ export default function InboxPage() {
             {[...Array(3)].map((_, i) => (
               <div key={i} className="h-32 bg-white/5 rounded-xl border border-white/10"></div>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show upgrade prompt for Research/Trial users
+  if (isResearchOrTrial() && !subLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 rounded-2xl border border-white/10 p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="p-3 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl shadow-lg shadow-violet-500/20">
+                <Bot className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">AI Inbox</h1>
+              <p className="text-gray-400 mt-1">Automated conversation management</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Upgrade Prompt */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 rounded-2xl border border-violet-500/20 p-12">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-fuchsia-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+          
+          <div className="relative flex flex-col items-center text-center space-y-6">
+            <div className="p-4 bg-violet-500/20 rounded-2xl border border-violet-500/30">
+              <Lock className="w-10 h-10 text-violet-400" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl font-semibold text-white">AI Inbox Requires Live Outreach</h3>
+              <p className="text-gray-400 max-w-lg">
+                The AI Inbox automatically manages your email conversations, classifies replies, 
+                and drafts responses. Upgrade to Live Outreach to connect your mailbox and unlock this feature.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <Link href="/pricing">
+                <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-8 py-6 text-lg group">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Upgrade to Live Outreach
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <p className="text-sm text-gray-500">
+                Starting at $297/month • 10 inboxes • AI response agent
+              </p>
+            </div>
           </div>
         </div>
       </div>

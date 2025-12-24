@@ -52,9 +52,12 @@ import {
   ThermometerSun,
   Play,
   Pause,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface Company {
   id: number;
@@ -136,6 +139,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
+  const { isResearchOrTrial } = useSubscription();
 
   const toggleActivityExpanded = (activityId: string) => {
     setExpandedActivities(prev => {
@@ -587,31 +591,6 @@ export default function LeadDetailPage() {
           </div>
         </div>
 
-        {/* AI Insights Bar */}
-        <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-cyan-600/10 border border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 rounded-xl bg-violet-500/20">
-                <Brain className="w-5 h-5 text-violet-400" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-white">AI Agent Recommendation</div>
-                <div className="text-xs text-gray-400">Based on engagement patterns and enrichment data</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                <Target className="w-3 h-3 mr-1" />
-                High Intent Signal
-              </Badge>
-              <Button size="sm" className="bg-white/10 hover:bg-white/20 text-white border-0">
-                <Zap className="w-4 h-4 mr-2 text-amber-400" />
-                Execute Sequence
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
@@ -1050,7 +1029,25 @@ export default function LeadDetailPage() {
                         </div>
                       </div>
                       
-                      {activities.length > 0 ? (
+                      {isResearchOrTrial() ? (
+                        <div className="flex items-center justify-between p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-violet-500/20 rounded-lg">
+                              <Lock className="w-4 h-4 text-violet-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">Activity Tracking</p>
+                              <p className="text-xs text-gray-400">Upgrade to Live Outreach to track email opens, clicks, and replies</p>
+                            </div>
+                          </div>
+                          <Link href="/pricing">
+                            <Button size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white">
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Upgrade
+                            </Button>
+                          </Link>
+                        </div>
+                      ) : activities.length > 0 ? (
                         <div className="space-y-3">
                           {activities.map((activity) => {
                             const isExpanded = expandedActivities.has(activity.id);
@@ -1167,42 +1164,6 @@ export default function LeadDetailPage() {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* AI Agent Actions */}
-            <div className="bg-white/[0.03] rounded-2xl border border-white/10 overflow-hidden backdrop-blur-sm">
-              <div className="p-4 border-b border-white/5 bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-violet-400" />
-                  <h3 className="text-lg font-semibold text-white">AI Actions</h3>
-                </div>
-              </div>
-              <div className="p-4 space-y-2">
-                <Button className="w-full justify-start text-gray-300 hover:text-white bg-white/5 hover:bg-violet-500/20 border border-white/10 hover:border-violet-500/30 h-11 rounded-xl transition-all">
-                  <div className="p-1.5 bg-violet-500/20 rounded-lg mr-3">
-                    <Zap className="w-4 h-4 text-violet-400" />
-                  </div>
-                  Auto-Sequence
-                </Button>
-                <Button className="w-full justify-start text-gray-300 hover:text-white bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/30 h-11 rounded-xl transition-all">
-                  <div className="p-1.5 bg-emerald-500/20 rounded-lg mr-3">
-                    <Mail className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  Generate Email
-                </Button>
-                <Button className="w-full justify-start text-gray-300 hover:text-white bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/30 h-11 rounded-xl transition-all">
-                  <div className="p-1.5 bg-cyan-500/20 rounded-lg mr-3">
-                    <Calendar className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  Book Meeting
-                </Button>
-                <Button className="w-full justify-start text-gray-300 hover:text-white bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 h-11 rounded-xl transition-all">
-                  <div className="p-1.5 bg-amber-500/20 rounded-lg mr-3">
-                    <Brain className="w-4 h-4 text-amber-400" />
-                  </div>
-                  AI Research
-                </Button>
-              </div>
-            </div>
-            
             {/* Lead Intelligence */}
             <div className="bg-white/[0.03] rounded-2xl border border-white/10 overflow-hidden backdrop-blur-sm">
               <div className="p-4 border-b border-white/5">

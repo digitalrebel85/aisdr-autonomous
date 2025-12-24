@@ -15,8 +15,12 @@ import {
   Rocket,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Download,
+  Lock,
+  Sparkles
 } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface Lead {
   id: number;
@@ -58,6 +62,8 @@ export default function CampaignLaunchPage() {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
   const [isLaunching, setIsLaunching] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [creationProgress, setCreationProgress] = useState('');
   const [error, setError] = useState('');
 
   // Filters
@@ -68,6 +74,9 @@ export default function CampaignLaunchPage() {
 
   // Connected inbox
   const [connectedInbox, setConnectedInbox] = useState<any>(null);
+  
+  // Subscription check
+  const { isResearchOrTrial, loading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
     fetchData();
@@ -266,13 +275,15 @@ export default function CampaignLaunchPage() {
 
       if (execError) throw execError;
 
-      // Update leads status
+      // Update leads status - increment sequence_count using RPC or separate update
+      for (const leadId of Array.from(selectedLeads)) {
+        await supabase.rpc('increment_lead_sequence_count', { lead_id: leadId });
+      }
+      
+      // Update lead status
       const { error: leadsError } = await supabase
         .from('leads')
-        .update({ 
-          lead_status: 'in_sequence',
-          sequence_count: supabase.raw('sequence_count + 1')
-        })
+        .update({ lead_status: 'in_sequence' })
         .in('id', Array.from(selectedLeads));
 
       if (leadsError) throw leadsError;
@@ -285,6 +296,62 @@ export default function CampaignLaunchPage() {
       setError(err instanceof Error ? err.message : 'Failed to launch campaign');
     } finally {
       setIsLaunching(false);
+    }
+  };
+
+  // Create campaign and generate emails without requiring inbox
+  const createCampaignWithEmails = async () => {
+    if (selectedLeads.size === 0) {
+      setError('Please select at least one lead');
+      return;
+    }
+
+    setIsCreating(true);
+    setCreationProgress('Creating campaign...');
+    setError('');
+
+    try {
+      setCreationProgress(`Generating emails for ${selectedLeads.size} leads...`);
+      
+      const response = await fetch('/api/campaigns/create-and-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sequenceId: parseInt(sequenceId),
+          sequenceName: sequence?.name,
+          sequenceDescription: sequence?.description,
+          leadIds: Array.from(selectedLeads),
+          sequenceSteps: sequenceSteps,
+          framework: sequence?.messaging_framework,
+          objective: sequence?.objective
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create campaign');
+      }
+
+      const result = await response.json();
+      
+      if (result.errors && result.errors.length > 0) {
+        console.warn('Campaign creation warnings:', result.errors);
+      }
+      
+      setCreationProgress(`Created! ${result.emails_generated || result.emails_prepared || 0} emails ready.`);
+      
+      // Short delay to show success message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Redirect to campaign page
+      router.push(`/dashboard/campaigns/${result.campaign.id}`);
+
+    } catch (err) {
+      console.error('Error creating campaign:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create campaign');
+    } finally {
+      setIsCreating(false);
+      setCreationProgress('');
     }
   };
 
@@ -311,23 +378,91 @@ export default function CampaignLaunchPage() {
                 {sequence?.name} - Select leads to include
               </p>
             </div>
-            <button
-              onClick={launchCampaign}
-              disabled={isLaunching || selectedLeads.size === 0}
-              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-500 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
-            >
-              {isLaunching ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Launching...</span>
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-5 h-5" />
-                  <span>Launch to {selectedLeads.size} Leads</span>
-                </>
+            <div className="flex items-center space-x-3">
+              {/* Download Campaign Button - Available to all plans */}
+              <button
+                onClick={async () => {
+                  if (selectedLeads.size === 0) return;
+                  
+                  try {
+                    // Use POST endpoint to export leads directly without needing outreach_queue
+                    const response = await fetch(`/api/campaigns/${sequenceId}/export`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        leadIds: Array.from(selectedLeads),
+                        sequenceSteps: sequenceSteps
+                      })
+                    });
+                    
+                    if (!response.ok) {
+                      const error = await response.json();
+                      setError(error.error || 'Failed to export');
+                      return;
+                    }
+                    
+                    // Download the CSV
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `campaign_leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } catch (err) {
+                    console.error('Export error:', err);
+                    setError('Failed to export campaign');
+                  }
+                }}
+                disabled={selectedLeads.size === 0}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl hover:from-cyan-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-cyan-500/25 transition-all"
+              >
+                <Download className="w-5 h-5" />
+                <span>Download CSV</span>
+              </button>
+              
+              {/* Create Campaign Button - Creates campaign and generates emails without inbox */}
+              <button
+                onClick={createCampaignWithEmails}
+                disabled={isCreating || selectedLeads.size === 0}
+                className="px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-violet-500/25 transition-all"
+              >
+                {isCreating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>{creationProgress || 'Creating...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    <span>Create Campaign</span>
+                  </>
+                )}
+              </button>
+
+              {/* Launch Campaign Button - Only show if inbox connected and not Research/Trial */}
+              {connectedInbox && !isResearchOrTrial() && (
+                <button
+                  onClick={launchCampaign}
+                  disabled={isLaunching || selectedLeads.size === 0}
+                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-500 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg shadow-emerald-500/25 transition-all"
+                >
+                  {isLaunching ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Launching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="w-5 h-5" />
+                      <span>Launch to {selectedLeads.size} Leads</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           </div>
         </div>
 

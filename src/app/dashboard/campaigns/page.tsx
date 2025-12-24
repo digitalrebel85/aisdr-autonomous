@@ -21,7 +21,8 @@ import {
   Activity,
   ArrowRight,
   Send,
-  Target
+  Target,
+  Download
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -354,7 +355,16 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="ml-6">
+                  <div className="ml-6 flex items-center space-x-2">
+                    <a
+                      href={`/api/campaigns/${campaign.id}/export`}
+                      download
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 rounded-lg flex items-center space-x-1 text-white text-sm transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download</span>
+                    </a>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

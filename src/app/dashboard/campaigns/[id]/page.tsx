@@ -16,7 +16,8 @@ import {
   Calendar,
   Pause,
   Play,
-  BarChart3
+  BarChart3,
+  Download
 } from 'lucide-react';
 
 interface Campaign {
@@ -235,6 +236,14 @@ export default function CampaignDetailPage() {
                   </>
                 )}
               </button>
+              <a
+                href={`/api/campaigns/${campaignId}/export`}
+                download
+                className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 rounded-lg flex items-center space-x-2 text-white transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download CSV</span>
+              </a>
             </div>
           </div>
         </div>

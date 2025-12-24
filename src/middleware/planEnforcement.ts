@@ -112,10 +112,10 @@ export async function checkFeatureAccess(userId: string, feature: string): Promi
     
     // Define feature access by plan
     const featureAccess: Record<string, string[]> = {
-      'research': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
-      'starter': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync'],
-      'pro': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'advanced_analytics', 'ab_testing', 'calendar_booking', 'reply_routing'],
-      'scale': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'advanced_analytics', 'ab_testing', 'calendar_booking', 'reply_routing', 'ai_reply_generation', 'api_access', 'white_label', 'audit_logs', 'custom_ai_rules']
+      'free_trial': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
+      'research': ['lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export'],
+      'live_outreach': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'calendar_booking', 'warmup', 'ai_response_agent'],
+      'growth': ['basic_analytics', 'lead_import', 'lead_enrichment', 'email_copywriting', 'sequence_export', 'email_sending', 'inbox_connection', 'reply_tracking', 'crm_sync', 'calendar_booking', 'warmup', 'ai_response_agent', 'ab_testing', 'ai_learning', 'advanced_analytics', 'multiple_campaigns']
     };
     
     const planFeatures = featureAccess[subscription.plan_slug] || [];
