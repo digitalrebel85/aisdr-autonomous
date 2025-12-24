@@ -85,6 +85,7 @@ export async function GET(
             lead_id: email.lead_id,
             sequence_step: email.step_number,
             subject: email.subject,
+            body: email.body, // Add body at top level for export
             generated_email: { subject: email.subject, body: email.body },
             status: email.status
           });
