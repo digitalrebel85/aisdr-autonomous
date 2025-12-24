@@ -660,6 +660,52 @@ export default function LeadDetailPage() {
                             )}
                           </div>
                         )}
+
+                        {/* Latest News & Updates Section */}
+                        {lead.enriched_data.website_analysis?.analysis?.recent_news_or_updates && (
+                          <div className="bg-white/5 rounded-xl p-5 border border-white/10 mt-4">
+                            <h4 className="font-semibold text-white mb-3 flex items-center">
+                              <div className="p-1.5 bg-amber-500/20 rounded-lg mr-2">
+                                <Megaphone className="w-3.5 h-3.5 text-amber-400" />
+                              </div>
+                              Latest News & Updates
+                              <Badge className="ml-2 bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">
+                                Great for personalization!
+                              </Badge>
+                            </h4>
+                            <div className="space-y-2">
+                              {(Array.isArray(lead.enriched_data.website_analysis.analysis.recent_news_or_updates) 
+                                ? lead.enriched_data.website_analysis.analysis.recent_news_or_updates 
+                                : [lead.enriched_data.website_analysis.analysis.recent_news_or_updates]
+                              ).filter(Boolean).map((news: string, index: number) => (
+                                <div key={index} className="flex items-start gap-3 p-3 bg-amber-500/5 rounded-lg border border-amber-500/10">
+                                  <div className="w-2 h-2 rounded-full bg-amber-400 mt-2 flex-shrink-0"></div>
+                                  <p className="text-gray-300 text-sm">{news}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Blog Topics Section */}
+                        {lead.enriched_data.website_analysis?.analysis?.blog_topics && 
+                         lead.enriched_data.website_analysis.analysis.blog_topics.length > 0 && (
+                          <div className="bg-white/5 rounded-xl p-5 border border-white/10 mt-4">
+                            <h4 className="font-semibold text-white mb-3 flex items-center">
+                              <div className="p-1.5 bg-fuchsia-500/20 rounded-lg mr-2">
+                                <Brain className="w-3.5 h-3.5 text-fuchsia-400" />
+                              </div>
+                              Blog Topics & Focus Areas
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {lead.enriched_data.website_analysis.analysis.blog_topics.map((topic: string, index: number) => (
+                                <Badge key={index} className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 text-xs font-medium">
+                                  {topic}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Contact & Company Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -800,6 +846,103 @@ export default function LeadDetailPage() {
                                       <Badge key={i} className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">{tech}</Badge>
                                     ))}
                                   </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Website Analysis Data */}
+                          {lead.enriched_data.website_analysis?.analysis && (
+                            <div className="bg-amber-500/10 rounded-xl p-5 border border-amber-500/20 mt-4">
+                              <h4 className="font-semibold text-white mb-4 flex items-center">
+                                <Globe className="w-4 h-4 mr-2 text-amber-400" />
+                                Website Intelligence
+                                <Badge className="ml-2 bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">
+                                  {lead.enriched_data.website_analysis.pages_scraped || 0} pages analyzed
+                                </Badge>
+                              </h4>
+                              
+                              {/* Company Description from website */}
+                              {lead.enriched_data.website_analysis.analysis.company_description && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Company Description:</p>
+                                  <p className="text-sm text-gray-300">{lead.enriched_data.website_analysis.analysis.company_description}</p>
+                                </div>
+                              )}
+                              
+                              {/* Value Proposition */}
+                              {lead.enriched_data.website_analysis.analysis.value_proposition && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Value Proposition:</p>
+                                  <p className="text-sm text-gray-300">{lead.enriched_data.website_analysis.analysis.value_proposition}</p>
+                                </div>
+                              )}
+                              
+                              {/* Recent News - Highlighted */}
+                              {lead.enriched_data.website_analysis.analysis.recent_news_or_updates && (
+                                <div className="mb-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                                  <p className="text-xs font-medium text-amber-400 mb-2 flex items-center">
+                                    <Megaphone className="w-3 h-3 mr-1" />
+                                    Recent News & Updates (Use for personalization!)
+                                  </p>
+                                  <div className="space-y-2">
+                                    {(Array.isArray(lead.enriched_data.website_analysis.analysis.recent_news_or_updates) 
+                                      ? lead.enriched_data.website_analysis.analysis.recent_news_or_updates 
+                                      : [lead.enriched_data.website_analysis.analysis.recent_news_or_updates]
+                                    ).filter(Boolean).map((news: string, i: number) => (
+                                      <div key={i} className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0"></div>
+                                        <p className="text-sm text-gray-300">{news}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Blog Topics */}
+                              {lead.enriched_data.website_analysis.analysis.blog_topics && 
+                               lead.enriched_data.website_analysis.analysis.blog_topics.length > 0 && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Blog Topics:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {lead.enriched_data.website_analysis.analysis.blog_topics.map((topic: string, i: number) => (
+                                      <Badge key={i} className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 text-xs">{topic}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Products/Services */}
+                              {lead.enriched_data.website_analysis.analysis.products_services && 
+                               lead.enriched_data.website_analysis.analysis.products_services.length > 0 && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Products & Services:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {lead.enriched_data.website_analysis.analysis.products_services.map((product: string, i: number) => (
+                                      <Badge key={i} className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs">{product}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Pain Points Solved */}
+                              {lead.enriched_data.website_analysis.analysis.pain_points_solved && 
+                               lead.enriched_data.website_analysis.analysis.pain_points_solved.length > 0 && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Pain Points They Solve:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {lead.enriched_data.website_analysis.analysis.pain_points_solved.map((pain: string, i: number) => (
+                                      <Badge key={i} className="bg-red-500/20 text-red-300 border-red-500/30 text-xs">{pain}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Target Customers */}
+                              {lead.enriched_data.website_analysis.analysis.target_customers && (
+                                <div className="mb-4">
+                                  <p className="text-xs font-medium text-gray-400 mb-2">Target Customers:</p>
+                                  <p className="text-sm text-gray-300">{lead.enriched_data.website_analysis.analysis.target_customers}</p>
                                 </div>
                               )}
                             </div>

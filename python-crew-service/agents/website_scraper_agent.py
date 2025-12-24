@@ -114,17 +114,28 @@ def find_key_pages(domain: str) -> List[str]:
     """Find key pages to scrape on a domain."""
     base_url = f"https://{domain}" if not domain.startswith('http') else domain
     
-    # Common important pages
+    # Common important pages - prioritized order
     key_paths = [
         "",  # Homepage
         "/about",
         "/about-us",
         "/company",
+        # News and blog pages for recent updates
+        "/blog",
+        "/news",
+        "/newsroom",
+        "/press",
+        "/press-releases",
+        "/announcements",
+        "/updates",
+        # Product/service pages
         "/services",
         "/products",
         "/solutions",
         "/what-we-do",
         "/our-story",
+        "/customers",
+        "/case-studies",
     ]
     
     urls = []
@@ -141,6 +152,10 @@ def scrape_website(domain: str) -> Dict[str, Any]:
     urls_to_try = find_key_pages(domain)
     scraped_pages = []
     successful_pages = 0
+    has_news_or_blog = False
+    
+    # News/blog paths to look for
+    news_paths = ['/blog', '/news', '/newsroom', '/press', '/press-releases', '/announcements', '/updates']
     
     for url in urls_to_try:
         print(f"  Scraping: {url}")
@@ -150,16 +165,24 @@ def scrape_website(domain: str) -> Dict[str, Any]:
             scraped_pages.append(result)
             successful_pages += 1
             print(f"    ✓ Success - {len(result['content'])} chars")
+            
+            # Check if this is a news/blog page
+            parsed_url = urlparse(url)
+            if any(news_path in parsed_url.path.lower() for news_path in news_paths):
+                has_news_or_blog = True
+                print(f"    📰 Found news/blog page!")
         else:
             print(f"    ✗ Failed - {result.get('error', 'No content')}")
         
-        # Stop after 3 successful pages to save time/tokens
-        if successful_pages >= 3:
+        # Stop after 4 successful pages, or 3 if we already have news/blog
+        # This ensures we try to get news content for personalization
+        if successful_pages >= 4 or (successful_pages >= 3 and has_news_or_blog):
             break
     
     return {
         "domain": domain,
         "pages_scraped": successful_pages,
+        "has_news_or_blog": has_news_or_blog,
         "pages": scraped_pages
     }
 
@@ -219,9 +242,17 @@ Extract and return a JSON object with:
     "key_differentiators": ["What makes them different from competitors"],
     "industry": "Primary industry they operate in",
     "company_size_indicators": "Any indicators of company size (team size, customers, etc.)",
-    "recent_news_or_updates": "Any recent announcements, news, or updates mentioned",
+    "recent_news_or_updates": ["List of recent announcements, news, blog posts, awards, partnerships, product launches, funding rounds, or company updates - PRIORITIZE THESE for email personalization hooks"],
+    "blog_topics": ["Key topics or themes from their blog/news section if available"],
     "tone_and_style": "The tone of their messaging (professional, casual, technical, etc.)"
 }}
+
+IMPORTANT: Pay special attention to /blog, /news, /press pages for recent updates. These are GOLD for email personalization - things like:
+- New product launches or features
+- Awards or recognition received
+- Partnerships or integrations announced
+- Funding rounds or company milestones
+- Recent blog posts showing their current focus areas
 
 Return ONLY valid JSON, no other text."""
 
