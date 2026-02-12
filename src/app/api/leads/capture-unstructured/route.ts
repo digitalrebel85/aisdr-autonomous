@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 
 /**
  * 🚀 AI-Powered Unstructured Lead Capture API
@@ -24,7 +24,7 @@ interface UnstructuredLeadInput {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
