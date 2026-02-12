@@ -12,7 +12,7 @@
  * - Trial expiration handling
  */
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 
 export interface TrialLimits {
   maxDays: number;
@@ -50,7 +50,7 @@ export const DEFAULT_TRIAL_LIMITS: TrialLimits = {
  * Initialize a new trial for a user
  */
 export async function initializeTrial(userId: string): Promise<UserTrial> {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   const startDate = new Date();
   const endDate = new Date();
@@ -87,7 +87,7 @@ export async function initializeTrial(userId: string): Promise<UserTrial> {
  * Get current trial status and usage for a user
  */
 export async function getTrialUsage(userId: string): Promise<TrialUsage> {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const { data: trial, error } = await supabase
     .from('user_trials')
@@ -163,7 +163,7 @@ export async function canSendEmail(userId: string): Promise<boolean> {
  * Increment lead enrichment count
  */
 export async function incrementLeadCount(userId: string, count: number = 1): Promise<void> {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const { error } = await supabase.rpc('increment_leads_enriched', {
     p_user_id: userId,
@@ -179,7 +179,7 @@ export async function incrementLeadCount(userId: string, count: number = 1): Pro
  * Increment email sent count
  */
 export async function incrementEmailCount(userId: string, count: number = 1): Promise<void> {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const { error } = await supabase.rpc('increment_emails_sent', {
     p_user_id: userId,
@@ -195,7 +195,7 @@ export async function incrementEmailCount(userId: string, count: number = 1): Pr
  * Convert trial to paid subscription
  */
 export async function convertTrialToPaid(userId: string, subscriptionTier: string): Promise<void> {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   // Update trial status
   await supabase

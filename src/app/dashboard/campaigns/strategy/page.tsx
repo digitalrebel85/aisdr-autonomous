@@ -15,7 +15,10 @@ import {
   Sparkles,
   Download,
   Lock,
-  Rocket
+  Rocket,
+  Search,
+  Filter,
+  CheckSquare
 } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -24,6 +27,18 @@ interface ICPProfile {
   name: string;
   description: string;
   leads_scored: number;
+}
+
+interface Lead {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company: string;
+  title: string;
+  icp_score: number;
+  lead_status: string;
+  enrichment_status: string;
 }
 
 interface Offer {
@@ -97,7 +112,7 @@ export default function CampaignStrategyWizard() {
   
   // Wizard Steps
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 6;
   
   // Form Data
   const [campaignName, setCampaignName] = useState('');
@@ -107,6 +122,13 @@ export default function CampaignStrategyWizard() {
   const [targetPersona, setTargetPersona] = useState('');
   const [offers, setOffers] = useState<Offer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<number | null>(null);
+  
+  // Lead Selection
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
+  const [leadSearchTerm, setLeadSearchTerm] = useState('');
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>('all');
+  const [icpScoreMin, setIcpScoreMin] = useState(0);
   
   // AI Recommendations
   const [aiRecommendations, setAiRecommendations] = useState<AIRecommendation | null>(null);
@@ -131,6 +153,7 @@ export default function CampaignStrategyWizard() {
   useEffect(() => {
     fetchICPProfiles();
     fetchOffers();
+    fetchLeads();
   }, []);
 
   const fetchICPProfiles = async () => {
@@ -139,7 +162,7 @@ export default function CampaignStrategyWizard() {
         .from('icp_profiles')
         .select('id, name, description, leads_scored')
         .eq('status', 'active')
-        .order('leads_scored', { ascending: false });
+        .order('name', { ascending: true });
 
       if (error) throw error;
       setIcpProfiles(data || []);
@@ -162,11 +185,60 @@ export default function CampaignStrategyWizard() {
         throw error;
       }
       
-      console.log('Fetched offers:', data);
-      console.log('Number of offers:', data?.length || 0);
       setOffers(data || []);
     } catch (err) {
       console.error('Error fetching offers:', err);
+    }
+  };
+
+  const fetchLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, first_name, last_name, email, company, title, icp_score, lead_status, enrichment_status')
+        .order('icp_score', { ascending: false });
+
+      if (error) throw error;
+      setAllLeads(data || []);
+    } catch (err) {
+      console.error('Error fetching leads:', err);
+    }
+  };
+
+  const filteredLeads = allLeads.filter(lead => {
+    if (leadSearchTerm) {
+      const search = leadSearchTerm.toLowerCase();
+      const matchesSearch = 
+        lead.first_name?.toLowerCase().includes(search) ||
+        lead.last_name?.toLowerCase().includes(search) ||
+        lead.email?.toLowerCase().includes(search) ||
+        lead.company?.toLowerCase().includes(search);
+      if (!matchesSearch) return false;
+    }
+    if (leadStatusFilter !== 'all') {
+      if (leadStatusFilter === 'new' && lead.lead_status !== 'new') return false;
+      if (leadStatusFilter === 'enriched' && lead.enrichment_status !== 'completed') return false;
+    }
+    if (lead.icp_score < icpScoreMin) return false;
+    if (['unsubscribed', 'spam_reported', 'do_not_contact', 'bounced'].includes(lead.lead_status)) return false;
+    return true;
+  });
+
+  const toggleLead = (leadId: number) => {
+    const newSelected = new Set(selectedLeads);
+    if (newSelected.has(leadId)) {
+      newSelected.delete(leadId);
+    } else {
+      newSelected.add(leadId);
+    }
+    setSelectedLeads(newSelected);
+  };
+
+  const toggleAllLeads = () => {
+    if (selectedLeads.size === filteredLeads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(filteredLeads.map(l => l.id)));
     }
   };
 
@@ -271,12 +343,14 @@ export default function CampaignStrategyWizard() {
       await getAIRecommendations();
     }
     
-    if (currentStep === 3 && !testStrategy) {
-      await getTestStrategy();
-    }
+    const shouldLoadTestStrategy = currentStep === 4 && !testStrategy;
     
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
+    }
+    
+    if (shouldLoadTestStrategy) {
+      getTestStrategy();
     }
   };
 
@@ -405,8 +479,8 @@ export default function CampaignStrategyWizard() {
             user_accepted: acceptedAIStrategy
           });
 
-        // Success! Redirect to campaign details
-        router.push(`/dashboard/campaigns/${campaign.id}`);
+        // Redirect to launch page to select leads and queue emails
+        router.push(`/dashboard/campaigns/launch/${campaign.id}`);
         
       } else {
         // Fallback to old flow if no test strategy
@@ -430,7 +504,7 @@ export default function CampaignStrategyWizard() {
 
         if (seqError) throw seqError;
 
-        router.push(`/dashboard/campaigns/sequences/${sequence.id}`);
+        router.push(`/dashboard/campaigns/launch/${sequence.id}`);
       }
       
     } catch (err) {
@@ -490,7 +564,7 @@ export default function CampaignStrategyWizard() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4, 5, 6].map((step) => (
               <div key={step} className="flex items-center flex-1">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold transition-all ${
                   currentStep >= step 
@@ -499,7 +573,7 @@ export default function CampaignStrategyWizard() {
                 }`}>
                   {currentStep > step ? <CheckCircle2 className="w-6 h-6" /> : step}
                 </div>
-                {step < 4 && (
+                {step < 6 && (
                   <div className={`flex-1 h-1 mx-2 rounded-full ${
                     currentStep > step ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-white/10'
                   }`} />
@@ -509,8 +583,10 @@ export default function CampaignStrategyWizard() {
           </div>
           <div className="flex justify-between text-xs text-gray-500">
             <span>Objective</span>
-            <span>AI Research</span>
+            <span>Research</span>
             <span>Framework</span>
+            <span>Leads</span>
+            <span>Testing</span>
             <span>Review</span>
           </div>
         </div>
@@ -573,7 +649,7 @@ export default function CampaignStrategyWizard() {
                   <option value="" className="bg-[#0a0a0f]">Select ICP profile...</option>
                   {icpProfiles.map((profile) => (
                     <option key={profile.id} value={profile.id} className="bg-[#0a0a0f]">
-                      {profile.name} ({profile.leads_scored} scored leads)
+                      {profile.name}{profile.leads_scored ? ` (${profile.leads_scored} scored leads)` : ''}
                     </option>
                   ))}
                 </select>
@@ -596,10 +672,6 @@ export default function CampaignStrategyWizard() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Select Offer <span className="text-red-400">*</span>
                 </label>
-                {/* Debug info */}
-                <div className="mb-2 text-xs text-gray-500">
-                  Debug: {offers.length} offers loaded
-                </div>
                 <select
                   value={selectedOffer || ''}
                   onChange={(e) => setSelectedOffer(Number(e.target.value) || null)}
@@ -834,8 +906,155 @@ export default function CampaignStrategyWizard() {
             </div>
           )}
 
-          {/* Step 4: AI Test Strategy */}
-          {currentStep === 4 && testStrategy && (
+          {/* Step 4: Select Leads */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="p-2 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-xl">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Select Leads</h2>
+                  <p className="text-gray-400">Choose which leads to include in this campaign</p>
+                </div>
+              </div>
+
+              {/* Search & Filters */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type="text"
+                    value={leadSearchTerm}
+                    onChange={(e) => setLeadSearchTerm(e.target.value)}
+                    placeholder="Search by name, email, or company..."
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  />
+                </div>
+                <select
+                  value={leadStatusFilter}
+                  onChange={(e) => setLeadStatusFilter(e.target.value)}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                >
+                  <option value="all" className="bg-[#0a0a0f]">All Leads</option>
+                  <option value="new" className="bg-[#0a0a0f]">New Only</option>
+                  <option value="enriched" className="bg-[#0a0a0f]">Enriched Only</option>
+                </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400 whitespace-nowrap">ICP {icpScoreMin}+</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={icpScoreMin}
+                    onChange={(e) => setIcpScoreMin(Number(e.target.value))}
+                    className="w-24 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                  />
+                </div>
+              </div>
+
+              {/* Selection Summary */}
+              <div className="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/10">
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
+                    onChange={toggleAllLeads}
+                    className="w-4 h-4 text-violet-600 border-white/20 rounded focus:ring-violet-500 bg-white/5"
+                  />
+                  <span className="text-sm font-medium text-gray-300">
+                    {selectedLeads.size} of {filteredLeads.length} leads selected
+                  </span>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {allLeads.length} total leads
+                </span>
+              </div>
+
+              {/* Leads Table */}
+              <div className="overflow-x-auto max-h-[400px] overflow-y-auto rounded-xl border border-white/10">
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="bg-white/5 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Select</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Lead</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Company</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">ICP Score</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredLeads.map((lead) => (
+                      <tr
+                        key={lead.id}
+                        className={`hover:bg-white/5 cursor-pointer transition-colors ${
+                          selectedLeads.has(lead.id) ? 'bg-violet-500/10' : ''
+                        }`}
+                        onClick={() => toggleLead(lead.id)}
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedLeads.has(lead.id)}
+                            onChange={() => toggleLead(lead.id)}
+                            className="w-4 h-4 text-violet-600 border-white/20 rounded focus:ring-violet-500 bg-white/5"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-white">
+                            {lead.first_name} {lead.last_name}
+                          </div>
+                          <div className="text-xs text-gray-500">{lead.email}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-white">{lead.company}</div>
+                          <div className="text-xs text-gray-500">{lead.title}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <TrendingUp className={`w-4 h-4 mr-1 ${
+                              lead.icp_score >= 80 ? 'text-emerald-400' :
+                              lead.icp_score >= 60 ? 'text-amber-400' :
+                              'text-gray-500'
+                            }`} />
+                            <span className="text-sm font-medium text-white">{lead.icp_score || 0}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            lead.enrichment_status === 'completed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                            'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                          }`}>
+                            {lead.enrichment_status || 'pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {filteredLeads.length === 0 && (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400">No eligible leads found</p>
+                    <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or import more leads</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedLeads.size > 0 && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-sm text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4 inline mr-2" />
+                    {selectedLeads.size} leads selected — approximately {selectedLeads.size * selectedTouches} emails will be generated
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 5: AI Test Strategy */}
+          {currentStep === 5 && testStrategy && (
             <div className="space-y-6">
               <div className="bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 p-6 rounded-xl border border-white/10">
                 <div className="flex items-start space-x-4">
@@ -939,7 +1158,7 @@ export default function CampaignStrategyWizard() {
           )}
 
           {/* Loading State for Test Strategy */}
-          {currentStep === 4 && isLoadingTestStrategy && (
+          {currentStep === 5 && isLoadingTestStrategy && (
             <div className="text-center py-12">
               <div className="relative w-16 h-16 mx-auto mb-4">
                 <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 animate-ping"></div>
@@ -949,8 +1168,8 @@ export default function CampaignStrategyWizard() {
             </div>
           )}
 
-          {/* Step 5: Review & Create */}
-          {currentStep === 5 && aiRecommendations && testStrategy && (
+          {/* Step 6: Review & Create */}
+          {currentStep === 6 && aiRecommendations && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Review Your Campaign</h2>
@@ -972,6 +1191,14 @@ export default function CampaignStrategyWizard() {
                     <div>
                       <dt className="text-sm text-gray-500">Target</dt>
                       <dd className="font-medium text-white">{targetPersona || 'General audience'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Selected Leads</dt>
+                      <dd className="font-medium text-white">{selectedLeads.size} leads</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Total Emails</dt>
+                      <dd className="font-medium text-white">{selectedLeads.size * selectedTouches}</dd>
                     </div>
                   </dl>
                 </div>
@@ -1003,7 +1230,7 @@ export default function CampaignStrategyWizard() {
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li className="flex items-start">
                     <span className="text-emerald-400 mr-2">1.</span>
-                    AI will generate {selectedTouches} personalized email templates
+                    AI will generate personalized emails for {selectedLeads.size} leads ({selectedLeads.size * selectedTouches} total emails)
                   </li>
                   <li className="flex items-start">
                     <span className="text-emerald-400 mr-2">2.</span>
@@ -1011,7 +1238,7 @@ export default function CampaignStrategyWizard() {
                   </li>
                   <li className="flex items-start">
                     <span className="text-emerald-400 mr-2">3.</span>
-                    Select leads and launch your campaign
+                    Campaign will be created and ready to launch
                   </li>
                 </ul>
               </div>
@@ -1039,7 +1266,7 @@ export default function CampaignStrategyWizard() {
           {currentStep < totalSteps ? (
             <button
               onClick={handleNext}
-              disabled={!campaignName || !objective || !selectedOffer}
+              disabled={!campaignName || !objective || !selectedOffer || (currentStep === 4 && selectedLeads.size === 0)}
               className="px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg shadow-violet-500/25 transition-all"
             >
               <span>Next</span>

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const leadsToInsert = leads.map(lead => {
       const fullName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim();
       
-      return {
+      const record: Record<string, any> = {
         user_id: user.id,
         name: fullName,
         first_name: lead.first_name || fullName.split(' ')[0] || '',
@@ -55,9 +55,17 @@ export async function POST(request: NextRequest) {
         location: lead.location || '',
         industry: lead.industry || '',
         company_size: lead.company_size || '',
+        company_domain: lead.company_domain || '',
         enrichment_status: 'pending',
         created_at: new Date().toISOString()
       };
+
+      // Pass through enriched_data if provided (e.g. from CSV custom fields)
+      if (lead.enriched_data) {
+        record.enriched_data = lead.enriched_data;
+      }
+
+      return record;
     }).filter(lead => lead.email && lead.name); // Filter out invalid leads
 
     if (leadsToInsert.length === 0) {
@@ -66,14 +74,45 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Insert leads in batches to avoid timeout
+    // De-duplicate within the batch itself (keep first occurrence)
+    const seenEmails = new Set<string>();
+    const uniqueLeads = leadsToInsert.filter(lead => {
+      const key = lead.email.toLowerCase();
+      if (seenEmails.has(key)) return false;
+      seenEmails.add(key);
+      return true;
+    });
+
+    // Check which emails already exist in the database for this user
+    const allEmails = uniqueLeads.map(l => l.email);
+    const { data: existingLeads } = await supabase
+      .from('leads')
+      .select('email')
+      .eq('user_id', user.id)
+      .in('email', allEmails);
+
+    const existingEmails = new Set((existingLeads || []).map(l => l.email.toLowerCase()));
+    const newLeads = uniqueLeads.filter(l => !existingEmails.has(l.email.toLowerCase()));
+    const duplicateCount = uniqueLeads.length - newLeads.length;
+
+    if (newLeads.length === 0) {
+      return NextResponse.json({ 
+        success: 0,
+        failed: 0,
+        duplicates: duplicateCount,
+        total: leads.length,
+        message: `All ${duplicateCount} leads already exist in your database.`
+      });
+    }
+
+    // Insert new leads in batches to avoid timeout
     const batchSize = 100;
     let successCount = 0;
     let failedCount = 0;
     const errors: string[] = [];
 
-    for (let i = 0; i < leadsToInsert.length; i += batchSize) {
-      const batch = leadsToInsert.slice(i, i + batchSize);
+    for (let i = 0; i < newLeads.length; i += batchSize) {
+      const batch = newLeads.slice(i, i + batchSize);
       
       const { data, error } = await supabase
         .from('leads')
@@ -92,6 +131,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: successCount,
       failed: failedCount,
+      duplicates: duplicateCount,
       total: leads.length,
       errors: errors.length > 0 ? errors : undefined,
       usage: {

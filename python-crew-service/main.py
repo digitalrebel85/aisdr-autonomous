@@ -277,8 +277,8 @@ async def analyze_reply(request: AnalysisRequest):
             print(f"--- No lead found for email: {request.sender_email}. Skipping analysis. ---")
             return {"status": "skipped", "reason": "No matching lead found"}
 
-        # 4. Create and run the Master Sales Crew to orchestrate a response
-        print(f"--- ORCHESTRATING RESPONSE FOR: {request.sender_email} ---")
+        # 4. Stage 1: Classify the reply using the Reply Crew
+        print(f"--- STAGE 1: CLASSIFYING REPLY FROM: {request.sender_email} ---")
         reply_crew = create_reply_crew(
             llm=llm,
             email_reply=reply_text,
@@ -287,20 +287,60 @@ async def analyze_reply(request: AnalysisRequest):
         )
         result = reply_crew.kickoff()
 
-        print(f"--- CREW RESULT ---\n{result.raw}")
+        print(f"--- CLASSIFICATION RESULT ---\n{result.raw}")
 
-        # The master agent's final output is a JSON string.
-        # We need to parse it to send it back as a proper JSON object.
+        # Parse classification result
         try:
             crew_output = json.loads(result.raw)
         except json.JSONDecodeError:
-            # Handle cases where the LLM doesn't return valid JSON
             crew_output = {
-                "drafted_reply": result.raw,
-                "agent_reasoning": "The agent did not return valid JSON. Raw output is provided as the draft."
+                "sentiment": "neutral",
+                "action": "reply",
+                "summary": result.raw[:200],
+                "nextStepPrompt": result.raw,
+                "agent_reasoning": "Classification did not return valid JSON."
             }
 
         crew_output['lead_id'] = lead_id
+
+        # 5. Stage 2: If reply is needed, generate a proper email using the Master Sales Crew
+        actions_needing_reply = ['reply', 'follow_up', 'schedule_call']
+        if crew_output.get('action') in actions_needing_reply:
+            print(f"--- STAGE 2: GENERATING REPLY EMAIL VIA MASTER SALES CREW ---")
+            try:
+                # Get company domain from lead data
+                company_domain = ""
+                if lead_res.data:
+                    company_domain = lead_res.data[0].get('company_domain', '') or lead_res.data[0].get('company', '')
+
+                master_crew = create_master_sales_crew(
+                    llm=llm,
+                    company_domain=company_domain,
+                    email_reply=reply_text,
+                    lead_context=lead_context,
+                    thread_history=str(thread_history)
+                )
+                master_result = master_crew.kickoff()
+                print(f"--- MASTER CREW RESULT ---\n{str(master_result.raw)[:500]}")
+
+                # Parse the master crew's drafted reply
+                try:
+                    master_output = json.loads(master_result.raw)
+                    if master_output.get('drafted_reply'):
+                        crew_output['nextStepPrompt'] = master_output['drafted_reply']
+                        crew_output['agent_reasoning'] = master_output.get('agent_reasoning', '')
+                        print("--- Using Master Sales Crew drafted reply ---")
+                except json.JSONDecodeError:
+                    # If master crew returns raw text, use it as the reply
+                    raw_reply = str(master_result.raw).strip()
+                    if len(raw_reply) > 50:  # Only use if substantial
+                        crew_output['nextStepPrompt'] = raw_reply
+                        print("--- Using Master Sales Crew raw output as reply ---")
+
+            except Exception as master_err:
+                print(f"--- Master Sales Crew failed, falling back to classifier reply: {master_err} ---")
+                # Fall back to the classifier's nextStepPrompt (better than nothing)
+
         return crew_output
 
     except Exception as e:
@@ -388,6 +428,46 @@ async def run_strategic_reflection(request: StrategicReflectionRequest):
         return StrategicReflectionResponse(recommendations=str(result))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Strategic reflection failed: {str(e)}")
+
+class StrategicReflectionByUserRequest(BaseModel):
+    user_id: str
+
+@app.post("/strategic-reflection")
+async def strategic_reflection_by_user(request: StrategicReflectionByUserRequest):
+    """
+    Run AI strategic reflection for a user. Uses the CampaignMetricsTool to auto-fetch
+    performance data from Supabase, then generates insights and recommendations.
+    Called by the daily performance loop cron.
+    """
+    try:
+        crew = create_strategic_reflection_crew(llm=llm, user_id=request.user_id)
+        result = crew.kickoff()
+        
+        # Try to parse JSON from result
+        raw = str(result)
+        start = raw.find('{')
+        end = raw.rfind('}') + 1
+        if start != -1 and end > start:
+            try:
+                import json as json_mod
+                parsed = json_mod.loads(raw[start:end])
+                return {
+                    "summary": parsed.get("summary", raw),
+                    "recommendations": parsed.get("recommendations", [])
+                }
+            except:
+                pass
+        
+        return {
+            "summary": raw[:500],
+            "recommendations": []
+        }
+    except Exception as e:
+        print(f"Strategic reflection error for user {request.user_id}: {e}")
+        return {
+            "summary": f"Reflection failed: {str(e)}",
+            "recommendations": []
+        }
 
 @app.post("/generate-strategic-followup")
 async def generate_strategic_followup_endpoint(request: StrategicFollowUpInput) -> StrategicFollowUpOutput:
@@ -654,7 +734,7 @@ async def analyze_website(request: WebsiteAnalysisRequest):
         print(f"Error during website analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Apollo Discovery
+# Apollo Discovery (legacy endpoint — kept for backward compatibility)
 from agents.apollo_discovery_agent import create_apollo_discovery_agent
 
 @app.post("/apollo/discover")
@@ -696,6 +776,189 @@ async def apollo_discover(request: dict):
             "leads": []
         }
 
+# Multi-provider lead discovery — uses whatever providers the user has configured
+from agents.lead_discovery_router import discover_leads_multi_provider
+
+@app.post("/discover-leads")
+async def discover_leads_endpoint(request: dict):
+    """Provider-agnostic lead discovery. Tries all available providers (Apollo, ZoomInfo, Icypeas, etc.)."""
+    try:
+        icp_criteria = request.get('icp_criteria', {})
+        max_results = request.get('max_results', 25)
+        api_keys = request.get('api_keys', {})
+        preferred_provider = request.get('preferred_provider')
+
+        # Also check for provider-specific headers (from autopilot cron)
+        # Merge env vars as fallbacks
+        env_providers = {
+            'apollo': os.getenv('APOLLO_API_KEY'),
+            'serper': os.getenv('SERPER_API_KEY'),
+        }
+        for provider, env_key in env_providers.items():
+            if env_key and provider not in api_keys:
+                api_keys[provider] = env_key
+
+        print(f"--- MULTI-PROVIDER LEAD DISCOVERY ---")
+        print(f"ICP Criteria: {icp_criteria}")
+        print(f"Available providers: {list(api_keys.keys())}")
+        print(f"Max Results: {max_results}")
+
+        result = discover_leads_multi_provider(
+            icp_criteria=icp_criteria,
+            api_keys=api_keys,
+            max_results=max_results,
+            preferred_provider=preferred_provider
+        )
+
+        result['discovery_timestamp'] = json.loads(json.dumps(datetime.now(), default=str))
+        result['icp_criteria_used'] = icp_criteria
+
+        print(f"--- DISCOVERY RESULT ---")
+        print(f"Success: {result.get('success')}")
+        print(f"Total: {result.get('total_discovered', 0)}")
+        print(f"Providers: {result.get('providers_used', {})}")
+
+        return result
+
+    except Exception as e:
+        print(f"Error during multi-provider discovery: {e}")
+        return {
+            "success": False,
+            "error": f"Lead discovery failed: {str(e)}",
+            "total_discovered": 0,
+            "leads": [],
+            "providers_tried": []
+        }
+
+# Learning Agent — analyzes angle performance, generates new angles, provides insights
+from agents.learning_agent import (
+    aggregate_angle_metrics,
+    calculate_angle_weights,
+    generate_new_angles_prompt,
+    generate_insights_prompt
+)
+
+@app.post("/learning-agent/analyze")
+async def learning_agent_analyze(request: dict):
+    """Aggregate angle metrics and return performance analysis for a user."""
+    try:
+        user_id = request.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id required")
+        
+        metrics = aggregate_angle_metrics(user_id)
+        weights = calculate_angle_weights(metrics)
+        
+        return {
+            "success": True,
+            "metrics": metrics,
+            "traffic_weights": weights
+        }
+    except Exception as e:
+        print(f"Learning agent analyze error: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/learning-agent/generate-angles")
+async def learning_agent_generate_angles(request: dict):
+    """Generate new test angles based on performance data using AI."""
+    try:
+        user_id = request.get('user_id')
+        icp_profile = request.get('icp_profile', {})
+        offer = request.get('offer', {})
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id required")
+        
+        # Get current metrics
+        metrics = aggregate_angle_metrics(user_id)
+        
+        if not metrics.get('has_data'):
+            return {
+                "success": True,
+                "angles": [],
+                "message": "Not enough data yet to generate optimized angles"
+            }
+        
+        # Build prompt and call LLM
+        prompt = generate_new_angles_prompt(metrics, icp_profile, offer)
+        
+        from langchain_openai import ChatOpenAI
+        gen_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+        response = gen_llm.invoke(prompt)
+        raw = response.content
+        
+        # Parse JSON from response
+        start = raw.find('[')
+        end = raw.rfind(']') + 1
+        new_angles = []
+        if start != -1 and end > start:
+            try:
+                new_angles = json.loads(raw[start:end])
+            except:
+                print(f"Failed to parse angle JSON: {raw[start:end][:200]}")
+        
+        return {
+            "success": True,
+            "angles": new_angles,
+            "based_on": {
+                "winners": len(metrics.get('winners', [])),
+                "losers": len(metrics.get('losers', [])),
+                "total_emails_analyzed": metrics.get('totals', {}).get('total_sent', 0)
+            }
+        }
+    except Exception as e:
+        print(f"Learning agent generate angles error: {e}")
+        return {"success": False, "error": str(e), "angles": []}
+
+@app.post("/learning-agent/insights")
+async def learning_agent_insights(request: dict):
+    """Generate strategic insights from angle performance data."""
+    try:
+        user_id = request.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id required")
+        
+        metrics = aggregate_angle_metrics(user_id)
+        
+        if not metrics.get('has_data'):
+            return {
+                "success": True,
+                "insights": {
+                    "key_finding": "Not enough data yet. Keep sending to build statistical significance.",
+                    "recommendations": ["Continue current angles until at least 30 emails per angle"],
+                    "confidence": "low"
+                }
+            }
+        
+        prompt = generate_insights_prompt(metrics)
+        
+        from langchain_openai import ChatOpenAI
+        insights_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+        response = insights_llm.invoke(prompt)
+        raw = response.content
+        
+        # Parse JSON
+        start = raw.find('{')
+        end = raw.rfind('}') + 1
+        insights = {}
+        if start != -1 and end > start:
+            try:
+                insights = json.loads(raw[start:end])
+            except:
+                insights = {"key_finding": raw[:500], "recommendations": [], "confidence": "low"}
+        
+        return {
+            "success": True,
+            "insights": insights,
+            "metrics_summary": metrics.get('averages', {}),
+            "angle_count": len(metrics.get('angles', [])),
+            "winners": len(metrics.get('winners', [])),
+            "losers": len(metrics.get('losers', []))
+        }
+    except Exception as e:
+        print(f"Learning agent insights error: {e}")
+        return {"success": False, "error": str(e)}
+
 # Sequence Orchestrator
 from agents.sequence_orchestrator_agent import (
     generate_complete_sequence,
@@ -721,8 +984,8 @@ async def generate_sequence(request: SequenceGenerationRequest):
         print(f"Sequence Type: {request.sequence_type}")
         print(f"Lead: {request.lead_email}")
         
-        # Generate complete sequence
-        sequence = await generate_complete_sequence(request)
+        # Generate complete sequence with the configured LLM
+        sequence = await generate_complete_sequence(request, llm=llm)
         
         print(f"--- SEQUENCE GENERATED ---")
         print(f"Total Steps: {len(sequence.steps)}")
@@ -734,6 +997,55 @@ async def generate_sequence(request: SequenceGenerationRequest):
     except Exception as e:
         print(f"Error generating sequence: {e}")
         raise HTTPException(status_code=500, detail=f"Sequence generation failed: {str(e)}")
+
+# --- Email QA Endpoint ---
+from agents.email_qa_agent import run_email_qa, QACheckResult
+
+class EmailQARequest(BaseModel):
+    subject: str
+    body: str
+    step_number: int = 1
+    lead_name: str = ""
+    company: str = ""
+    skip_ai_review: bool = False
+
+@app.post("/email-qa")
+async def email_qa_check(request: EmailQARequest):
+    """
+    Pre-send quality assurance check on AI-generated emails.
+    Stage 1: Deterministic rules (spam triggers, hallucinations, tone, formatting)
+    Stage 2: AI review (only if stage 1 passes)
+    Returns pass/fail with score, issues, warnings, and optional rewrites.
+    """
+    try:
+        result = run_email_qa(
+            subject=request.subject,
+            body=request.body,
+            step_number=request.step_number,
+            lead_name=request.lead_name,
+            company=request.company,
+            llm=llm,
+            skip_ai_review=request.skip_ai_review
+        )
+        return {
+            "passed": result.passed,
+            "score": result.score,
+            "issues": result.issues,
+            "warnings": result.warnings,
+            "rewritten_subject": result.rewritten_subject,
+            "rewritten_body": result.rewritten_body
+        }
+    except Exception as e:
+        print(f"Email QA error: {e}")
+        # On error, pass by default — don't block sends
+        return {
+            "passed": True,
+            "score": 70,
+            "issues": [],
+            "warnings": [f"QA check failed: {str(e)}"],
+            "rewritten_subject": None,
+            "rewritten_body": None
+        }
 
 @app.post("/enrich-pain-points", response_model=PainPointEnrichmentResponse)
 async def enrich_pain_points(request: PainPointEnrichmentRequest):

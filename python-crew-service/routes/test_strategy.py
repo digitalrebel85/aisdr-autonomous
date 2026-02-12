@@ -41,7 +41,7 @@ class Offer(BaseModel):
     name: str
     value_proposition: str
     call_to_action: str
-    sales_assets: List[str] = []  # Lead magnets
+    sales_assets: List[Any] = []  # Lead magnets - can be strings or {name, url, type} objects
     proof_points: List[str] = []  # Social proof
     benefits: List[str] = []
 
@@ -157,6 +157,14 @@ def analyze_available_assets(offer: Optional[Offer]) -> Dict[str, Any]:
             "benefit_count": 0
         }
     
+    # Extract lead magnet names (handle both string and {name, url, type} formats)
+    lead_magnet_names = []
+    for asset in offer.sales_assets:
+        if isinstance(asset, dict):
+            lead_magnet_names.append(asset.get('name', str(asset)))
+        else:
+            lead_magnet_names.append(str(asset))
+    
     return {
         "has_lead_magnets": len(offer.sales_assets) > 0,
         "has_proof_points": len(offer.proof_points) > 0,
@@ -164,7 +172,7 @@ def analyze_available_assets(offer: Optional[Offer]) -> Dict[str, Any]:
         "lead_magnet_count": len(offer.sales_assets),
         "proof_point_count": len(offer.proof_points),
         "benefit_count": len(offer.benefits),
-        "lead_magnets": offer.sales_assets,
+        "lead_magnets": lead_magnet_names,
         "proof_points": offer.proof_points,
         "benefits": offer.benefits
     }
@@ -394,14 +402,22 @@ def generate_variant_recommendations(
     
     if test_type == "lead_magnet" and offer and offer.sales_assets:
         # Create variant for each lead magnet
-        for i, magnet in enumerate(offer.sales_assets[:5]):  # Max 5 variants
+        for i, magnet_raw in enumerate(offer.sales_assets[:5]):  # Max 5 variants
+            # Handle both string and structured {name, url, type} formats
+            if isinstance(magnet_raw, dict):
+                magnet_name = magnet_raw.get('name', str(magnet_raw))
+                magnet_url = magnet_raw.get('url', '')
+            else:
+                magnet_name = str(magnet_raw)
+                magnet_url = ''
+            
             # Check historical performance
             expected_perf = 5.0  # Base expectation
-            reasoning = f"Testing '{magnet}' as primary CTA"
+            reasoning = f"Testing '{magnet_name}' as primary CTA"
             
             if historical["has_history"]:
                 for pattern in historical["patterns"]:
-                    if pattern["type"] == "lead_magnet" and pattern["element"] == magnet:
+                    if pattern["type"] == "lead_magnet" and pattern["element"] == magnet_name:
                         expected_perf = pattern["avg_performance"]
                         reasoning += f" - Previously achieved {expected_perf}% reply rate"
                         break
@@ -410,11 +426,15 @@ def generate_variant_recommendations(
                     if historical["avg_reply_rate"] > 0:
                         expected_perf = historical["avg_reply_rate"] * 0.9  # Slightly conservative
             
+            config = {"lead_magnet": magnet_name}
+            if magnet_url:
+                config["lead_magnet_url"] = magnet_url
+            
             variants.append(VariantRecommendation(
-                name=f"Variant {chr(65+i)} - {magnet}",
+                name=f"Variant {chr(65+i)} - {magnet_name}",
                 variant_letter=chr(65+i),
-                strategy=f"Lead with value proposition, offer {magnet}",
-                config={"lead_magnet": magnet},
+                strategy=f"Lead with value proposition, offer {magnet_name}",
+                config=config,
                 reasoning=reasoning,
                 expected_performance=round(expected_perf, 1)
             ))
@@ -551,12 +571,13 @@ async def generate_variant_emails(request: VariantGenerationRequest):
             
             # Determine what to emphasize based on variant config
             lead_magnet = variant.config.get('lead_magnet', request.offer.call_to_action if request.offer else '')
+            lead_magnet_url = variant.config.get('lead_magnet_url', '')
             proof_point = variant.config.get('proof_point', '')
             
-            # Build offer text based on variant
-            offer_text = f"{request.offer.value_proposition if request.offer else ''}"
+            # Build base offer text (without URL - URL added for touch 2+ only)
+            base_offer_text = f"{request.offer.value_proposition if request.offer else ''}"
             if lead_magnet:
-                offer_text += f" Get access to: {lead_magnet}"
+                base_offer_text += f" Get access to: {lead_magnet}"
             
             # Build hook snippet with proof point if available
             hook_snippet = proof_point if proof_point else ''
@@ -576,6 +597,11 @@ async def generate_variant_emails(request: VariantGenerationRequest):
             for touch_num in range(1, request.num_touches + 1):
                 try:
                     logger.info(f"Starting email generation for {variant.name}, touch {touch_num}")
+                    
+                    # Add lead magnet URL only for touch 2+ (never in first email)
+                    offer_text = base_offer_text
+                    if lead_magnet_url and touch_num > 1:
+                        offer_text += f" Link: {lead_magnet_url}"
                     
                     # Create email copywriter crew
                     email_crew = create_email_copywriter_crew(

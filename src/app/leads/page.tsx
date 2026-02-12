@@ -37,7 +37,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 
 interface Lead {
   id: string;
@@ -108,9 +108,9 @@ export default function LeadsPage() {
   const [csvMapping, setCsvMapping] = useState<Record<string, string>>({});
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const [csvUploadError, setCsvUploadError] = useState<string | null>(null);
-  const [csvUploadResult, setCsvUploadResult] = useState<{ success: number; failed: number } | null>(null);
+  const [csvUploadResult, setCsvUploadResult] = useState<{ success: number; failed: number; duplicates?: number } | null>(null);
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     fetchLeads();
@@ -285,65 +285,85 @@ export default function LeadsPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
+
+      // RFC 4180-compliant CSV parser: handles multi-line quoted fields
+      const parseCSV = (csv: string): string[][] => {
+        const rows: string[][] = [];
+        let row: string[] = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < csv.length; i++) {
+          const ch = csv[i];
+          const next = csv[i + 1];
+          if (inQuotes) {
+            if (ch === '"' && next === '"') {
+              cell += '"';
+              i++; // skip escaped quote
+            } else if (ch === '"') {
+              inQuotes = false;
+            } else {
+              cell += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ',') {
+              row.push(cell.trim());
+              cell = '';
+            } else if (ch === '\r' && next === '\n') {
+              row.push(cell.trim());
+              cell = '';
+              rows.push(row);
+              row = [];
+              i++; // skip \n
+            } else if (ch === '\n') {
+              row.push(cell.trim());
+              cell = '';
+              rows.push(row);
+              row = [];
+            } else {
+              cell += ch;
+            }
+          }
+        }
+        // push last cell / row
+        row.push(cell.trim());
+        if (row.some(c => c !== '')) rows.push(row);
+        return rows;
+      };
+
+      const allRows = parseCSV(text);
+      if (allRows.length < 2) {
         setCsvUploadError('CSV file must have at least a header row and one data row');
         return;
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      const data = lines.slice(1).map(line => {
-        // Handle quoted values with commas
-        const values: string[] = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (const char of line) {
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim());
-        
-        return values;
-      });
+      const headers = allRows[0];
+      // Filter out empty rows (fewer cells than headers or all cells empty)
+      const data = allRows.slice(1).filter(r => r.length >= headers.length && r.some(c => c !== ''));
 
       setCsvHeaders(headers);
       setCsvData(data);
       
-      // Auto-map common field names - matches leads table schema
+      // Auto-map only core lead fields — all other columns go to enriched_data automatically
       const autoMapping: Record<string, string> = {};
       const fieldMappings: Record<string, string[]> = {
-        // Required fields
-        first_name: ['first_name', 'firstname', 'first name', 'given name', 'first'],
-        last_name: ['last_name', 'lastname', 'last name', 'surname', 'family name', 'last'],
+        first_name: ['first_name', 'firstname', 'first name', 'given name', 'first', 'fname'],
+        last_name: ['last_name', 'lastname', 'last name', 'surname', 'family name', 'last', 'lname'],
         name: ['name', 'full name', 'fullname', 'contact name'],
-        email: ['email', 'email address', 'e-mail', 'email_address'],
-        company: ['company', 'company name', 'organization', 'org', 'company_name'],
-        // Optional fields from leads table
+        email: ['email', 'email address', 'e-mail', 'email_address', 'work email'],
+        company: ['company', 'company name', 'organization', 'org', 'company_name', 'cleaned company name', 'account name'],
         title: ['title', 'job title', 'position', 'role', 'job_title'],
-        phone: ['phone', 'phone number', 'telephone', 'mobile', 'phone_number', 'cell'],
-        linkedin_url: ['linkedin', 'linkedin_url', 'linkedin url', 'linkedin profile', 'linkedin_profile'],
-        location: ['location', 'address', 'full_address'],
-        city: ['city', 'town'],
-        country: ['country', 'nation'],
-        timezone: ['timezone', 'time zone', 'time_zone', 'tz'],
+        phone: ['phone', 'phone number', 'telephone', 'mobile', 'phone_number', 'cell', 'company phone number', 'direct phone'],
+        linkedin_url: ['linkedin', 'linkedin_url', 'linkedin url', 'linkedin profile', 'linkedin_profile', 'linkedin link', 'person linkedin url'],
+        location: ['location', 'address', 'full_address', 'company address'],
         industry: ['industry', 'sector', 'vertical'],
-        company_size: ['company_size', 'company size', 'employees', 'size', 'employee_count', 'headcount'],
-        // Additional context fields
-        pain_points: ['pain_points', 'pain points', 'challenges', 'problems'],
-        offer: ['offer', 'product', 'service', 'solution'],
-        cta: ['cta', 'call to action', 'call_to_action', 'next step']
+        company_size: ['company_size', 'company size', 'employees', 'size', 'employee_count', 'headcount', 'employee count', 'number of employees'],
+        company_domain: ['company_domain', 'domain', 'website', 'company website', 'company website full', 'company website short', 'url'],
       };
 
-      headers.forEach((header, index) => {
-        const headerLower = header.toLowerCase();
+      headers.forEach((header) => {
+        const headerLower = header.toLowerCase().trim();
         for (const [field, aliases] of Object.entries(fieldMappings)) {
           if (aliases.includes(headerLower)) {
             autoMapping[field] = header;
@@ -373,15 +393,60 @@ export default function LeadsPage() {
 
     try {
       const leadsToUpload = csvData.map(row => {
-        const lead: Record<string, string> = {};
+        const lead: Record<string, any> = {};
         
+        // Map only the core fields the user selected
         for (const [field, csvHeader] of Object.entries(csvMapping)) {
           const headerIndex = csvHeaders.indexOf(csvHeader);
-          if (headerIndex !== -1 && row[headerIndex]) {
-            lead[field] = row[headerIndex];
+          if (headerIndex === -1 || !row[headerIndex]) continue;
+          const value = row[headerIndex];
+
+          if (field === 'email') {
+            lead.email = value.toLowerCase().trim();
+          } else if (field === 'company_domain') {
+            lead.company_domain = value.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+          } else if (field === 'linkedin_url') {
+            lead.linkedin_url = value.startsWith('http') ? value : `https://${value}`;
+          } else {
+            lead[field] = value;
           }
         }
-        
+
+        // Build location from unmapped city/state/country columns if no location mapped
+        if (!lead.location) {
+          const cityAliases = ['lead city', 'city', 'company city'];
+          const stateAliases = ['lead state', 'state', 'company state'];
+          const countryAliases = ['lead country', 'country', 'company country'];
+          const findVal = (aliases: string[]) => {
+            for (const alias of aliases) {
+              const idx = csvHeaders.findIndex(h => h.toLowerCase().trim() === alias);
+              if (idx !== -1 && row[idx]) return row[idx];
+            }
+            return '';
+          };
+          const parts = [findVal(cityAliases), findVal(stateAliases), findVal(countryAliases)].filter(Boolean);
+          if (parts.length > 0) lead.location = parts.join(', ');
+        }
+
+        // Capture ALL unmapped columns into enriched_data
+        const mappedHeaders = new Set(Object.values(csvMapping));
+        const customFields: Record<string, string> = {};
+        csvHeaders.forEach((header, idx) => {
+          if (!mappedHeaders.has(header) && row[idx]) {
+            customFields[header.toLowerCase().trim().replace(/\s+/g, '_')] = row[idx];
+          }
+        });
+
+        if (Object.keys(customFields).length > 0) {
+          lead.enriched_data = {
+            csv_upload: {
+              source: 'csv_upload',
+              timestamp: new Date().toISOString(),
+              custom_fields: customFields
+            }
+          };
+        }
+
         return lead;
       }).filter(lead => {
         // Must have email and company
@@ -400,10 +465,16 @@ export default function LeadsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setCsvUploadResult({ success: data.success || leadsToUpload.length, failed: data.failed || 0 });
+        setCsvUploadResult({ 
+          success: data.success || 0, 
+          failed: data.failed || 0,
+          duplicates: data.duplicates || 0
+        });
         setCsvStep(3);
-        await fetchLeads();
-        await fetchStats();
+        if (data.success > 0) {
+          await fetchLeads();
+          await fetchStats();
+        }
       } else {
         setCsvUploadError(data.error || 'Failed to upload leads');
       }
@@ -1131,32 +1202,25 @@ export default function LeadsPage() {
                     <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
                       <p className="text-sm text-violet-300">
                         <strong className="text-white">{csvData.length}</strong> leads found in <strong className="text-white">{csvFile?.name}</strong>. 
-                        Map your CSV columns to lead fields below.
+                        Map your CSV columns to the core lead fields below. All other columns are automatically saved as enriched data.
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        // Required fields - either name OR first_name + last_name
-                        { key: 'name', label: 'Full Name', required: false, hint: 'Or use First + Last Name' },
+                        // Core lead fields only — everything else auto-stored in enriched_data
                         { key: 'first_name', label: 'First Name', required: false, hint: 'Required if no Full Name' },
                         { key: 'last_name', label: 'Last Name', required: false, hint: 'Required if no Full Name' },
+                        { key: 'name', label: 'Full Name', required: false, hint: 'Or use First + Last Name' },
                         { key: 'email', label: 'Email', required: true },
                         { key: 'company', label: 'Company', required: true },
-                        // Optional fields from leads table
                         { key: 'title', label: 'Job Title', required: false },
                         { key: 'phone', label: 'Phone', required: false },
                         { key: 'linkedin_url', label: 'LinkedIn URL', required: false },
+                        { key: 'company_domain', label: 'Company Website', required: false },
                         { key: 'location', label: 'Location', required: false },
-                        { key: 'city', label: 'City', required: false },
-                        { key: 'country', label: 'Country', required: false },
-                        { key: 'timezone', label: 'Timezone', required: false },
                         { key: 'industry', label: 'Industry', required: false },
                         { key: 'company_size', label: 'Company Size', required: false },
-                        // Context fields
-                        { key: 'pain_points', label: 'Pain Points', required: false },
-                        { key: 'offer', label: 'Offer/Product', required: false },
-                        { key: 'cta', label: 'Call to Action', required: false },
                       ].map(field => (
                         <div key={field.key}>
                           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1214,6 +1278,9 @@ export default function LeadsPage() {
                     <h3 className="text-xl font-bold text-white mb-2">Import Complete!</h3>
                     <p className="text-gray-400 mb-6">
                       Successfully imported <strong className="text-emerald-400">{csvUploadResult.success}</strong> leads
+                      {csvUploadResult.duplicates ? (
+                        <span className="text-yellow-400"> ({csvUploadResult.duplicates} skipped — already exist)</span>
+                      ) : null}
                       {csvUploadResult.failed > 0 && (
                         <span className="text-red-400"> ({csvUploadResult.failed} failed)</span>
                       )}

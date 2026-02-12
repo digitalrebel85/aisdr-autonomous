@@ -22,7 +22,18 @@ import {
   TrendingUp,
   MessageSquare,
   Activity,
-  CircuitBoard
+  CircuitBoard,
+  Search,
+  PenTool,
+  RefreshCw,
+  GitBranch,
+  Database,
+  Globe,
+  Cpu,
+  Eye,
+  Send,
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -131,6 +142,7 @@ export default function HomePage() {
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Link href="#features" className="text-gray-400 hover:text-white transition-colors">Features</Link>
+              <Link href="#agents" className="text-gray-400 hover:text-white transition-colors">AI Agents</Link>
               <Link href="#how-it-works" className="text-gray-400 hover:text-white transition-colors">How It Works</Link>
               <Link href="#testimonials" className="text-gray-400 hover:text-white transition-colors">Testimonials</Link>
               <Link href="/login" className="text-gray-400 hover:text-white transition-colors">Login</Link>
@@ -294,59 +306,448 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="relative py-32 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
+      {/* AI Agents Section */}
+      <section id="agents" className="relative py-32 bg-gradient-to-b from-transparent via-fuchsia-600/5 to-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-16">
+            <Badge className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 px-4 py-1">
+              <Cpu className="w-4 h-4 mr-2" />
+              Autonomous AI Agents
+            </Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold text-white">
+              Meet Your
+              <span className="bg-gradient-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent"> AI Sales Team</span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Six specialized AI agents work together autonomously to find, engage, and convert your ideal customers
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Lead Enrichment Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-violet-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-violet-600/10 rounded-full blur-2xl group-hover:bg-violet-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <Search className="w-6 h-6 text-violet-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors">Lead Enrichment Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-emerald-400">Always Active</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Enriches every lead with data from multiple providers — Apollo, PeopleDataLabs, Clearbit, Serper, and Hunter. Finds LinkedIn profiles, phone numbers, company details, and intent signals.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">Apollo</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">PDL</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">Clearbit</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">Serper</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">Hunter</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Company Profile Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-cyan-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full blur-2xl group-hover:bg-cyan-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-cyan-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-cyan-300 transition-colors">Company Profile Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-emerald-400">Always Active</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Deep-dives into every prospect's company — scrapes websites, analyzes tech stacks with BuiltWith, pulls Google Knowledge Graph data, and identifies value propositions and pain points.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">Web Scraping</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">BuiltWith</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">Google KG</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">Serper</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Email Copywriting Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-fuchsia-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-600/10 rounded-full blur-2xl group-hover:bg-fuchsia-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <PenTool className="w-6 h-6 text-fuchsia-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-fuchsia-300 transition-colors">Email Copywriting Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-emerald-400">Always Active</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Writes hyper-personalized emails using enriched lead data, company intelligence, and your messaging angles. Every email is unique — referencing specific pain points, tech stacks, and recent news.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/20">Personalization</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/20">A/B Angles</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/20">QA Check</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Reply Analysis Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-emerald-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/10 rounded-full blur-2xl group-hover:bg-emerald-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-emerald-300 transition-colors">Reply Analysis Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-emerald-400">Always Active</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Monitors your inbox in real-time. Classifies replies as interested, objection, question, or not interested. Auto-responds intelligently and escalates hot leads for meeting booking.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Sentiment</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Auto-Reply</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Escalation</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Learning & Optimization Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-amber-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl group-hover:bg-amber-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-amber-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-amber-300 transition-colors">Learning Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-amber-400">Runs Daily</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Analyzes campaign performance daily. Identifies winning messaging angles, pauses underperformers, generates new test angles, and shifts traffic to what works best. Your outreach gets smarter every day.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">A/B Testing</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">Auto-Optimize</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">Insights</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Send Time Optimization Agent */}
+            <div className="group relative bg-white/[0.02] rounded-2xl border border-white/5 p-6 hover:border-indigo-500/30 transition-all duration-300 hover:bg-white/[0.04] hover-lift overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl group-hover:bg-indigo-600/20 transition-all duration-500"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 p-0.5">
+                    <div className="w-full h-full bg-[#12121a] rounded-[10px] flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-indigo-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-indigo-300 transition-colors">Smart Scheduling Agent</h3>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-emerald-400">Always Active</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                  Learns the optimal send time for each timezone by tracking open rates. Schedules emails at proven high-engagement hours with human-like jitter to maximize deliverability and response rates.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Timezone-Aware</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Data-Driven</span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Anti-Spam</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works — Detailed Pipeline */}
+      <section id="how-it-works" className="relative py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-16">
             <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-4 py-1">
               <Rocket className="w-4 h-4 mr-2" />
-              Simple Process
+              The Autonomous Pipeline
             </Badge>
             <h2 className="text-4xl lg:text-5xl font-bold text-white">
               How ConnectLead
               <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent"> Works</span>
             </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              From lead import to booked meeting — fully autonomous, always learning
+            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="relative group">
-              <div className="absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-violet-500/50 to-transparent hidden md:block"></div>
-              <div className="text-center space-y-4">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 rounded-2xl border border-violet-500/30 flex items-center justify-center group-hover:scale-110 group-hover:border-violet-500/50 transition-all duration-300 animate-subtle-bounce" style={{animationDuration: '4s'}}>
-                  <Users className="w-10 h-10 text-violet-400" />
+
+          {/* Pipeline Steps */}
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-violet-500/50 via-fuchsia-500/50 to-cyan-500/50 hidden lg:block"></div>
+
+            <div className="space-y-12 lg:space-y-0">
+              {/* Step 1 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center lg:pb-16">
+                <div className="lg:text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 mb-4">
+                    <span className="text-xs font-bold text-violet-400">STEP 1</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">Import Your Leads</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Upload a CSV from Apollo, LinkedIn, or any source. Our smart parser handles messy data — multi-line fields, 
+                    50+ columns, any format. Core fields map automatically, and every extra column is preserved as enriched data for AI personalization.
+                  </p>
                 </div>
-                <div className="text-sm text-violet-400 font-medium">Step 1</div>
-                <h3 className="text-2xl font-semibold text-white group-hover:text-violet-300 transition-colors">Import & Enrich</h3>
-                <p className="text-gray-400">
-                  Upload your leads or connect your CRM. AI agents automatically enrich with company data, intent signals, and contact info.
-                </p>
+                <div className="hidden lg:flex justify-start">
+                  <div className="relative">
+                    <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <Database className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="ml-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span>39 leads parsed from Apollo CSV</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span>48 columns auto-mapped</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span>Extra data saved to enriched profile</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <div className="relative group">
-              <div className="absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-fuchsia-500/50 to-transparent hidden md:block"></div>
-              <div className="text-center space-y-4">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-fuchsia-600/20 to-pink-600/20 rounded-2xl border border-fuchsia-500/30 flex items-center justify-center group-hover:scale-110 group-hover:border-fuchsia-500/50 transition-all duration-300 animate-subtle-bounce" style={{animationDuration: '4s', animationDelay: '1s'}}>
-                  <Mail className="w-10 h-10 text-fuchsia-400" />
+
+              {/* Step 2 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center lg:pb-16">
+                <div className="hidden lg:flex justify-end">
+                  <div className="relative">
+                    <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-fuchsia-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <Search className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="mr-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="text-sm text-gray-300 font-medium mb-2">Enrichment Sources</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="px-2 py-0.5 text-xs rounded bg-violet-500/20 text-violet-300">Apollo</span>
+                        <span className="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300">PDL</span>
+                        <span className="px-2 py-0.5 text-xs rounded bg-cyan-500/20 text-cyan-300">Clearbit</span>
+                        <span className="px-2 py-0.5 text-xs rounded bg-emerald-500/20 text-emerald-300">Serper</span>
+                        <span className="px-2 py-0.5 text-xs rounded bg-amber-500/20 text-amber-300">BuiltWith</span>
+                        <span className="px-2 py-0.5 text-xs rounded bg-pink-500/20 text-pink-300">Hunter</span>
+                      </div>
+                      <div className="mt-3 text-xs text-gray-500">
+                        LinkedIn, phone, tech stack, company intel, intent signals
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-fuchsia-400 font-medium">Step 2</div>
-                <h3 className="text-2xl font-semibold text-white group-hover:text-fuchsia-300 transition-colors">AI Outreach</h3>
-                <p className="text-gray-400">
-                  AI writes hyper-personalized emails based on each prospect's company, role, and pain points. Every message is unique.
-                </p>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 mb-4">
+                    <span className="text-xs font-bold text-fuchsia-400">STEP 2</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">AI Enriches Every Lead</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Two AI agents work in tandem. The <strong className="text-violet-300">Lead Enrichment Agent</strong> pulls contact data from 5+ providers. 
+                    The <strong className="text-cyan-300">Company Profile Agent</strong> deep-dives into their business — tech stack, value proposition, recent news, and pain points.
+                  </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="relative group">
-              <div className="text-center space-y-4">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-2xl border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 group-hover:border-cyan-500/50 transition-all duration-300 animate-subtle-bounce" style={{animationDuration: '4s', animationDelay: '2s'}}>
-                  <Calendar className="w-10 h-10 text-cyan-400" />
+
+              {/* Step 3 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center lg:pb-16">
+                <div className="lg:text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 mb-4">
+                    <span className="text-xs font-bold text-pink-400">STEP 3</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">AI Writes Personalized Emails</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    The <strong className="text-fuchsia-300">Email Copywriting Agent</strong> crafts unique emails for each prospect using all enriched data — their role, 
+                    company's tech stack, pain points, and your messaging angles. A QA agent reviews every email before sending.
+                  </p>
                 </div>
-                <div className="text-sm text-cyan-400 font-medium">Step 3</div>
-                <h3 className="text-2xl font-semibold text-white group-hover:text-cyan-300 transition-colors">Book Meetings</h3>
-                <p className="text-gray-400">
-                  AI handles follow-ups, responds to replies, and books qualified meetings directly into your calendar.
-                </p>
+                <div className="hidden lg:flex justify-start">
+                  <div className="relative">
+                    <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-pink-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <PenTool className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="ml-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="text-sm text-gray-300 font-medium mb-2">Sample Personalization</div>
+                      <p className="text-xs text-gray-400 italic leading-relaxed">
+                        "Hi Sarah, I noticed TechCorp recently migrated to AWS and is scaling your React frontend. 
+                        Many VP Engineering leaders in SaaS face the same monitoring blind spots during cloud transitions..."
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center lg:pb-16">
+                <div className="hidden lg:flex justify-end">
+                  <div className="relative">
+                    <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <Send className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="mr-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="text-sm text-gray-300 font-medium mb-2">Smart Sending</div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Clock className="w-3 h-3 text-indigo-400" />
+                          <span>Optimal send time per timezone</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Shield className="w-3 h-3 text-emerald-400" />
+                          <span>Human-like delays between sends</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Layers className="w-3 h-3 text-amber-400" />
+                          <span>Multi-inbox rotation</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Eye className="w-3 h-3 text-cyan-400" />
+                          <span>Threaded conversations</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                    <span className="text-xs font-bold text-emerald-400">STEP 4</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">Autonomous Outreach & Follow-ups</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Emails send at the optimal time for each prospect's timezone. The <strong className="text-indigo-300">Smart Scheduling Agent</strong> learns 
+                    from open rates. Multi-inbox rotation and human-like delays keep deliverability high. Follow-ups adapt based on engagement.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center lg:pb-16">
+                <div className="lg:text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 mb-4">
+                    <span className="text-xs font-bold text-amber-400">STEP 5</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">AI Handles Replies & Books Meetings</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    The <strong className="text-emerald-300">Reply Analysis Agent</strong> reads every response, classifies intent, and responds intelligently. 
+                    Interested prospects get a booking link. Objections get handled. Unsubscribes are respected automatically.
+                  </p>
+                </div>
+                <div className="hidden lg:flex justify-start">
+                  <div className="relative">
+                    <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="ml-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="text-sm text-gray-300 font-medium mb-2">Reply Classification</div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Interested</span>
+                          <span className="text-gray-500">→ Send booking link</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">Question</span>
+                          <span className="text-gray-500">→ AI answers contextually</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">Objection</span>
+                          <span className="text-gray-500">→ AI handles objection</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">Unsubscribe</span>
+                          <span className="text-gray-500">→ Auto-suppressed</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 6 */}
+              <div className="relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+                <div className="hidden lg:flex justify-end">
+                  <div className="relative">
+                    <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-cyan-600 rounded-full flex items-center justify-center border-4 border-[#0a0a0f] z-10">
+                      <RefreshCw className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="mr-12 bg-white/[0.03] rounded-xl border border-white/5 p-4 max-w-sm">
+                      <div className="text-sm text-gray-300 font-medium mb-2">Continuous Improvement</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Angle A: "Cost savings"</span>
+                          <span className="text-emerald-400 font-medium">12% reply rate</span>
+                        </div>
+                        <div className="w-full bg-white/5 rounded-full h-1.5">
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{width: '60%'}}></div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Angle B: "Scaling pain"</span>
+                          <span className="text-amber-400 font-medium">8% reply rate</span>
+                        </div>
+                        <div className="w-full bg-white/5 rounded-full h-1.5">
+                          <div className="bg-amber-500 h-1.5 rounded-full" style={{width: '40%'}}></div>
+                        </div>
+                        <div className="text-xs text-violet-400 mt-1">AI shifting traffic to Angle A...</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
+                    <span className="text-xs font-bold text-cyan-400">STEP 6</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">System Gets Smarter Every Day</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    The <strong className="text-amber-300">Learning Agent</strong> runs daily — analyzing what messaging works, pausing underperformers, 
+                    generating new test angles, and shifting traffic to winners. Your outreach improves automatically without any manual intervention.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -464,20 +865,20 @@ export default function HomePage() {
               <ul className="space-y-2 text-gray-500">
                 <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-                <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
+                <li><Link href="/trust" className="hover:text-white transition-colors">Trust</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold text-white mb-4">Support</h4>
               <ul className="space-y-2 text-gray-500">
-                <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
-                <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
+                <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
+                <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/5 mt-8 pt-8 text-center text-gray-500">
-            <p>&copy; 2025 ConnectLead. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} ConnectLead. All rights reserved.</p>
           </div>
         </div>
       </footer>

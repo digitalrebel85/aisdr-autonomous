@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.inbox_daily_limits (
     inbox_id uuid REFERENCES public.connected_inboxes(id) ON DELETE CASCADE NOT NULL,
     date date NOT NULL,
     outreach_sent_count integer DEFAULT 0,
-    daily_limit integer DEFAULT 15,
+    daily_limit integer DEFAULT 20,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     
@@ -45,7 +45,7 @@ BEGIN
     
     -- Get or create today's record for this inbox
     INSERT INTO public.inbox_daily_limits (user_id, inbox_id, date, outreach_sent_count, daily_limit)
-    VALUES (p_user_id, p_inbox_id, today_date, 0, 15)
+    VALUES (p_user_id, p_inbox_id, today_date, 0, 20)
     ON CONFLICT (inbox_id, date) DO NOTHING;
     
     -- Get current count and limit
@@ -69,7 +69,7 @@ BEGIN
     
     -- Insert or update today's count
     INSERT INTO public.inbox_daily_limits (user_id, inbox_id, date, outreach_sent_count, daily_limit, updated_at)
-    VALUES (p_user_id, p_inbox_id, today_date, 1, 15, timezone('utc'::text, now()))
+    VALUES (p_user_id, p_inbox_id, today_date, 1, 20, timezone('utc'::text, now()))
     ON CONFLICT (inbox_id, date) 
     DO UPDATE SET 
         outreach_sent_count = inbox_daily_limits.outreach_sent_count + 1,
@@ -97,12 +97,12 @@ BEGIN
         ci.email_address,
         ci.grant_id,
         ci.provider,
-        COALESCE(15 - COALESCE(idl.outreach_sent_count, 0), 15) as remaining_sends
+        COALESCE(20 - COALESCE(idl.outreach_sent_count, 0), 20) as remaining_sends
     FROM public.connected_inboxes ci
     LEFT JOIN public.inbox_daily_limits idl ON (ci.id = idl.inbox_id AND idl.date = today_date)
     WHERE ci.user_id = p_user_id 
         AND ci.access_token IS NOT NULL
-        AND COALESCE(idl.outreach_sent_count, 0) < COALESCE(idl.daily_limit, 15)
+        AND COALESCE(idl.outreach_sent_count, 0) < COALESCE(idl.daily_limit, 20)
     ORDER BY COALESCE(idl.outreach_sent_count, 0) ASC; -- Prefer inboxes with fewer sends today
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { 
   Mail, 
   Sparkles, 
@@ -41,7 +41,7 @@ interface Sequence {
 export default function SequenceBuilderPage() {
   const router = useRouter();
   const params = useParams();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const sequenceId = params.id as string;
 
   const [sequence, setSequence] = useState<Sequence | null>(null);

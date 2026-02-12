@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,21 @@ import {
   X,
   Loader2,
   Check,
-  AlertCircle
+  AlertCircle,
+  Link2,
+  FileText,
+  Video,
+  Calculator,
+  BookOpen,
+  Presentation,
+  ExternalLink
 } from 'lucide-react';
+
+interface SalesAsset {
+  name: string;
+  url: string;
+  type: 'calculator' | 'report' | 'case_study' | 'checklist' | 'webinar' | 'video' | 'template' | 'audit' | 'other';
+}
 
 interface Offer {
   id: string;
@@ -34,7 +47,7 @@ interface Offer {
   pain_points: string[];
   benefits: string[];
   proof_points: string[];
-  sales_assets: string[];
+  sales_assets: SalesAsset[];
   email_example: string;
   excluded_terms: string[];
   created_at: string;
@@ -82,7 +95,7 @@ export default function OffersPage() {
     pain_points: '',
     benefits: '',
     proof_points: '',
-    sales_assets: ''
+    sales_assets: [] as SalesAsset[]
   });
   const [newOffer, setNewOffer] = useState({
     name: '',
@@ -93,10 +106,30 @@ export default function OffersPage() {
     pain_points: '',
     benefits: '',
     proof_points: '',
-    sales_assets: ''
+    sales_assets: [] as SalesAsset[]
   });
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
+
+  const normalizeSalesAssets = (assets: any): SalesAsset[] => {
+    if (!Array.isArray(assets)) return [];
+    return assets.map((a: any) => {
+      if (typeof a === 'string') return { name: a, url: '', type: 'other' as const };
+      return { name: a.name || '', url: a.url || '', type: a.type || 'other' };
+    });
+  };
+
+  const assetTypeOptions: { value: SalesAsset['type']; label: string; icon: any }[] = [
+    { value: 'calculator', label: 'ROI Calculator', icon: Calculator },
+    { value: 'report', label: 'Report / Guide', icon: FileText },
+    { value: 'case_study', label: 'Case Study', icon: BookOpen },
+    { value: 'checklist', label: 'Checklist / Playbook', icon: Check },
+    { value: 'webinar', label: 'Webinar', icon: Presentation },
+    { value: 'video', label: 'Video / Loom', icon: Video },
+    { value: 'template', label: 'Template / Tool', icon: FileText },
+    { value: 'audit', label: 'Free Audit', icon: Target },
+    { value: 'other', label: 'Other', icon: Link2 },
+  ];
 
   const openEditModal = (offer: Offer) => {
     setEditingOffer(offer);
@@ -109,7 +142,7 @@ export default function OffersPage() {
       pain_points: Array.isArray(offer.pain_points) ? offer.pain_points.join(', ') : '',
       benefits: Array.isArray(offer.benefits) ? offer.benefits.join(', ') : '',
       proof_points: Array.isArray(offer.proof_points) ? offer.proof_points.join(', ') : '',
-      sales_assets: Array.isArray(offer.sales_assets) ? offer.sales_assets.join(', ') : ''
+      sales_assets: normalizeSalesAssets(offer.sales_assets)
     });
     setUpdateOfferError(null);
   };
@@ -136,7 +169,7 @@ export default function OffersPage() {
           pain_points: editForm.pain_points ? editForm.pain_points.split(',').map(s => s.trim()).filter(Boolean) : [],
           benefits: editForm.benefits ? editForm.benefits.split(',').map(s => s.trim()).filter(Boolean) : [],
           proof_points: editForm.proof_points ? editForm.proof_points.split(',').map(s => s.trim()).filter(Boolean) : [],
-          sales_assets: editForm.sales_assets ? editForm.sales_assets.split(',').map(s => s.trim()).filter(Boolean) : [],
+          sales_assets: editForm.sales_assets.filter(a => a.name.trim()),
         }),
       });
 
@@ -178,7 +211,7 @@ export default function OffersPage() {
           pain_points: newOffer.pain_points ? newOffer.pain_points.split(',').map(s => s.trim()).filter(Boolean) : [],
           benefits: newOffer.benefits ? newOffer.benefits.split(',').map(s => s.trim()).filter(Boolean) : [],
           proof_points: newOffer.proof_points ? newOffer.proof_points.split(',').map(s => s.trim()).filter(Boolean) : [],
-          sales_assets: newOffer.sales_assets ? newOffer.sales_assets.split(',').map(s => s.trim()).filter(Boolean) : [],
+          sales_assets: newOffer.sales_assets.filter(a => a.name.trim()),
         }),
       });
 
@@ -197,7 +230,7 @@ export default function OffersPage() {
           pain_points: '',
           benefits: '',
           proof_points: '',
-          sales_assets: ''
+          sales_assets: []
         });
       } else {
         setCreateOfferError(data.error || 'Failed to create offer');
@@ -235,7 +268,7 @@ export default function OffersPage() {
           pain_points: Array.isArray(offer.pain_points) ? offer.pain_points : [],
           benefits: Array.isArray(offer.benefits) ? offer.benefits : [],
           proof_points: Array.isArray(offer.proof_points) ? offer.proof_points : [],
-          sales_assets: Array.isArray(offer.sales_assets) ? offer.sales_assets : [],
+          sales_assets: normalizeSalesAssets(offer.sales_assets),
           email_example: offer.email_example || '',
           excluded_terms: offer.excluded_terms || [],
           created_at: offer.created_at,
@@ -402,12 +435,38 @@ export default function OffersPage() {
                     )}
 
                     {/* AI Strategy Fields */}
-                    {(offer.pain_points?.length > 0 || offer.benefits?.length > 0 || offer.proof_points?.length > 0) && (
+                    {(offer.pain_points?.length > 0 || offer.benefits?.length > 0 || offer.proof_points?.length > 0 || offer.sales_assets?.length > 0) && (
                       <div className="pt-4 border-t border-white/5 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
                           <Sparkles className="w-4 h-4 text-amber-400" />
                           AI Strategy Data
                         </div>
+
+                        {offer.sales_assets?.length > 0 && (
+                          <div>
+                            <span className="text-xs font-medium text-orange-400 uppercase">Lead Magnets</span>
+                            <div className="space-y-1 mt-1">
+                              {offer.sales_assets.slice(0, 3).map((asset, i) => {
+                                const typeOpt = assetTypeOptions.find(t => t.value === asset.type);
+                                const TypeIcon = typeOpt?.icon || Link2;
+                                return (
+                                  <div key={i} className="flex items-center gap-2 text-xs">
+                                    <TypeIcon className="w-3 h-3 text-orange-400 flex-shrink-0" />
+                                    <span className="text-orange-200 truncate">{asset.name}</span>
+                                    {asset.url && (
+                                      <a href={asset.url} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 flex-shrink-0">
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {offer.sales_assets.length > 3 && (
+                                <span className="text-xs text-orange-400/60">+{offer.sales_assets.length - 3} more</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                         
                         {offer.pain_points?.length > 0 && (
                           <div>
@@ -816,18 +875,77 @@ export default function OffersPage() {
                     />
                   </div>
 
-                  {/* Sales Assets / Lead Magnets */}
+                  {/* Lead Magnets / Sales Assets - Structured */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lead Magnets / Sales Assets <span className="text-gray-400">(value offers)</span>
+                      Lead Magnets / Sales Assets <span className="text-gray-400">(AI will include links in emails)</span>
                     </label>
-                    <textarea
-                      value={newOffer.sales_assets}
-                      onChange={(e) => setNewOffer({ ...newOffer, sales_assets: e.target.value })}
-                      placeholder="e.g., Free ROI Calculator, Industry Benchmark Report, Strategy Session, Product Demo (comma separated)"
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="space-y-3">
+                      {newOffer.sales_assets.map((asset, idx) => (
+                        <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex-1 space-y-2">
+                            <input
+                              type="text"
+                              value={asset.name}
+                              onChange={(e) => {
+                                const updated = [...newOffer.sales_assets];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                setNewOffer({ ...newOffer, sales_assets: updated });
+                              }}
+                              placeholder="e.g., Free ROI Calculator"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={asset.url}
+                                onChange={(e) => {
+                                  const updated = [...newOffer.sales_assets];
+                                  updated[idx] = { ...updated[idx], url: e.target.value };
+                                  setNewOffer({ ...newOffer, sales_assets: updated });
+                                }}
+                                placeholder="https://yoursite.com/resource"
+                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <select
+                                value={asset.type}
+                                onChange={(e) => {
+                                  const updated = [...newOffer.sales_assets];
+                                  updated[idx] = { ...updated[idx], type: e.target.value as SalesAsset['type'] };
+                                  setNewOffer({ ...newOffer, sales_assets: updated });
+                                }}
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                              >
+                                {assetTypeOptions.map(opt => (
+                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = newOffer.sales_assets.filter((_, i) => i !== idx);
+                              setNewOffer({ ...newOffer, sales_assets: updated });
+                            }}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg mt-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setNewOffer({
+                          ...newOffer,
+                          sales_assets: [...newOffer.sales_assets, { name: '', url: '', type: 'other' }]
+                        })}
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Lead Magnet
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -967,14 +1085,28 @@ export default function OffersPage() {
                   {viewingOffer.sales_assets?.length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium text-orange-600 uppercase mb-2">Lead Magnets / Sales Assets</h4>
-                      <ul className="space-y-1">
-                        {viewingOffer.sales_assets.map((asset, i) => (
-                          <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                            <span className="text-orange-500 mt-0.5">•</span>
-                            {asset}
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="space-y-2">
+                        {viewingOffer.sales_assets.map((asset, i) => {
+                          const typeOpt = assetTypeOptions.find(t => t.value === asset.type);
+                          const TypeIcon = typeOpt?.icon || Link2;
+                          return (
+                            <div key={i} className="flex items-center gap-3 p-2 bg-orange-50 rounded-lg border border-orange-200">
+                              <TypeIcon className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-800">{asset.name}</div>
+                                {asset.url && (
+                                  <a href={asset.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-700 truncate block">
+                                    {asset.url}
+                                  </a>
+                                )}
+                              </div>
+                              <Badge className="text-xs bg-orange-100 text-orange-600 border-orange-200 capitalize flex-shrink-0">
+                                {typeOpt?.label || asset.type}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -1129,17 +1261,77 @@ export default function OffersPage() {
                     />
                   </div>
 
-                  {/* Sales Assets */}
+                  {/* Lead Magnets / Sales Assets - Structured */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lead Magnets / Sales Assets <span className="text-gray-400">(comma separated)</span>
+                      Lead Magnets / Sales Assets <span className="text-gray-400">(AI will include links in emails)</span>
                     </label>
-                    <textarea
-                      value={editForm.sales_assets}
-                      onChange={(e) => setEditForm({ ...editForm, sales_assets: e.target.value })}
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="space-y-3">
+                      {editForm.sales_assets.map((asset, idx) => (
+                        <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex-1 space-y-2">
+                            <input
+                              type="text"
+                              value={asset.name}
+                              onChange={(e) => {
+                                const updated = [...editForm.sales_assets];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                setEditForm({ ...editForm, sales_assets: updated });
+                              }}
+                              placeholder="e.g., Free ROI Calculator"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={asset.url}
+                                onChange={(e) => {
+                                  const updated = [...editForm.sales_assets];
+                                  updated[idx] = { ...updated[idx], url: e.target.value };
+                                  setEditForm({ ...editForm, sales_assets: updated });
+                                }}
+                                placeholder="https://yoursite.com/resource"
+                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <select
+                                value={asset.type}
+                                onChange={(e) => {
+                                  const updated = [...editForm.sales_assets];
+                                  updated[idx] = { ...updated[idx], type: e.target.value as SalesAsset['type'] };
+                                  setEditForm({ ...editForm, sales_assets: updated });
+                                }}
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                              >
+                                {assetTypeOptions.map(opt => (
+                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = editForm.sales_assets.filter((_, i) => i !== idx);
+                              setEditForm({ ...editForm, sales_assets: updated });
+                            }}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg mt-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setEditForm({
+                          ...editForm,
+                          sales_assets: [...editForm.sales_assets, { name: '', url: '', type: 'other' }]
+                        })}
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Lead Magnet
+                      </button>
+                    </div>
                   </div>
                 </div>
 

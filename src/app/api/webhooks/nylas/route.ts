@@ -342,6 +342,29 @@ async function processEvent(delta: any, supabase: any) {
           console.log('STEP 12 SUCCESS: Lead engagement updated.');
         }
 
+        // STEP 12b: Detect unsubscribe intent and suppress email
+        const messageBody = (messageDetails.data.body || messageDetails.data.snippet || '').toLowerCase();
+        const unsubKeywords = ['unsubscribe', 'remove me', 'stop emailing', 'opt out', 'opt-out', 'take me off', 'do not contact', 'don\'t contact', 'stop contacting', 'remove from list', 'no longer interested'];
+        const isUnsubscribe = analysis.action === 'unsubscribe' || unsubKeywords.some(kw => messageBody.includes(kw));
+
+        if (isUnsubscribe && analysis.lead_id) {
+          console.log(`STEP 12b: Unsubscribe detected from ${senderEmail}. Suppressing.`);
+          await supabase.rpc('suppress_email', {
+            p_user_id: inboxData.user_id,
+            p_email: senderEmail,
+            p_reason: 'unsubscribed',
+            p_source: 'reply',
+            p_lead_id: analysis.lead_id,
+            p_campaign_id: originalCampaignId
+          }).catch((err: any) => console.warn('suppress_email RPC failed:', err));
+
+          // Don't send an automated reply to unsubscribe requests
+          console.log('STEP 12b: Skipping auto-reply — lead has unsubscribed.');
+          // Organize the email and return early
+          try { await organizeProcessedEmail(grant_id, message_id); } catch {}
+          return;
+        }
+
         // STEP 13: Send automatic AI-generated reply if action requires it
         // NOTE: This only executes for emails from known leads that require AI responses
         // Regular emails (newsletters, notifications, etc.) are never processed here
@@ -349,6 +372,36 @@ async function processEvent(delta: any, supabase: any) {
         if (actionsRequiringReply.includes(analysis.action)) {
           console.log('STEP 13: Sending AI-generated reply...');
           try {
+            let replyBody = analysis.nextStepPrompt;
+
+            // If booking intent detected, append the user's calendar link
+            if (analysis.action === 'schedule_call') {
+              try {
+                const { data: autopilotSettings } = await supabase
+                  .from('autopilot_settings')
+                  .select('booking_link, auto_send_booking_link')
+                  .eq('user_id', inboxData.user_id)
+                  .single();
+
+                if (autopilotSettings?.booking_link && autopilotSettings?.auto_send_booking_link) {
+                  const bookingLink = autopilotSettings.booking_link;
+                  replyBody += `\n\nHere's a link to grab a time that works for you: ${bookingLink}`;
+                  console.log('STEP 13a: Appended booking link to reply');
+
+                  // Update lead status to meeting_booked intent
+                  await supabase
+                    .from('leads')
+                    .update({ lead_status: 'meeting_booked' })
+                    .eq('id', analysis.lead_id);
+
+                  // Increment autopilot meetings counter
+                  await supabase.rpc('increment_autopilot_meetings', { p_user_id: inboxData.user_id }).catch(() => {});
+                }
+              } catch (bookingErr) {
+                console.warn('STEP 13a: Failed to fetch booking link, proceeding without:', bookingErr);
+              }
+            }
+
             const replySubject = `Re: ${messageDetails.data.subject || 'Your inquiry'}`;
             const sendEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-automated-reply`, {
               method: 'POST',
@@ -358,7 +411,7 @@ async function processEvent(delta: any, supabase: any) {
               body: JSON.stringify({
                 to: senderEmail,
                 subject: replySubject,
-                body: analysis.nextStepPrompt,
+                body: replyBody,
                 sender_email: inboxData.email_address,
                 lead_id: analysis.lead_id,
                 user_id: inboxData.user_id,
@@ -425,9 +478,31 @@ async function processEvent(delta: any, supabase: any) {
 
       if (eventInsertError) {
         console.error(`Failed to insert email event for message_id ${message_id}:`, eventInsertError);
-        // Don't throw an error, just log and continue
       } else {
         console.log(`Successfully logged '${event_type}' event for message_id ${message_id}.`);
+      }
+
+      // Record open event for send time optimization
+      if (event_type === 'opened') {
+        try {
+          // Get lead timezone and sent_at for the original email
+          const { data: sentDetails } = await supabase
+            .from('sent_emails')
+            .select('sent_at, leads!inner(timezone)')
+            .eq('message_id', message_id)
+            .single();
+
+          if (sentDetails?.sent_at) {
+            const leadTz = (sentDetails as any).leads?.timezone || 'America/New_York';
+            await supabase.rpc('record_open_event', {
+              p_user_id: sentEmail.user_id,
+              p_timezone: leadTz,
+              p_sent_at: sentDetails.sent_at
+            });
+          }
+        } catch (openStatErr) {
+          console.warn('Failed to record open event for send time optimization:', openStatErr);
+        }
       }
     }
   } catch (error) {

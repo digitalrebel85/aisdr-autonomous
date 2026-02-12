@@ -300,6 +300,10 @@ export default function ICPPage() {
         employee_count_max: formData.employee_count_max ? parseInt(formData.employee_count_max) : null,
         revenue_min: formData.revenue_min ? parseInt(formData.revenue_min) : null,
         revenue_max: formData.revenue_max ? parseInt(formData.revenue_max) : null,
+        yearly_headcount_growth_min: formData.yearly_headcount_growth_min ? parseFloat(formData.yearly_headcount_growth_min) : null,
+        yearly_headcount_growth_max: formData.yearly_headcount_growth_max ? parseFloat(formData.yearly_headcount_growth_max) : null,
+        funding_amount_min: formData.funding_amount_min ? parseInt(formData.funding_amount_min) : null,
+        funding_amount_max: formData.funding_amount_max ? parseInt(formData.funding_amount_max) : null,
       };
 
       const url = editingProfile ? `/api/icp/${editingProfile.id}` : '/api/icp';
@@ -314,9 +318,14 @@ export default function ICPPage() {
       if (response.ok) {
         await fetchICPProfiles();
         resetForm();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error saving ICP profile:', errorData);
+        alert(`Failed to ${editingProfile ? 'update' : 'create'} profile: ${errorData.error || response.statusText}`);
       }
     } catch (error) {
       console.error('Error saving ICP profile:', error);
+      alert('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -402,6 +411,33 @@ export default function ICPPage() {
     });
     setEditingProfile(profile);
     setShowCreateForm(true);
+  };
+
+  const handleToggleStatus = async (profile: ICPProfile) => {
+    const statusCycle: Record<string, 'active' | 'draft' | 'archived'> = {
+      draft: 'active',
+      active: 'archived',
+      archived: 'draft'
+    };
+    const newStatus = statusCycle[profile.status] || 'active';
+    
+    try {
+      const { error } = await supabase
+        .from('icp_profiles')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', profile.id);
+      
+      if (error) {
+        console.error('Error updating status:', error);
+        return;
+      }
+      
+      setIcpProfiles(prev => prev.map(p => 
+        p.id === profile.id ? { ...p, status: newStatus } : p
+      ));
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -823,9 +859,21 @@ export default function ICPPage() {
                   <h3 className="text-lg font-semibold text-white">{profile.name}</h3>
                   <p className="text-sm text-gray-400 mt-1">{profile.description}</p>
                 </div>
-                <Badge className={profile.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-gray-500/20 text-gray-400 border-gray-500/30'}>
-                  {profile.status}
-                </Badge>
+                <button
+                  onClick={() => handleToggleStatus(profile)}
+                  title={`Click to change status (current: ${profile.status})`}
+                  className="transition-all hover:scale-105"
+                >
+                  <Badge className={
+                    profile.status === 'active' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-pointer hover:bg-emerald-500/30' 
+                      : profile.status === 'draft'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 cursor-pointer hover:bg-amber-500/30'
+                        : 'bg-gray-500/20 text-gray-400 border-gray-500/30 cursor-pointer hover:bg-gray-500/30'
+                  }>
+                    {profile.status}
+                  </Badge>
+                </button>
               </div>
               
               <div className="space-y-3">
@@ -901,41 +949,42 @@ export default function ICPPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                  <div className="flex items-center space-x-2">
-                    <Link href={`/icp/${profile.id}/angles`}>
+                <div className="pt-4 border-t border-white/5 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <Link href={`/icp/${profile.id}/angles`} className="w-full">
                       <Button 
                         size="sm" 
-                        className="bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30 hover:bg-fuchsia-500/30"
+                        className="w-full bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30 hover:bg-fuchsia-500/30 text-xs px-2"
                       >
-                        <Lightbulb className="w-4 h-4 mr-1" />
+                        <Lightbulb className="w-3.5 h-3.5 mr-1 shrink-0" />
                         Angles
                       </Button>
                     </Link>
                     <Button 
                       size="sm" 
-                      className="bg-violet-500/20 text-violet-400 border-violet-500/30 hover:bg-violet-500/30"
+                      className="w-full bg-violet-500/20 text-violet-400 border-violet-500/30 hover:bg-violet-500/30 text-xs px-2"
                       onClick={() => handleEdit(profile)}
                     >
-                      <Edit className="w-4 h-4 mr-1" />
+                      <Edit className="w-3.5 h-3.5 mr-1 shrink-0" />
                       Edit
                     </Button>
                     <Button 
                       size="sm" 
-                      className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
-                      onClick={() => handleScoreLeads(profile)}
-                      disabled={loading}
+                      className="w-full bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30 text-xs px-2"
+                      onClick={() => handleDelete(profile.id)}
                     >
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                      Score Leads
+                      <Trash2 className="w-3.5 h-3.5 mr-1 shrink-0" />
+                      Delete
                     </Button>
                   </div>
                   <Button 
                     size="sm" 
-                    className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
-                    onClick={() => handleDelete(profile.id)}
+                    className="w-full bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
+                    onClick={() => handleScoreLeads(profile)}
+                    disabled={loading}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    Score Leads
                   </Button>
                 </div>
               </div>

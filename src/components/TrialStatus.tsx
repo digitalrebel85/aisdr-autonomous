@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getTrialUsage, calculateTrialProgress, getTrialExpirationMessage, type TrialUsage } from '@/lib/trial';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 
 export default function TrialStatus() {
   const [usage, setUsage] = useState<TrialUsage | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     fetchTrialStatus();

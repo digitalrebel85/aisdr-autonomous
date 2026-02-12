@@ -261,6 +261,26 @@ class EmailCopywritingTask():
                 if isinstance(excluded_terms_list, list) and excluded_terms_list:
                     rpic_excluded_terms = ', '.join(excluded_terms_list)
                 
+                # Lead magnets / sales assets with URLs
+                sales_assets = lead_data.get('sales_assets', [])
+                if isinstance(sales_assets, list) and sales_assets:
+                    asset_parts = []
+                    for asset in sales_assets:
+                        if isinstance(asset, dict) and asset.get('name'):
+                            url_part = f" → {asset['url']}" if asset.get('url') else ""
+                            type_part = f" ({asset.get('type', 'resource')})" if asset.get('type') else ""
+                            asset_parts.append(f"{asset['name']}{type_part}{url_part}")
+                        elif isinstance(asset, str) and asset:
+                            asset_parts.append(asset)
+                    if asset_parts:
+                        context_parts.append(f"\n📎 LEAD MAGNETS (offer one of these as value-add):")
+                        for ap in asset_parts:
+                            context_parts.append(f"  • {ap}")
+                        if step_number == 1:
+                            context_parts.append("RULE: This is the FIRST email. Do NOT include any links or URLs. Just mention the lead magnet by name and offer to send it. E.g., 'I put together a quick [name] for teams like yours — want me to send it over?'")
+                        else:
+                            context_parts.append("TIP: Include the actual link in the email. E.g., 'Here's the [name] I mentioned: [url]'")
+                
                 # === LEAD INTELLIGENCE FOR PERSONALIZATION ===
                 
                 if lead_data.get('industry'):

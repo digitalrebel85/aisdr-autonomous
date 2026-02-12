@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       to: [{ email: recipientEmail }],
       subject: subject,
       body: body,
-      tracking: { opens: true, bounces: true },
+      tracking: { opens: false, links: false, thread_replies: true },
     };
 
     const nylasResponse = await fetch(nylasApiUrl, {

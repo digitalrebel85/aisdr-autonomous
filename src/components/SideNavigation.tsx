@@ -62,6 +62,7 @@ const navigation: NavigationItem[] = [
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     children: [
       { name: 'All Campaigns', href: '/dashboard/campaigns', icon: Rocket },
+      { name: 'AI Agent', href: '/dashboard/campaigns/agent', icon: Bot },
       { name: 'AI Strategy', href: '/dashboard/campaigns/strategy', icon: Sparkles },
     ]
   },
@@ -71,6 +72,13 @@ const navigation: NavigationItem[] = [
     icon: Bot,
     badge: '3',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  },
+  {
+    name: 'Autopilot',
+    href: '/dashboard/autopilot',
+    icon: Brain,
+    badge: 'Auto',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
   },
   {
     name: 'ICP Scoring',

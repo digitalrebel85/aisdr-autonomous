@@ -151,6 +151,10 @@ export default function CampaignWizard() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   
+  // Inbox & plan state
+  const [hasConnectedInbox, setHasConnectedInbox] = useState<boolean | null>(null);
+  const [userPlan, setUserPlan] = useState<{ name: string; slug: string; inboxLimit: number } | null>(null);
+  
   // Wizard state
   const [state, setState] = useState<WizardState>({
     selectedICP: null,
@@ -187,9 +191,38 @@ export default function CampaignWizard() {
         leadsRes.json(),
       ]);
 
-      setIcpProfiles(icpData.profiles || []);
+      setIcpProfiles((icpData.profiles || []).filter((p: any) => p.status === 'active'));
       setOffers(offersData.offers || []);
       setLeads(leadsData.leads || []);
+
+      // Check inbox & plan status
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: inboxes } = await supabase
+            .from('connected_inboxes')
+            .select('id, access_token')
+            .eq('user_id', user.id);
+          const validInbox = inboxes?.find(i => i.access_token);
+          setHasConnectedInbox(!!validInbox);
+
+          // Get user plan info
+          const { data: subData } = await supabase
+            .rpc('get_user_subscription', { user_uuid: user.id });
+          if (subData && subData.length > 0) {
+            const sub = subData[0];
+            setUserPlan({
+              name: sub.plan_name || 'Free',
+              slug: sub.plan_slug || 'free',
+              inboxLimit: sub.limits?.connected_inboxes || 0
+            });
+          } else {
+            setUserPlan({ name: 'Free', slug: 'free', inboxLimit: 0 });
+          }
+        }
+      } catch (e) {
+        console.error('Error checking inbox/plan:', e);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -828,7 +861,9 @@ Best,
 
       const inbox = inboxes?.find(i => i.access_token); // Find one with valid token
       if (!inbox) {
-        throw new Error('No connected inbox found. Please connect an email inbox in Settings first.');
+        setHasConnectedInbox(false);
+        setIsLaunching(false);
+        return;
       }
 
       // Validate offer is selected
@@ -1098,6 +1133,8 @@ Best,
             onNameChange={(name) => setState(prev => ({ ...prev, campaignName: name }))}
             onLaunch={launchCampaign}
             isLaunching={isLaunching}
+            hasConnectedInbox={hasConnectedInbox}
+            userPlan={userPlan}
           />
         )}
       </div>
@@ -1156,9 +1193,10 @@ Best,
               {/* Launch Campaign Button - Requires inbox */}
               <button
                 onClick={launchCampaign}
-                disabled={!canProceed() || isLaunching || isCreating}
+                disabled={!canProceed() || isLaunching || isCreating || !hasConnectedInbox}
+                title={!hasConnectedInbox ? 'Connect an email inbox first to launch' : ''}
                 className={`flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-all
-                  ${canProceed() && !isLaunching && !isCreating
+                  ${canProceed() && !isLaunching && !isCreating && hasConnectedInbox
                     ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-500 hover:to-green-500 shadow-lg shadow-emerald-500/25'
                     : 'bg-white/10 text-gray-500 cursor-not-allowed border border-white/10'}`}
               >
@@ -2579,14 +2617,20 @@ function StepLaunch({
   campaignName,
   onNameChange,
   onLaunch,
-  isLaunching
+  isLaunching,
+  hasConnectedInbox,
+  userPlan
 }: {
   state: WizardState;
   campaignName: string;
   onNameChange: (name: string) => void;
   onLaunch: () => void;
   isLaunching: boolean;
+  hasConnectedInbox: boolean | null;
+  userPlan: { name: string; slug: string; inboxLimit: number } | null;
 }) {
+  const needsUpgrade = userPlan && userPlan.inboxLimit === 0;
+  const needsInboxConnection = !needsUpgrade && hasConnectedInbox === false;
   return (
     <div className="space-y-8 pb-24">
       <div>
@@ -2658,22 +2702,75 @@ function StepLaunch({
         </div>
       </div>
 
-      {/* Launch Info */}
-      <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-xl p-6 border border-green-800/50">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-green-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Rocket className="w-5 h-5 text-green-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-white">Ready to Launch</h3>
-            <p className="text-gray-400 mt-1">
-              Your personalized email sequences have been generated and reviewed. 
-              Click Launch to start sending. Emails will be sent automatically according to the schedule.
-              You can pause or adjust the campaign at any time.
-            </p>
+      {/* Inbox / Plan Warning */}
+      {needsUpgrade && (
+        <div className="bg-gradient-to-r from-violet-900/30 to-fuchsia-900/30 rounded-xl p-6 border border-violet-500/30">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-violet-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-violet-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-white">Upgrade to Launch Campaigns</h3>
+              <p className="text-gray-400 mt-1">
+                Your current <span className="text-violet-300 font-medium">{userPlan.name}</span> plan doesn&apos;t include email sending. 
+                Upgrade to connect an inbox and start sending campaigns.
+              </p>
+              <div className="flex items-center gap-3 mt-4">
+                <a href="/pricing" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-violet-500/25">
+                  <Sparkles className="w-4 h-4" />
+                  View Plans & Upgrade
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <span className="text-sm text-gray-500">You can still save the campaign as a draft</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {needsInboxConnection && (
+        <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 rounded-xl p-6 border border-amber-500/30">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-amber-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Mail className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-white">Connect Your Email Inbox</h3>
+              <p className="text-gray-400 mt-1">
+                You need to connect an email inbox before launching. Your <span className="text-amber-300 font-medium">{userPlan?.name}</span> plan 
+                supports up to <span className="text-amber-300 font-medium">{userPlan?.inboxLimit === -1 ? 'unlimited' : userPlan?.inboxLimit}</span> inbox{userPlan?.inboxLimit !== 1 ? 'es' : ''}.
+              </p>
+              <div className="flex items-center gap-3 mt-4">
+                <a href="/dashboard/settings" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-amber-500/25">
+                  <Mail className="w-4 h-4" />
+                  Go to Settings
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <span className="text-sm text-gray-500">You can still save the campaign as a draft</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Launch Info - only show when inbox is connected */}
+      {hasConnectedInbox && (
+        <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-xl p-6 border border-green-800/50">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-green-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Rocket className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Ready to Launch</h3>
+              <p className="text-gray-400 mt-1">
+                Your personalized email sequences have been generated and reviewed. 
+                Click Launch to start sending. Emails will be sent automatically according to the schedule.
+                You can pause or adjust the campaign at any time.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

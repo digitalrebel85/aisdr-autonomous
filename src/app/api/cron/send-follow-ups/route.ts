@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
           to: [{ email: lead.email }],
           subject: followUpContent.subject,
           body: followUpContent.body,
-          tracking: { opens: true, bounces: true },
+          tracking: { opens: false, links: false, thread_replies: true },
         }),
       });
 

@@ -1,11 +1,7 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 
-// Singleton pattern to prevent multiple Supabase client instances
-let supabaseClient: ReturnType<typeof createClientComponentClient> | null = null;
-
+// Re-export for backward compatibility
+// Prefer importing createClient from '@/utils/supabase/client' directly
 export function getSupabaseClient() {
-  if (!supabaseClient) {
-    supabaseClient = createClientComponentClient();
-  }
-  return supabaseClient;
+  return createClient();
 }

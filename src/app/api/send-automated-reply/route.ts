@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       to: [{ email: to }],
       subject: personalizedSubject,
       body: personalizedBody,
-      tracking: { opens: true, bounces: true },
+      tracking: { opens: false, links: false, thread_replies: true },
     };
 
     // 2.2. Add threading information if available (for proper reply threading)

@@ -66,14 +66,14 @@ export default function MegaMenu({ className = "" }: MegaMenuProps) {
             { name: "How It Works", href: "/how-it-works", icon: Zap, description: "See AISDR in action" },
             { name: "Features", href: "/features", icon: Settings, description: "All platform capabilities" },
             { name: "Integrations", href: "/integrations", icon: Layers, description: "Connect your tools" },
-            { name: "API & Webhooks", href: "/api", icon: Globe, description: "Developer resources" }
+            { name: "Security", href: "/security", icon: Shield, description: "Enterprise-grade security" }
           ]
         },
         {
-          title: "What's New",
+          title: "Trust & Compliance",
           items: [
-            { name: "Changelog", href: "/changelog", icon: FileText, description: "Latest updates" },
-            { name: "Product Roadmap", href: "/roadmap", icon: Target, description: "What's coming next" }
+            { name: "Trust Center", href: "/trust", icon: Shield, description: "Security & compliance" },
+            { name: "About Us", href: "/about", icon: Users, description: "Our mission & team" }
           ]
         }
       ]
@@ -92,17 +92,9 @@ export default function MegaMenu({ className = "" }: MegaMenuProps) {
         {
           title: "By Role",
           items: [
-            { name: "Sales Teams", href: "/solutions/sales", icon: Trophy, description: "Boost sales performance" },
-            { name: "Marketing Teams", href: "/solutions/marketing", icon: BarChart3, description: "Generate more leads" },
-            { name: "Revenue Ops", href: "/solutions/revops", icon: Target, description: "Optimize your funnel" }
-          ]
-        },
-        {
-          title: "By Company Size",
-          items: [
-            { name: "Startups", href: "/solutions/startups", icon: Zap, description: "Fast growth solutions" },
-            { name: "SMB", href: "/solutions/smb", icon: Building2, description: "Scale efficiently" },
-            { name: "Enterprise", href: "/solutions/enterprise", icon: Users, description: "Enterprise solutions" }
+            { name: "By Role", href: "/solutions/by-role", icon: Trophy, description: "Solutions for every team" },
+            { name: "By Company Size", href: "/solutions/by-size", icon: Building2, description: "Right-sized solutions" },
+            { name: "By Use Case", href: "/solutions/by-use-case", icon: Target, description: "Solve specific challenges" }
           ]
         }
       ]
@@ -116,16 +108,15 @@ export default function MegaMenu({ className = "" }: MegaMenuProps) {
             { name: "Case Studies", href: "/case-studies", icon: Trophy, description: "Customer success stories" },
             { name: "ROI Calculator", href: "/roi-calculator", icon: Calculator, description: "Calculate your ROI" },
             { name: "Blog", href: "/blog", icon: FileText, description: "Sales insights & tips" },
-            { name: "Webinars", href: "/webinars", icon: Calendar, description: "Live training sessions" }
+            { name: "FAQ", href: "/faq", icon: HelpCircle, description: "Common questions" }
           ]
         },
         {
           title: "Support",
           items: [
-            { name: "Help Center", href: "/help", icon: HelpCircle, description: "Get answers fast" },
-            { name: "Documentation", href: "/docs", icon: BookOpen, description: "Technical guides" },
-            { name: "Status", href: "/status", icon: Shield, description: "System status" },
-            { name: "Contact Support", href: "/support", icon: Phone, description: "Get help from our team" }
+            { name: "Contact Us", href: "/contact", icon: Phone, description: "Get in touch" },
+            { name: "Privacy Policy", href: "/privacy", icon: Shield, description: "How we handle data" },
+            { name: "Terms of Service", href: "/terms", icon: FileText, description: "Legal information" }
           ]
         }
       ]
@@ -136,10 +127,7 @@ export default function MegaMenu({ className = "" }: MegaMenuProps) {
         {
           title: "vs Competitors",
           items: [
-            { name: "ConnectLead vs Apollo", href: "/compare/apollo", icon: Star, description: "See the differences" },
-            { name: "ConnectLead vs ZoomInfo", href: "/compare/zoominfo", icon: Star, description: "Feature comparison" },
-            { name: "ConnectLead vs Instantly", href: "/compare/instantly", icon: Star, description: "Side-by-side analysis" },
-            { name: "ConnectLead vs Outreach", href: "/compare/outreach", icon: Star, description: "Platform comparison" }
+            { name: "ConnectLead vs Apollo", href: "/compare/apollo", icon: Star, description: "See the differences" }
           ]
         }
       ]
@@ -153,7 +141,7 @@ export default function MegaMenu({ className = "" }: MegaMenuProps) {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
                 ConnectLead
               </h1>
             </Link>

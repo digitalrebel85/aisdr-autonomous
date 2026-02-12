@@ -42,62 +42,50 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Prepare the updated ICP profile data
-    const icpData = {
+    // Prepare the updated ICP profile data — include ALL form fields
+    const icpData: Record<string, any> = {
       name: body.name,
       description: body.description || '',
-      industries: body.industries || [],
-      company_sizes: body.company_sizes || [],
-      locations: body.locations || [],
+      campaign_name: body.campaign_name || '',
+      // Job & Contact Filters
       job_titles: body.job_titles || [],
+      exclude_job_titles: body.exclude_job_titles || [],
       seniority_levels: body.seniority_levels || [],
       departments: body.departments || [],
+      lead_names: body.lead_names || [],
+      // Company Filters
+      industries: body.industries || [],
+      industry_keywords: body.industry_keywords || [],
+      exclude_industry_keywords: body.exclude_industry_keywords || [],
+      company_sizes: body.company_sizes || [],
+      company_domain_names: body.company_domain_names || [],
+      company_domain_exact_match: body.company_domain_exact_match || false,
+      exclude_company_domains: body.exclude_company_domains || [],
+      exclude_domains_exact_match: body.exclude_domains_exact_match || false,
       technologies: body.technologies || [],
-      funding_stages: body.funding_stages || [],
-      keywords: body.keywords || [],
+      currently_hiring_for: body.currently_hiring_for || [],
+      // Location Filters
+      locations: body.locations || [],
+      contact_locations: body.contact_locations || [],
+      exclude_contact_locations: body.exclude_contact_locations || [],
+      company_hq_locations: body.company_hq_locations || [],
+      // Company Metrics
       employee_count_min: body.employee_count_min || null,
       employee_count_max: body.employee_count_max || null,
       revenue_min: body.revenue_min || null,
       revenue_max: body.revenue_max || null,
+      yearly_headcount_growth_min: body.yearly_headcount_growth_min || null,
+      yearly_headcount_growth_max: body.yearly_headcount_growth_max || null,
+      // Funding Filters
+      funding_types: body.funding_types || [],
+      funding_amount_min: body.funding_amount_min || null,
+      funding_amount_max: body.funding_amount_max || null,
+      // Advanced Filters
+      intent_signals: body.intent_signals || [],
+      verified_emails_only: body.verified_emails_only || false,
+      keywords: body.keywords || [],
       updated_at: new Date().toISOString()
     };
-
-    // Create Apollo filters object
-    const apolloFilters: any = {};
-    
-    if (icpData.industries.length > 0) {
-      apolloFilters.organization_industry_tag_ids = icpData.industries;
-    }
-    
-    if (icpData.company_sizes.length > 0) {
-      apolloFilters.organization_num_employees_ranges = icpData.company_sizes;
-    }
-    
-    if (icpData.locations.length > 0) {
-      apolloFilters.person_locations = icpData.locations;
-    }
-    
-    if (icpData.job_titles.length > 0) {
-      apolloFilters.person_titles = icpData.job_titles;
-    }
-    
-    if (icpData.seniority_levels.length > 0) {
-      apolloFilters.person_seniorities = icpData.seniority_levels;
-    }
-    
-    if (icpData.departments.length > 0) {
-      apolloFilters.person_departments = icpData.departments;
-    }
-    
-    if (icpData.technologies.length > 0) {
-      apolloFilters.organization_technology_names = icpData.technologies;
-    }
-    
-    if (icpData.keywords.length > 0) {
-      apolloFilters.q_keywords = icpData.keywords.join(' ');
-    }
-
-    (icpData as any).apollo_filters = apolloFilters;
 
     // Update the ICP profile
     const { data: profile, error } = await supabase

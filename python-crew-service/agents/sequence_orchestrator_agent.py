@@ -7,9 +7,10 @@ Implements industry best practices: 5 touches max, smart stop logic
 from typing import List, Dict, Optional
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+import json
 
-# Import existing agents
-from agents.email_copywriter_agent_v2 import create_email_copywriter_agent
+# Import existing agents and crews
+from crew.email_copywriter_crew import create_email_copywriter_crew
 from agents.strategic_followup_agent import StrategicFollowUpInput, generate_strategic_followup
 
 
@@ -117,9 +118,13 @@ def generate_sequence_strategy(request: SequenceGenerationRequest) -> Dict:
     }
 
 
-async def generate_complete_sequence(request: SequenceGenerationRequest) -> SequenceGenerationResponse:
+async def generate_complete_sequence(request: SequenceGenerationRequest, llm=None) -> SequenceGenerationResponse:
     """
-    Generate a complete email sequence using existing agents
+    Generate a complete email sequence using existing agents.
+    
+    Args:
+        request: The sequence generation request with all context
+        llm: The LLM instance to use for AI generation. If None, agents use their own defaults.
     """
     
     # Get sequence strategy
@@ -134,12 +139,13 @@ async def generate_complete_sequence(request: SequenceGenerationRequest) -> Sequ
         focus = strategy['focus'][i]
         
         if step_number == 1:
-            # First email - use email copywriter agent
+            # First email - use email copywriter crew (real AI)
             step = await generate_initial_email(
                 request=request,
                 step_number=step_number,
                 delay_days=delay_days,
-                focus=focus
+                focus=focus,
+                llm=llm
             )
         else:
             # Follow-up emails - use strategic follow-up agent
@@ -175,60 +181,94 @@ async def generate_initial_email(
     request: SequenceGenerationRequest,
     step_number: int,
     delay_days: int,
-    focus: str
+    focus: str,
+    llm=None
 ) -> SequenceStep:
     """
-    Generate the initial email using email copywriter agent
+    Generate the initial email using the real email copywriter crew (AI-powered).
     """
     
-    # Build context for AI
-    lead_context = {
-        'name': request.lead_name or request.lead_email.split('@')[0],
+    lead_name = request.lead_name or request.lead_email.split('@')[0]
+    first_name = lead_name.split()[0] if lead_name else ''
+    
+    # Build rich lead context JSON for the AI agent
+    lead_context_dict = {
+        'name': lead_name,
         'email': request.lead_email,
-        'company': request.company or 'their company',
+        'company': request.company or '',
         'title': request.title or '',
         'industry': request.industry or '',
-        'pain_points': request.pain_points or []
+        'pain_points': request.pain_points or [],
+        'sequence_step': f"Step {step_number} of {request.touches} - Initial outreach",
+        'focus': focus
     }
+    lead_context_json = json.dumps(lead_context_dict)
     
-    # Framework-specific prompts
-    framework_prompts = {
-        'AIDA': f"Write an attention-grabbing email using AIDA framework. Focus: {focus}. Hook them with a compelling insight about {request.industry or 'their industry'}.",
-        'PAS': f"Write a problem-focused email using PAS framework. Focus: {focus}. Start with a pain point they likely experience.",
-        'BAB': f"Write a transformation email using BAB framework. Focus: {focus}. Show the before/after of solving their problem.",
-        '4Ps': f"Write a persuasive email using 4Ps framework. Focus: {focus}. Paint a picture of success.",
-        'FAB': f"Write a value-focused email using FAB framework. Focus: {focus}. Lead with features that matter to them."
-    }
+    # Default subject line as fallback
+    fallback_subject = generate_subject_line(request, step_number, focus)
     
-    prompt = framework_prompts.get(request.framework, framework_prompts['PAS'])
-    
-    # Generate subject line
-    subject = generate_subject_line(request, step_number, focus)
-    
-    # Generate email body (simplified - in production, call actual AI agent)
-    body = f"""Hi {lead_context['name']},
-
-{prompt}
-
-{request.value_proposition}
-
-{request.hook_snippet or ''}
-
-Worth a quick chat?
-
-Best,
-[Your Name]"""
-    
-    return SequenceStep(
-        step_number=step_number,
-        delay_days=delay_days,
-        step_type='initial',
-        subject=subject,
-        body=body,
-        framework=request.framework,
-        focus=focus,
-        reasoning=f"Initial outreach using {request.framework} framework to {focus}"
-    )
+    try:
+        # Use the real email copywriter crew
+        email_crew = create_email_copywriter_crew(
+            llm=llm,
+            name=lead_name,
+            title=request.title or '',
+            company=request.company or '',
+            pain_points=request.pain_points or [],
+            offer=request.value_proposition,
+            hook_snippet=request.hook_snippet or '',
+            lead_context=lead_context_json,
+            step_number=step_number,
+            total_steps=request.touches,
+            objective=request.objective,
+            framework=request.framework,
+            first_name=first_name
+        )
+        
+        result = email_crew.kickoff()
+        raw_output = str(result)
+        
+        # Try to parse structured JSON output from the agent
+        subject = fallback_subject
+        body = raw_output
+        
+        try:
+            # The email_copywriter_agent_v2 returns JSON with subject_line and email_body
+            start = raw_output.find('{')
+            end = raw_output.rfind('}') + 1
+            if start != -1 and end > 0:
+                parsed = json.loads(raw_output[start:end])
+                subject = parsed.get('subject_line', fallback_subject)
+                body = parsed.get('email_body', raw_output)
+        except (json.JSONDecodeError, KeyError):
+            # If not JSON, use raw output as body
+            pass
+        
+        return SequenceStep(
+            step_number=step_number,
+            delay_days=delay_days,
+            step_type='initial',
+            subject=subject,
+            body=body,
+            framework=request.framework,
+            focus=focus,
+            reasoning=f"AI-generated initial outreach using {request.framework} framework focused on {focus}"
+        )
+        
+    except Exception as e:
+        print(f"Error generating initial email with AI: {e}. Using fallback.")
+        # Fallback to template if AI fails
+        body = f"Hi {first_name},\n\n{request.value_proposition}\n\n{request.hook_snippet or ''}\n\nWorth a quick chat?\n\nBest"
+        return SequenceStep(
+            step_number=step_number,
+            delay_days=delay_days,
+            step_type='initial',
+            subject=fallback_subject,
+            body=body,
+            framework=request.framework,
+            focus=focus,
+            reasoning=f"Fallback template - AI generation failed: {str(e)}"
+        )
 
 
 async def generate_followup_email(

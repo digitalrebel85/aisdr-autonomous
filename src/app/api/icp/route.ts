@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       name: body.name,
       description: description.trim(),
-      status: 'draft'
+      status: 'active'
     };
 
     // Only add array fields if they have values
