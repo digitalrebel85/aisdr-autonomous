@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 import os
 import httpx
 import json
+import asyncio
 from datetime import datetime
 from supabase import create_client, Client
+import redis.asyncio as redis
 
 # Load environment variables from parent directory (where .env files are located)
 load_dotenv(dotenv_path='../.env')
@@ -61,6 +64,10 @@ from crew.strategic_reflection_crew import create_strategic_reflection_crew
 # Tools
 from tools.nylas_tools import get_message_details as fetch_nylas_message_details
 from tools.supabase_tools import get_lead_by_email
+
+# Fast Reply Detection & Workers
+from detection import router as detection_router, FastReplyDetector
+from workers import ReplyWorker
 
 # Pydantic model for lead enrichment
 from pydantic import BaseModel
@@ -129,10 +136,57 @@ class WebsiteAnalysisRequest(BaseModel):
     domain: str
     company_name: Optional[str] = None
 
+# --- Global State for Fast Reply Service ---
+redis_client: redis.Redis = None
+reply_detector: FastReplyDetector = None
+reply_worker: ReplyWorker = None
+
+# --- Lifespan Context Manager ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events"""
+    global redis_client, reply_detector, reply_worker
+    
+    # Startup
+    print("INFO: Starting Fast Reply Service...")
+    
+    # Initialize Redis
+    redis_client = redis.from_url(
+        os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+        decode_responses=True
+    )
+    
+    # Initialize and start reply detector
+    reply_detector = FastReplyDetector(redis_client)
+    asyncio.create_task(reply_detector.start())
+    
+    # Initialize and start reply worker
+    reply_worker = ReplyWorker(redis_client)
+    asyncio.create_task(reply_worker.start())
+    
+    print("INFO: Fast Reply Service started")
+    
+    yield
+    
+    # Shutdown
+    print("INFO: Shutting down Fast Reply Service...")
+    if reply_detector:
+        await reply_detector.stop()
+    if reply_worker:
+        await reply_worker.stop()
+    if redis_client:
+        await redis_client.close()
+    print("INFO: Fast Reply Service stopped")
+
+# Helper to access detector from other modules
+def get_detector() -> FastReplyDetector:
+    return reply_detector
+
 # --- FastAPI App Initialization ---
 app = FastAPI(
     title="CrewAI Advanced Email Analysis Service",
     description="A service to analyze email replies using a context-aware CrewAI agent.",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -1207,6 +1261,7 @@ app.include_router(unstructured_lead_router)
 app.include_router(apollo_discovery_router)
 app.include_router(campaign_strategy_router)
 app.include_router(test_strategy_router)
+app.include_router(detection_router)  # Fast reply detection routes
 
 @app.get("/")
 async def root():

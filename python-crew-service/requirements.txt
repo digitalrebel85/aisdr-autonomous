@@ -20,3 +20,8 @@ jsonschema
 aiofiles
 python-multipart
 beautifulsoup4
+
+# Fast Reply Detection
+redis>=5.0.0
+aiosmtplib>=3.0.0
+imap-tools>=1.5.0
