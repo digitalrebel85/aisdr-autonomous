@@ -17,6 +17,15 @@ Your own autonomous outbound agent. No human-in-the-loop dashboard. Define the I
 ## Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                    FRONTEND (Vite + React)                  │
+├─────────────────────────────────────────────────────────────┤
+│  /setup       → 4-step onboarding wizard                    │
+│  /dashboard   → Mission Control (metrics, agents, activity) │
+│  /campaigns   → Campaign management                         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
 ┌─────────────────────────────────────────────┐
 │           JARVIS SDR ORCHESTRATOR           │
 ├─────────────────────────────────────────────┤
@@ -50,8 +59,14 @@ aisdr-autonomous/
 │       ├── config.json
 │       ├── leads.json
 │       └── logs/
-├── mission-control/    # Monitoring dashboard
-│   └── index.html      # Real-time status
+├── frontend/           # Setup wizard + dashboard
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── SetupWizard.jsx    # 4-step onboarding
+│   │   │   ├── Dashboard.jsx      # Mission control
+│   │   │   └── Campaigns.jsx      # Campaign management
+│   │   └── ...
+│   └── package.json
 ├── python-crew-service/# Backend (from original)
 │   ├── agents/         # CrewAI agents
 │   ├── crew/           # Crew definitions
@@ -117,7 +132,18 @@ cat > campaigns/agency-outreach-001/config.json << 'EOF'
 EOF
 ```
 
-### 4. Start the System
+### 4. Start the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+
+# Open http://localhost:5173
+# First time? You'll be guided through the setup wizard
+```
+
+### 5. Start the Backend
 
 ```bash
 # Install dependencies
@@ -206,9 +232,9 @@ python agent/orchestrator.py send --campaign agency-outreach-001
 ## Monitoring
 
 Your AI SDR reports via:
+- **Dashboard** - Mission Control at `/dashboard` (metrics, agents, activity)
 - **Slack** - Real-time alerts and summaries
 - **Email** - Daily/weekly reports
-- **Mission Control** - Web dashboard
 - **Memory files** - Daily logs in `memory/`
 
 ## The £500 Path to £1M
