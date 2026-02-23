@@ -25,6 +25,8 @@ from tools.gmail_tools import (
     get_message_details,
     init_gmail_manager
 )
+from tools.apollo_tools import ApolloClient, init_apollo, discover_leads as apollo_discover
+from tools.openai_tools import EmailGenerator, init_email_generator, generate_personalized_email, analyze_email_reply
 
 # Configure logging
 logging.basicConfig(
@@ -83,6 +85,12 @@ class AutonomousSDR:
         # Initialize Gmail manager if credentials available
         self._init_gmail()
         
+        # Initialize Apollo client
+        self._init_apollo()
+        
+        # Initialize Email generator
+        self._init_email_generator()
+        
     def _load_icp(self):
         """Load Ideal Customer Profile."""
         icp_file = self.config_path / "ICP.md"
@@ -114,6 +122,24 @@ class AutonomousSDR:
         else:
             logger.warning("Google OAuth credentials not found. Gmail features disabled.")
 
+    def _init_apollo(self):
+        """Initialize Apollo client."""
+        api_key = os.getenv('APOLLO_API_KEY')
+        if api_key:
+            init_apollo(api_key)
+            logger.info("Apollo client initialized")
+        else:
+            logger.warning("Apollo API key not found. Lead discovery disabled.")
+
+    def _init_email_generator(self):
+        """Initialize OpenAI email generator."""
+        api_key = os.getenv('OPENAI_API_KEY')
+        if api_key:
+            init_email_generator(api_key)
+            logger.info("Email generator initialized")
+        else:
+            logger.warning("OpenAI API key not found. Email generation disabled.")
+
     def _load_saved_mailboxes(self):
         """Load previously connected mailboxes from storage."""
         # TODO: Load from Supabase or local JSON
@@ -131,22 +157,61 @@ class AutonomousSDR:
                 if config_file.exists():
                     logger.info(f"Found campaign: {campaign_dir.name}")
                     
-    async def discover_leads(self, count: int = 50) -> List[Lead]:
+    async def discover_leads(self, count: int = 50, icp_config: Optional[Dict] = None) -> List[Lead]:
         """
         Use Apollo.io to discover new leads matching ICP.
         
         Args:
             count: Number of leads to discover
+            icp_config: ICP criteria (industry, titles, size, location)
             
         Returns:
             List of new Lead objects
         """
         logger.info(f"Discovering {count} new leads...")
-        # TODO: Implement Apollo API integration
-        # TODO: Filter by ICP criteria
-        # TODO: Enrich with company data
-        # TODO: Deduplicate against existing leads
-        return []
+        
+        # Default ICP config if not provided
+        if not icp_config:
+            icp_config = {
+                'titles': ['CEO', 'Head of Sales', 'Marketing Director', 'Founder'],
+                'industries': [],
+                'sizes': ['11-50', '51-200'],
+                'locations': ['United Kingdom', 'London']
+            }
+        
+        try:
+            apollo_leads = await apollo_discover(
+                title_keywords=icp_config.get('titles', ['CEO']),
+                industries=icp_config.get('industries', []),
+                company_sizes=icp_config.get('sizes', ['11-50']),
+                locations=icp_config.get('locations', ['United Kingdom']),
+                limit=count
+            )
+            
+            # Convert Apollo leads to our Lead format
+            leads = []
+            for apollo_lead in apollo_leads:
+                lead = Lead(
+                    email=apollo_lead.email,
+                    first_name=apollo_lead.first_name,
+                    last_name=apollo_lead.last_name,
+                    company=apollo_lead.company,
+                    title=apollo_lead.title,
+                    linkedin_url=apollo_lead.linkedin_url,
+                    source='apollo',
+                    status='new',
+                    last_contact=None,
+                    emails_sent=0
+                )
+                leads.append(lead)
+                
+            logger.info(f"Discovered {len(leads)} leads from Apollo")
+            self.daily_stats['leads_discovered'] += len(leads)
+            return leads
+            
+        except Exception as e:
+            logger.error(f"Error discovering leads: {e}")
+            return []
         
     async def enrich_lead(self, lead: Lead) -> Lead:
         """
@@ -161,17 +226,59 @@ class AutonomousSDR:
         # TODO: Implement enrichment pipeline
         return lead
         
-    async def generate_email(self, lead: Lead, step: int) -> str:
+    async def generate_email(self, lead: Lead, step: int, campaign_config: Optional[Dict] = None) -> Dict:
         """
         Generate personalized email for a lead at specific sequence step.
         
-        Uses CrewAI agents from python-crew-service.
+        Uses OpenAI GPT-4 for personalization.
+        
+        Args:
+            lead: The lead to email
+            step: Sequence step (1-4)
+            campaign_config: Campaign settings including value prop and pain points
+            
+        Returns:
+            Dict with 'subject' and 'body'
         """
         logger.info(f"Generating email for {lead.email}, step {step}")
-        # TODO: Call email copywriter crew
-        # TODO: Personalize based on lead data
-        # TODO: Include relevant case study/social proof
-        return ""
+        
+        # Default campaign config
+        if not campaign_config:
+            campaign_config = {
+                'sender_name': 'Chris',
+                'sender_company': 'AISDR',
+                'value_proposition': 'AI-powered SDR that books meetings 24/7',
+                'pain_points': ['SDR turnover', 'Can\'t scale outreach', 'High cost of sales team']
+            }
+        
+        try:
+            email_template = await generate_personalized_email(
+                lead_first_name=lead.first_name or 'there',
+                lead_title=lead.title or 'Executive',
+                lead_company=lead.company or 'Company',
+                lead_industry='Marketing',  # TODO: Get from ICP config
+                sender_name=campaign_config.get('sender_name', 'Chris'),
+                sender_company=campaign_config.get('sender_company', 'AISDR'),
+                value_proposition=campaign_config.get('value_proposition', 'AI SDR services'),
+                pain_points=campaign_config.get('pain_points', ['Scaling outreach']),
+                sequence_step=step
+            )
+            
+            return {
+                'subject': email_template.subject,
+                'body': email_template.body,
+                'success': True
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating email: {e}")
+            # Return fallback
+            return {
+                'subject': f"Quick question, {lead.first_name or 'there'}",
+                'body': f"Hi {lead.first_name or 'there'},\n\nI help companies like {lead.company or 'yours'} scale their outreach with AI.\n\nWorth a brief conversation?\n\nBest",
+                'success': False,
+                'error': str(e)
+            }
         
     async def send_email(self, lead: Lead, subject: str, email_body: str) -> bool:
         """
@@ -227,10 +334,55 @@ class AutonomousSDR:
         - Negative: Log and mark do-not-contact
         - Out of office: Reschedule
         """
-        logger.info(f"Processing reply from {reply.get('from')}")
-        # TODO: Analyze sentiment
-        # TODO: Take action based on category
-        # TODO: Update campaign metrics
+        from_email = reply.get('from', 'Unknown')
+        logger.info(f"Processing reply from {from_email}")
+        
+        try:
+            # Analyze the reply using OpenAI
+            analysis = await analyze_email_reply(reply.get('body', ''))
+            
+            category = analysis.get('category', 'unknown')
+            confidence = analysis.get('confidence', 0)
+            
+            logger.info(f"Reply categorized as: {category} (confidence: {confidence}%)")
+            
+            # Take action based on category
+            if category in ['positive', 'meeting']:
+                # High intent - notify immediately
+                logger.info(f"🎉 MEETING INTENT from {from_email}")
+                # TODO: Send notification to user
+                # TODO: Create meeting booking link
+                # TODO: Mark lead as 'meeting_scheduled'
+                
+            elif category == 'question':
+                # Needs human response
+                logger.info(f"❓ Question from {from_email} - needs response")
+                # TODO: Queue for user approval
+                # TODO: Draft response using AI
+                
+            elif category == 'not_interested':
+                # Mark as do-not-contact
+                logger.info(f"❌ Not interested: {from_email}")
+                # TODO: Update lead status to 'uninterested'
+                
+            elif category == 'out_of_office':
+                # Reschedule follow-up
+                logger.info(f"📅 Out of office: {from_email}")
+                # TODO: Reschedule email for when they're back
+                
+            elif category == 'wrong_person':
+                # Try to find right person
+                logger.info(f"👤 Wrong person: {from_email}")
+                # TODO: Ask for referral
+                
+            # Update stats
+            self.daily_stats['replies_received'] += 1
+            
+            # TODO: Log to Supabase
+            # TODO: Update campaign metrics
+            
+        except Exception as e:
+            logger.error(f"Error processing reply: {e}")
         
     async def run_campaign_step(self, campaign: Campaign):
         """
