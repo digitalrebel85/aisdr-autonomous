@@ -1,18 +1,18 @@
 # 🤖 AISDR Autonomous
 
-**The AI SDR that never sleeps.**
+**Deploy an AI SDR that never sleeps.**
 
-This is the autonomous version of AISDR — no human-in-the-loop dashboard. Just give me (Jarvis) the ICP, platform access, and I'll run the entire outbound motion.
+Your own autonomous outbound agent. No human-in-the-loop dashboard. Define the ICP, connect your platforms, and the AI runs discovery, enrichment, emailing, and reply handling — 24/7.
 
 ## What Changed
 
 | Old (Human-Driven) | New (Autonomous) |
 |-------------------|------------------|
-| Upload CSVs manually | I discover leads from Apollo automatically |
-| Click to send emails | I send based on heartbeat schedule |
-| Read replies in UI | I categorize and respond automatically |
-| Manage campaigns via dashboard | I optimize based on performance data |
-| Human decides next steps | I decide (with safety guardrails) |
+| Upload CSVs manually | AI discovers leads from Apollo automatically |
+| Click to send emails | AI sends based on heartbeat schedule |
+| Read replies in UI | AI categorizes and responds automatically |
+| Manage campaigns via dashboard | AI optimizes based on performance data |
+| Human decides next steps | AI decides (with safety guardrails) |
 
 ## Architecture
 
@@ -139,12 +139,12 @@ python agent/orchestrator.py evening    # 6pm daily
 
 ### Heartbeat (Every 30 min)
 
-I automatically:
-1. **Check replies** - Read and categorize all new emails
-2. **Process meetings** - Log bookings, notify you immediately
-3. **Send emails** - Queue and send based on schedule/limits
-4. **Discover leads** - Find new prospects from Apollo
-5. **Update dashboard** - Refresh mission control
+Your AI SDR automatically:
+1. **Checks replies** - Reads and categorizes all new emails
+2. **Processes meetings** - Logs bookings, notifies you immediately
+3. **Sends emails** - Queues and sends based on schedule/limits
+4. **Discovers leads** - Finds new prospects from Apollo
+5. **Updates dashboard** - Refreshes mission control
 
 ### Daily Schedule
 
@@ -180,7 +180,7 @@ Open `mission-control/index.html` in browser for real-time dashboard:
 
 ## Sub-Agents
 
-I can spawn parallel workers:
+Your AI SDR can spawn parallel workers:
 
 1. **Lead Research Agent** - Deep company research
 2. **Email Writer Agent** - Generate personalized copy
@@ -205,11 +205,11 @@ python agent/orchestrator.py send --campaign agency-outreach-001
 
 ## Monitoring
 
-I report to you via:
+Your AI SDR reports via:
 - **Slack** - Real-time alerts and summaries
-- **Telegram** - Direct messages for urgent items
+- **Email** - Daily/weekly reports
 - **Mission Control** - Web dashboard
-- **Memory files** - Daily logs in `~/.openclaw/memory/`
+- **Memory files** - Daily logs in `memory/`
 
 ## The £500 Path to £1M
 
@@ -232,4 +232,4 @@ I report to you via:
 
 ---
 
-**Ready to deploy?** Give me the ICP and API keys, and I'll start booking meetings.
+**Ready to deploy?** Configure your ICP and API keys, start the orchestrator, and your AI SDR starts booking meetings.
