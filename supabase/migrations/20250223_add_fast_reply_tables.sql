@@ -72,40 +72,6 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS reply_handling_mode TEXT DEFAULT 'ai'
 
 -- Add reply_stats to campaigns
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS reply_stats JSONB DEFAULT '{}'::jsonb;
-/*
-Example structure:
-{
-  "total_replies": 10,
-  "positive": 5,
-  "questions": 3,
-  "objections": 2,
-  "ai_responses_sent": 8,
-  "human_handoffs": 2,
-  "avg_response_time_seconds": 45
-}
-*/
-
--- Function to update campaign reply stats
-CREATE OR REPLACE FUNCTION update_campaign_reply_stats()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE campaigns
-    SET reply_stats = jsonb_set(
-        COALESCE(reply_stats, '{}'::jsonb),
-        '{total_replies}',
-        (COALESCE(reply_stats->>'total_replies', '0')::int + 1)::text::jsonb
-    )
-    WHERE id = NEW.campaign_id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to auto-update stats
-DROP TRIGGER IF EXISTS trg_update_campaign_reply_stats ON email_replies;
-CREATE TRIGGER trg_update_campaign_reply_stats
-    AFTER INSERT ON email_replies
-    FOR EACH ROW
-    EXECUTE FUNCTION update_campaign_reply_stats();
 
 -- Enable RLS
 ALTER TABLE sent_emails ENABLE ROW LEVEL SECURITY;
@@ -118,7 +84,7 @@ CREATE POLICY "Users can view their own sent emails"
 
 CREATE POLICY "Service role can insert sent emails"
     ON sent_emails FOR INSERT
-    WITH CHECK (true);  -- Service role bypass
+    WITH CHECK (true);
 
 CREATE POLICY "Users can update their own sent emails"
     ON sent_emails FOR UPDATE
@@ -131,15 +97,8 @@ CREATE POLICY "Users can view their own email replies"
 
 CREATE POLICY "Service role can insert email replies"
     ON email_replies FOR INSERT
-    WITH CHECK (true);  -- Service role bypass
+    WITH CHECK (true);
 
 CREATE POLICY "Service role can update email replies"
     ON email_replies FOR UPDATE
     USING (true);
-
--- Comments for documentation
-COMMENT ON TABLE sent_emails IS 'Tracks all outbound emails for reply correlation';
-COMMENT ON TABLE email_replies IS 'Stores incoming email replies and AI processing results';
-COMMENT ON COLUMN sent_emails.message_id IS 'Email Message-ID header used for In-Reply-To matching';
-COMMENT ON COLUMN email_replies.original_message_id IS 'References sent_emails.message_id to correlate reply';
-COMMENT ON COLUMN leads.reply_handling_mode IS 'How to handle replies: ai, human, hybrid, or auto';
