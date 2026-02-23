@@ -15,9 +15,9 @@ const SetupWizard = ({ onComplete }) => {
     },
     platforms: {
       apolloKey: '',
-      nylasClientId: '',
-      nylasSecret: '',
       openaiKey: '',
+      googleClientId: '',
+      googleClientSecret: '',
       supabaseUrl: '',
       supabaseKey: ''
     },
@@ -64,7 +64,8 @@ const SetupWizard = ({ onComplete }) => {
       case 2:
         return config.icp.industry && config.icp.companySize
       case 3:
-        return config.platforms.apolloKey && config.platforms.openaiKey
+        return config.platforms.apolloKey && config.platforms.openaiKey && 
+               config.platforms.googleClientId && config.platforms.googleClientSecret
       case 4:
         return config.firstCampaign.name
       default:
@@ -275,35 +276,51 @@ const PlatformStep = ({ config, updateConfig }) => (
 
     <div style={{ marginTop: '24px', padding: '16px', background: 'var(--bg-card)', borderRadius: '8px' }}>
       <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        Optional: For email sending and calendar booking
+        <strong>Connect Gmail/Google Workspace</strong> - Your AI SDR will send emails from your account
       </p>
       
       <div className="form-group">
-        <label>Nylas Client ID</label>
+        <label>Google OAuth Client ID *</label>
         <input 
-          type="password" 
+          type="text" 
           className="api-key-input"
-          placeholder="nylas_client_id"
-          value={config.nylasClientId}
-          onChange={(e) => updateConfig('platforms', 'nylasClientId', e.target.value)}
+          placeholder="xxxx.apps.googleusercontent.com"
+          value={config.googleClientId}
+          onChange={(e) => updateConfig('platforms', 'googleClientId', e.target.value)}
         />
+        <p className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+          From Google Cloud Console → APIs & Services → Credentials
+        </p>
       </div>
 
       <div className="form-group">
-        <label>Nylas Client Secret</label>
+        <label>Google OAuth Client Secret *</label>
         <input 
           type="password" 
           className="api-key-input"
-          placeholder="nylas_secret"
-          value={config.nylasSecret}
-          onChange={(e) => updateConfig('platforms', 'nylasSecret', e.target.value)}
+          placeholder="GOCSPX-..."
+          value={config.googleClientSecret}
+          onChange={(e) => updateConfig('platforms', 'googleClientSecret', e.target.value)}
         />
+      </div>
+
+      <div className="checkbox-item" style={{ marginTop: '12px' }}>
+        <input type="checkbox" checked readOnly id="gmail-scope-1" />
+        <label htmlFor="gmail-scope-1">Send emails on your behalf</label>
+      </div>
+      <div className="checkbox-item">
+        <input type="checkbox" checked readOnly id="gmail-scope-2" />
+        <label htmlFor="gmail-scope-2">Read replies and manage threads</label>
+      </div>
+      <div className="checkbox-item">
+        <input type="checkbox" checked readOnly id="calendar-scope" />
+        <label htmlFor="calendar-scope">Access calendar for booking meetings</label>
       </div>
     </div>
 
     <div style={{ marginTop: '24px', padding: '16px', background: 'var(--bg-card)', borderRadius: '8px' }}>
       <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        Optional: For data storage
+        Optional: Supabase for cloud data storage (uses localStorage if not set)
       </p>
       
       <div className="form-group">

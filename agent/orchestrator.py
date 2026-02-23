@@ -17,6 +17,15 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
+# Gmail tools for multi-mailbox OAuth
+from tools.gmail_tools import (
+    GmailManager,
+    send_email_via_gmail,
+    check_gmail_replies,
+    get_message_details,
+    init_gmail_manager
+)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -64,11 +73,15 @@ class AutonomousSDR:
             'meetings_booked': 0,
             'leads_discovered': 0
         }
+        self.gmail_manager: Optional[GmailManager] = None
         
         # Load configurations
         self._load_icp()
         self._load_platforms()
         self._load_campaigns()
+        
+        # Initialize Gmail manager if credentials available
+        self._init_gmail()
         
     def _load_icp(self):
         """Load Ideal Customer Profile."""
@@ -85,6 +98,26 @@ class AutonomousSDR:
             logger.info("Platform configs loaded")
         else:
             logger.warning("No platforms config found")
+
+    def _init_gmail(self):
+        """Initialize Gmail manager if credentials are available."""
+        client_id = os.getenv('GOOGLE_CLIENT_ID')
+        client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5173/auth/callback')
+
+        if client_id and client_secret:
+            self.gmail_manager = init_gmail_manager(client_id, client_secret, redirect_uri)
+            logger.info("Gmail manager initialized")
+
+            # Load any saved mailboxes from config
+            self._load_saved_mailboxes()
+        else:
+            logger.warning("Google OAuth credentials not found. Gmail features disabled.")
+
+    def _load_saved_mailboxes(self):
+        """Load previously connected mailboxes from storage."""
+        # TODO: Load from Supabase or local JSON
+        pass
             
     def _load_campaigns(self):
         """Load active campaigns from campaigns directory."""
@@ -140,33 +173,49 @@ class AutonomousSDR:
         # TODO: Include relevant case study/social proof
         return ""
         
-    async def send_email(self, lead: Lead, email_body: str) -> bool:
+    async def send_email(self, lead: Lead, subject: str, email_body: str) -> bool:
         """
-        Send email via Nylas.
+        Send email via Gmail API.
         
         Respects:
-        - Daily send limits
+        - Daily send limits per mailbox
         - Business hours (recipient timezone)
         - Anti-spam guidelines
         """
         logger.info(f"Sending email to {lead.email}")
-        # TODO: Implement Nylas send
-        # TODO: Log to Supabase
-        # TODO: Update lead status
-        return True
+        
+        result = await send_email_via_gmail(
+            to_email=lead.email,
+            subject=subject,
+            body=email_body
+        )
+        
+        if result.get('success'):
+            logger.info(f"Email sent successfully via {result.get('mailbox')}")
+            # TODO: Log to Supabase
+            # TODO: Update lead status
+            return True
+        else:
+            logger.error(f"Failed to send email: {result.get('error')}")
+            return False
         
     async def check_replies(self) -> List[Dict]:
         """
-        Check Nylas for new email replies.
+        Check Gmail for new email replies across all connected mailboxes.
         
         Returns:
             List of replies to process
         """
         logger.info("Checking for new replies...")
-        # TODO: Poll Nylas API
+        
+        replies = await check_gmail_replies(since=datetime.now() - timedelta(hours=1))
+        
+        logger.info(f"Found {len(replies)} new replies")
+        
         # TODO: Categorize replies (positive/negative/question/meeting)
-        # TODO: Update lead statuses
-        return []
+        # TODO: Update lead statuses in Supabase
+        
+        return replies
         
     async def process_reply(self, reply: Dict):
         """
