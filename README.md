@@ -38,9 +38,16 @@ Your own autonomous outbound agent. No human-in-the-loop dashboard. Define the I
     ┌──────────────────┼──────────────────┐
     ▼                  ▼                  ▼
 ┌─────────┐    ┌─────────────┐    ┌───────────┐
-│  APOLLO │    │   NYLAS     │    │  SUPABASE │
-│  Leads  │    │  Email/Cal  │    │   Data    │
+│  APOLLO │    │    GMAIL    │    │  SUPABASE │
+│  Leads  │    │   (OAuth)   │    │   Data    │
 └─────────┘    └─────────────┘    └───────────┘
+     │                  │
+     ▼                  ▼
+┌─────────────┐  ┌─────────────┐
+│ Lead Data   │  │ Multi-      │
+│ Discovery   │  │ mailbox     │
+└─────────────┘  │ Rotation    │
+                 └─────────────┘
 ```
 
 ## Directory Structure
@@ -81,23 +88,24 @@ aisdr-autonomous/
 Create `.env` in root:
 
 ```bash
-# Apollo.io
-APOLLO_API_KEY=your_key_here
+# Apollo.io - Lead Discovery
+APOLLO_API_KEY=your_apollo_key_here
 
-# Nylas (Email/Calendar)
-NYLAS_CLIENT_ID=your_id
-NYLAS_CLIENT_SECRET=your_secret
-NYLAS_ACCESS_TOKEN=your_token
+# Google OAuth - Gmail/Calendar
+GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback
 
-# Supabase
+# OpenAI - Email Generation
+OPENAI_API_KEY=sk-...
+
+# Supabase - Data Storage (optional, uses localStorage if not set)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_anon_key
 SUPABASE_SERVICE_KEY=your_service_key
 
-# OpenAI
-OPENAI_API_KEY=sk-...
-
-# Slack (for alerts)
+# Slack - Notifications (optional)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/...
 SLACK_WEBHOOK_URL=https://hooks.slack.com/...
 ```
 

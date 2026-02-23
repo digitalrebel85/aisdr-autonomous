@@ -1,0 +1,22 @@
+# AISDR Autonomous - Python Dependencies
+
+# Gmail API
+google-auth>=2.22.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.1
+google-api-python-client>=2.95.0
+
+# Apollo API
+requests>=2.31.0
+
+# OpenAI
+openai>=1.0.0
+
+# Database
+supabase>=2.0.0
+
+# Environment
+dotenv-python>=0.0.1
+
+# Async
+asyncio>=3.4.3
